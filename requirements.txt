@@ -1,0 +1,7 @@
+mne-realtime
+scikit-learn
+python-osc
+pyedflib
+antropy
+pylsl
+biotuner @ git+https://github.com/AntoineBellemare/biotuner.git
