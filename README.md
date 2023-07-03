@@ -48,10 +48,12 @@ Finally, we call the blocking `mngr.run()` method, which starts the processing l
 - implement processor cache to avoid recomputing features that have not changed (e.g. power spectrum for PSD and 1/f)
     - e.g. add PowerSpectrum processor that is required by PSD and 1/f
     - set cache to dirty at the end of every update
-- all processors return channel-wise feaetures in addition to average
+- all processors return channel-wise features in addition to average
     - find standardized OSC address format (e.g. /device/feature/channel)
 - implement threaded Processors into abstract base class (default can be either eager or timed evaluation)
 - improve normalization by allowing for different normalization strategies for different features
+    - implement normalizers as wrappers of processors
+    - can take single processor or list
 - modular preprocessing step (e.g. notch filter, band pass)
 - clean up visualization code (replace by more efficient library in the long run)
 - add more features (e.g. 1/f slope)
