@@ -5,6 +5,17 @@ TODO: Update README
 
 This is a modular processing and streaming pipeline for real-time EEG. In its current state it is able to listen to EEG data streamed through LSL, apply a range of processing to the data (e.g. PSD, Lempel-Ziv) and output the processed features to several output channels (e.g. visualization, OSC stream).
 
+## Installation
+Clone the repository and install the required packages using `pip`:
+```bash
+git clone git@github.com:PhilippThoelke/neurofeedback.git
+cd neurofeedback
+pip install -e .
+```
+
+### Device setup
+Refer to the `devices` directory for device-specific setup instructions.
+
 ## Architecture
 The main component of this pipeline is the `Manager` class. This class manages a single input stream, multiple data processing/feature extraction steps and multiple output channels. Internally it creates a dynamic buffer of raw EEG, which gets populated by a single `DataIn` source. This can be a stream of raw EEG data coming from an EEG headset in real-time (`data_in.EEGStream`) or from a previous EEG recording (`data_in.EEGRecording`). Once the internal buffer is filled, a list of `Processor` objects extracts features from the raw EEG.
 
