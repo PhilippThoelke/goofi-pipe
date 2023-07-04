@@ -1,8 +1,7 @@
-# Setup for the DSI24 EEG headset by Wearable Sensing
-
 > __Warning__
 > This setup is currently only tested on Linux. It likely won't work on Windows, it might on Mac.
 
+# Setup for the DSI24 EEG headset by Wearable Sensing
 ## Installing the API
 Run the `install_dsi.sh` script to automatically download the API from WearableSensing and compile it into an executable. The script will create a directory called `dsi24_lib` in the current working directory, containing the `dsi2lsl` executable and a Python API for accessing device info.
 
