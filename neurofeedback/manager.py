@@ -117,7 +117,11 @@ if __name__ == "__main__":
             processors.Ratio("/file/alpha", "/file/theta", "alpha/theta"),
             processors.Bioelements(channels={"file": ["C3"]}),
             processors.Biocolor(channels={"file": ["C3"]}),
-            processors.OpenAI("/file/biocolor/ch0_peak0_name", "/file/bioelements/ch0_bioelements", read_poem=True),
+            processors.OpenAI(
+                "/file/biocolor/ch0_peak0_name",
+                "/file/bioelements/ch0_bioelements",
+                read_text=True,
+            ),
             # processors.Biotuner(channels={"file": ["O1", "O2"]}),
         ],
         normalization=normalization.StaticBaselineNormal(duration=30),

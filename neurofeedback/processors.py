@@ -778,8 +778,9 @@ class OpenAI(Processor):
 
     Parameters:
         color_feature (str): a list of features to use in the API call
+        temperature (float): the temperature parameter for the text generation
+        read_text (bool): whether to read the text using text-to-speech
         label (str): label under which to save the extracted feature
-        read_poem (bool): whether to read the poem using text to speech
         channels (Dict[str, List[str]]): channel list for each input stream
         api_call_frequency (float, optional): the frequency in Hz at which to run the API call loop
     """
@@ -787,14 +788,16 @@ class OpenAI(Processor):
     def __init__(
         self,
         *feature_names: str,
+        temperature: float = 1.3,
+        read_text: bool = False,
         label: str = "openai",
-        read_poem: bool = False,
         channels: Dict[str, List[str]] = None,
         api_call_frequency: float = 0.5,
     ):
         super(OpenAI, self).__init__(label, channels, normalize=False)
         self.feature_names = feature_names
-        self.read_poem = read_poem
+        self.temperature = temperature
+        self.read_text = read_text
         self.api_call_frequency = api_call_frequency
         self.latest_chat_messages = None
         self.api_lock = threading.Lock()
@@ -815,7 +818,12 @@ class OpenAI(Processor):
         messages = [
             {
                 "role": "system",
-                "content": "You are a poetic mastermind who uses Jungian archetypes to compose poems line by line. Every response should therefore only contain one line of the poem. Do not repeat the color in your response, but instead talk about the archetype of the color.",
+                "content": (
+                    "You are a poetic mastermind who uses Jungian archetypes to "
+                    "compose poems line by line. Every response should therefore "
+                    "only contain one line of the poem. Do not repeat the color in "
+                    "your response, but instead talk about the archetype of the color."
+                ),
             }
         ]
 
@@ -838,7 +846,9 @@ class OpenAI(Processor):
 
                 # Make an API call
                 response = openai.ChatCompletion.create(
-                    model="gpt-3.5-turbo", messages=messages
+                    model="gpt-3.5-turbo",
+                    messages=messages,
+                    temperature=self.temperature,
                 )
                 response = response["choices"][0]["message"]
 
@@ -848,7 +858,7 @@ class OpenAI(Processor):
                 with self.api_lock:
                     self.latest_chat_messages = response["content"]
 
-                if self.read_poem:
+                if self.read_text:
                     # Read the poem using text to speech
                     text2speech(response["content"])
 
