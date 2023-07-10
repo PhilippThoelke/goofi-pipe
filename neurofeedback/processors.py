@@ -15,6 +15,7 @@ from utils import (
     compute_conn_matrix_single,
     rgb2name,
     viz_scale_colors,
+    bioelements_realtime
 )
 
 
@@ -641,7 +642,7 @@ class Biotuner(Processor):
 
         result = {}
         normalization_mask = {}
-        for i in range(len(metrics)):
+        for i in range(len(metrics)): # iterate over channels
             ch_prefix = f"ch{i}_"
             result[f"{self.label}/{ch_prefix}harmsim"] = metrics[i]["harmsim"]
             normalization_mask[f"{self.label}/{ch_prefix}harmsim"] = True
@@ -671,4 +672,101 @@ class Biotuner(Processor):
             for j in range(len(harm_conn[i])):
                 result[f"{self.label}/harm_conn/{i}/{j}"] = harm_conn[i][j]
                 normalization_mask[f"{self.label}/harm_conn/{i}/{j}"] = False
+        return result
+
+class Bioelements(Processor):
+    """
+    Feature extractor for bioelement matching.
+
+    Parameters:
+        label (str): label under which to save the extracted feature
+        channels (Dict[str, List[str]]): channel list for each input stream
+        extraction_frequency (float, optional): the frequency in Hz at which to run the peak extraction loop
+    """
+
+    def __init__(
+        self,
+        label: str = "bioelements",
+        channels: Dict[str, List[str]] = None,
+        extraction_frequency: float = 1 / 5,
+    ):
+        super(Bioelements, self).__init__(label, channels, normalize=False)
+        self.sfreq = None
+        self.latest_raw = None
+        self.latest_elements = None
+        self.raw_lock = threading.Lock()
+        self.features_lock = threading.Lock()
+        self.extraction_frequency = extraction_frequency
+        self.extraction_thread = threading.Thread(
+            target=self.extraction_loop, daemon=True
+        )
+        self.extraction_thread.start()
+
+    def extraction_loop(self):
+        """
+        This function runs the biotuner_realtime function in a loop in a separate thread.
+        It continuously grabs the latest raw data, processes it, and updates the latest_hsvs.
+        """
+        while True:
+            with self.raw_lock:
+                raw = self.latest_raw
+
+            if raw is None:
+                time.sleep(0.05)
+                continue
+
+            bioelements_list = []
+            #try:
+            for ch in raw:
+                res = bioelements_realtime(ch, self.sfreq)
+                bioelements_list.append(list(res.keys()))
+            #except:
+            #    print("bioelements computation failed.")
+            #    continue
+
+
+            with self.features_lock:
+                self.latest_elements = bioelements_list
+
+            if self.extraction_frequency is not None:
+                sleep_time = 1 / self.extraction_frequency
+                time.sleep(sleep_time)
+
+    def process(
+        self,
+        raw: np.ndarray,
+        info: mne.Info,
+        processed: Dict[str, float],
+        intermediates: Dict[str, np.ndarray],
+    ):
+        """
+        This function computes the biotuner metrics for each channel.
+
+        Parameters:
+            raw (np.ndarray): the raw EEG buffer with shape (Channels, Time)
+            info (mne.Info): info object containing e.g. channel names, sampling frequency, etc.
+            processed (Dict[str, float]): dictionary collecting extracted features
+            intermediates (Dict[str, np.ndarray]): dictionary containing intermediate representations
+        """
+        self.sfreq = info["sfreq"]
+
+        with self.raw_lock:
+            self.latest_raw = raw
+
+        with self.features_lock:
+            bioelements = self.latest_elements
+
+        if bioelements is None:
+            bioelements = [['']] * info["nchan"]
+
+        result = {}
+        normalization_mask = {}
+        
+        if not isinstance(bioelements, list):
+            bioelements = [bioelements]
+        for i in range(len(bioelements)): # iterate over channels
+            ch_prefix = f"ch{i}_"
+            result[f"{self.label}/{ch_prefix}bioelements"] = bioelements[i]
+            print(result[f"{self.label}/{ch_prefix}bioelements"])
+            normalization_mask[f"{self.label}/{ch_prefix}bioelements"] = True
         return result

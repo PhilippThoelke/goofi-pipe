@@ -12,6 +12,7 @@ from biotuner.biotuner_object import compute_biotuner, dyad_similarity, harmonic
 from biotuner.harmonic_connectivity import harmonic_connectivity
 from biotuner.metrics import tuning_cons_matrix
 from mne.io.base import _get_ch_factors
+from biotuner.bioelements import hertz_to_nm, convert_to_nm, find_matching_spectral_lines, ALL_ELEMENTS
 
 
 class DataIn(ABC):
@@ -352,7 +353,16 @@ def biotuner_realtime(data, Fs):
         metrics["subharm_tension"][0] = -1
     tuning = bt_plant.peaks_ratios
     return peaks, extended_peaks, metrics, tuning, harm_tuning
-
+    
+def bioelements_realtime(data, Fs):
+    biotuning = compute_biotuner(1000, peaks_function = 'EMD', precision = 0.1, n_harm = 100,
+                        ratios_n_harms = 10, ratios_inc_fit = False, ratios_inc = False) # Initialize biotuner object
+    biotuning.peaks_extraction(data, ratios_extension = True, max_freq = 50)
+    _, _, _ = biotuning.peaks_extension(method = 'harmonic_fit', harm_function = 'mult', cons_limit = 0.1)
+    peaks_nm = [hertz_to_nm(x) for x in biotuning.extended_peaks]
+    print('PEAKS BIOLEMENTS', peaks_nm)
+    res = find_matching_spectral_lines(peaks_nm, convert_to_nm(ALL_ELEMENTS), tolerance=10)
+    return res
 
 # Helper function for computing a single connectivity matrix
 def compute_conn_matrix_single(data, sf):
