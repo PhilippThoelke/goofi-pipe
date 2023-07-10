@@ -788,7 +788,7 @@ class OpenAI(Processor):
     def __init__(
         self,
         *feature_names: str,
-        temperature: float = 1.3,
+        temperature: float = 1.2,
         read_text: bool = False,
         label: str = "openai",
         channels: Dict[str, List[str]] = None,
@@ -819,28 +819,26 @@ class OpenAI(Processor):
             {
                 "role": "system",
                 "content": (
-                    "You are a poetic mastermind who uses Jungian archetypes to "
-                    "compose poems line by line. Every response should therefore "
-                    "only contain one line of the poem. Do not repeat the color in "
-                    "your response, but instead talk about the archetype of the color."
+                    "I want you to inspire yourself from a list of elements to write a surrealist poetry of 2 lines. "
+                    "Only use the symbolism related to these elements to construct the poetry, without naming "
+                    "any of the elements. Use unconventional words and surprising imagery."
                 ),
             }
         ]
 
         while True:
-            # Wait for the next features to be available
-            with self.features_lock:
-                if self.latest_features is None:
-                    time.sleep(0.05)
-                    continue
-
             try:
                 # Add a user message to the conversation
                 with self.features_lock:
+                    if self.latest_features is None:
+                        # Wait for the next features to be available
+                        time.sleep(0.05)
+                        continue
+
                     messages.append(
                         {
                             "role": "user",
-                            "content": f"Next line, archetypes of {', '.join(self.latest_features)}.",
+                            "content": f"continue this poetry, with meaningful continuity with the following elements: {', '.join(self.latest_features)}. Do not name the element names explicitly.",
                         }
                     )
 
@@ -853,7 +851,7 @@ class OpenAI(Processor):
                 response = response["choices"][0]["message"]
 
                 # Add the response to the conversation
-                messages.append(response)
+                messages.append(dict(response))
 
                 with self.api_lock:
                     self.latest_chat_messages = response["content"]
