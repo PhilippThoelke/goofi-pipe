@@ -150,7 +150,7 @@ class PlotProcessed(DataOut):
         self.fig.canvas.restore_region(self.background_buffer)
 
         # update line plots
-        values = [p for p in processed.values()]
+        values = [p if isinstance(p, float) else 0.0 for p in processed.values()]
         if self.bar_plots is None:
             xs = range(len(processed))
             self.bar_plots = self.ax.bar(
@@ -206,7 +206,10 @@ class OSCStream(DataOut):
         for key, val in processed.items():
             # Create a new message
             msg = OscMessageBuilder(self.address_prefix + key)
-            msg.add_arg(val, OscMessageBuilder.ARG_TYPE_FLOAT)
+            if isinstance(val, float):
+                msg.add_arg(val, OscMessageBuilder.ARG_TYPE_FLOAT)
+            elif isinstance(val, str):
+                msg.add_arg(val, OscMessageBuilder.ARG_TYPE_STRING)
 
             # Add the message to the bundle
             bundle.add_content(msg.build())

@@ -6,6 +6,7 @@ from typing import Dict, List, Tuple, Union
 
 import mne
 import numpy as np
+import webcolors
 from biotuner.biocolors import audible2visible, scale2freqs, wavelength_to_rgb
 from biotuner.biotuner_object import compute_biotuner, dyad_similarity, harmonic_tuning
 from biotuner.harmonic_connectivity import harmonic_connectivity
@@ -366,3 +367,23 @@ def compute_conn_matrix_single(data, sf):
     )
     bt_conn.compute_harm_connectivity(metric="harmsim", save=False, graph=False)
     return bt_conn.conn_matrix
+
+
+def rgb2name(rgb):
+    """
+    Find the closest color in a dictionary of colors to an input RGB value.
+
+    Parameters:
+        rgb (Tuple[int, int, int]): RGB color tuple
+
+    Returns:
+        str: The name of the closest color in the dictionary
+    """
+    colors = {
+        k: webcolors.hex_to_rgb(k) for k in webcolors.constants.CSS3_HEX_TO_NAMES.keys()
+    }
+    closest_color = min(
+        colors,
+        key=lambda color: sum((a - b) ** 2 for a, b in zip(rgb, colors[color])),
+    )
+    return webcolors.constants.CSS3_HEX_TO_NAMES[closest_color]

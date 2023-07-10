@@ -1,3 +1,4 @@
+import colorsys
 import operator
 import sys
 import threading
@@ -12,6 +13,7 @@ from utils import (
     Processor,
     biotuner_realtime,
     compute_conn_matrix_single,
+    rgb2name,
     viz_scale_colors,
 )
 
@@ -504,6 +506,9 @@ class Biocolor(Processor):
                 result[f"{self.label}/ch{i}_peak{j}_hue"] = hsv[0]
                 result[f"{self.label}/ch{i}_peak{j}_sat"] = hsv[1]
                 result[f"{self.label}/ch{i}_peak{j}_val"] = hsv[2]
+
+                rgb = tuple(map(lambda x: int(x * 255), colorsys.hsv_to_rgb(*hsv)))
+                result[f"{self.label}/ch{i}_peak{j}_name"] = rgb2name(rgb)
         return result
 
 
