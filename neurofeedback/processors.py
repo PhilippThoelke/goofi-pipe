@@ -1,21 +1,22 @@
 import colorsys
 import operator
-import sys
 import threading
 import time
 from typing import Callable, Dict, List, Optional, Tuple
 
 import mne
 import numpy as np
+import openai
 from antropy import lziv_complexity, spectral_entropy
 from scipy.signal import welch
 from utils import (
     Processor,
+    bioelements_realtime,
     biotuner_realtime,
     compute_conn_matrix_single,
     rgb2name,
+    text2speech,
     viz_scale_colors,
-    bioelements_realtime
 )
 
 
@@ -642,7 +643,7 @@ class Biotuner(Processor):
 
         result = {}
         normalization_mask = {}
-        for i in range(len(metrics)): # iterate over channels
+        for i in range(len(metrics)):  # iterate over channels
             ch_prefix = f"ch{i}_"
             result[f"{self.label}/{ch_prefix}harmsim"] = metrics[i]["harmsim"]
             normalization_mask[f"{self.label}/{ch_prefix}harmsim"] = True
@@ -673,6 +674,7 @@ class Biotuner(Processor):
                 result[f"{self.label}/harm_conn/{i}/{j}"] = harm_conn[i][j]
                 normalization_mask[f"{self.label}/harm_conn/{i}/{j}"] = False
         return result
+
 
 class Bioelements(Processor):
     """
@@ -716,14 +718,13 @@ class Bioelements(Processor):
                 continue
 
             bioelements_list = []
-            #try:
-            for ch in raw:
-                res = bioelements_realtime(ch, self.sfreq)
-                bioelements_list.append(list(res.keys()))
-            #except:
-            #    print("bioelements computation failed.")
-            #    continue
-
+            try:
+                for ch in raw:
+                    res = bioelements_realtime(ch, self.sfreq)
+                    bioelements_list.append(list(res.keys()))
+            except:
+                print("bioelements computation failed.")
+                continue
 
             with self.features_lock:
                 self.latest_elements = bioelements_list
@@ -757,16 +758,132 @@ class Bioelements(Processor):
             bioelements = self.latest_elements
 
         if bioelements is None:
-            bioelements = [['']] * info["nchan"]
+            bioelements = [[""]] * info["nchan"]
 
         result = {}
         normalization_mask = {}
-        
+
         if not isinstance(bioelements, list):
             bioelements = [bioelements]
-        for i in range(len(bioelements)): # iterate over channels
+        for i in range(len(bioelements)):  # iterate over channels
             ch_prefix = f"ch{i}_"
             result[f"{self.label}/{ch_prefix}bioelements"] = bioelements[i]
-            print(result[f"{self.label}/{ch_prefix}bioelements"])
             normalization_mask[f"{self.label}/{ch_prefix}bioelements"] = True
+        return result
+
+
+class OpenAI(Processor):
+    """
+    Feature extractor for OpenAI API responses.
+
+    Parameters:
+        color_feature (str): a list of features to use in the API call
+        label (str): label under which to save the extracted feature
+        read_poem (bool): whether to read the poem using text to speech
+        channels (Dict[str, List[str]]): channel list for each input stream
+        api_call_frequency (float, optional): the frequency in Hz at which to run the API call loop
+    """
+
+    def __init__(
+        self,
+        *feature_names: str,
+        label: str = "openai",
+        read_poem: bool = False,
+        channels: Dict[str, List[str]] = None,
+        api_call_frequency: float = 0.5,
+    ):
+        super(OpenAI, self).__init__(label, channels, normalize=False)
+        self.feature_names = feature_names
+        self.read_poem = read_poem
+        self.api_call_frequency = api_call_frequency
+        self.latest_chat_messages = None
+        self.api_lock = threading.Lock()
+        self.latest_features = None
+        self.features_lock = threading.Lock()
+        self.api_call_thread = threading.Thread(target=self.api_call_loop, daemon=True)
+        self.api_call_thread.start()
+
+    def api_call_loop(self):
+        """
+        This function calls the OpenAI API in a loop to iteratively build up a text, based
+        on some features.
+        """
+        with open("openai.key", "r") as f:
+            openai.api_key = f.read().strip()
+
+        # Start a conversation with the AI
+        messages = [
+            {
+                "role": "system",
+                "content": "You are a poetic mastermind who uses Jungian archetypes to compose poems line by line. Every response should therefore only contain one line of the poem. Do not repeat the color in your response, but instead talk about the archetype of the color.",
+            }
+        ]
+
+        while True:
+            # Wait for the next features to be available
+            with self.features_lock:
+                if self.latest_features is None:
+                    time.sleep(0.05)
+                    continue
+
+            try:
+                # Add a user message to the conversation
+                with self.features_lock:
+                    messages.append(
+                        {
+                            "role": "user",
+                            "content": f"Next line, archetypes of {', '.join(self.latest_features)}.",
+                        }
+                    )
+
+                # Make an API call
+                response = openai.ChatCompletion.create(
+                    model="gpt-3.5-turbo", messages=messages
+                )
+                response = response["choices"][0]["message"]
+
+                # Add the response to the conversation
+                messages.append(response)
+
+                with self.api_lock:
+                    self.latest_chat_messages = response["content"]
+
+                if self.read_poem:
+                    # Read the poem using text to speech
+                    text2speech(response["content"])
+
+            except Exception as e:
+                print(f"OpenAI API call failed: {e}")
+                continue
+
+            if self.api_call_frequency is not None:
+                sleep_time = 1 / self.api_call_frequency
+                time.sleep(sleep_time)
+
+    def process(
+        self,
+        raw: np.ndarray,
+        info: mne.Info,
+        processed: Dict[str, float],
+        intermediates: Dict[str, np.ndarray],
+    ):
+        """
+        This function provides responses from OpenAI API calls.
+
+        Parameters:
+            raw (np.ndarray): the raw EEG buffer with shape (Channels, Time)
+            info (mne.Info): info object containing e.g. channel names, sampling frequency, etc.
+            processed (Dict[str, float]): dictionary collecting extracted features
+            intermediates (Dict[str, np.ndarray]): dictionary containing intermediate representations
+        """
+        with self.features_lock:
+            self.latest_features = []
+            for ft in self.feature_names:
+                if isinstance(processed[ft], list):
+                    self.latest_features.extend(processed[ft])
+                else:
+                    self.latest_features.append(processed[ft])
+
+        with self.api_lock:
+            result = {self.label: self.latest_chat_messages}
         return result

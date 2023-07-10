@@ -157,3 +157,6 @@ cython_debug/
 
 # device-specific files
 dsi24_lib/
+
+# OpenAI API key
+openai.key

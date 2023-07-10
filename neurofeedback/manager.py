@@ -115,9 +115,10 @@ if __name__ == "__main__":
             processors.PSD(label="gamma"),
             processors.LempelZiv(),
             processors.Ratio("/file/alpha", "/file/theta", "alpha/theta"),
-            #processors.Biocolor(channels={"file": ["C3"]}, extraction_frequency=0.2),
-            #processors.Biotuner(channels={"file": ["O1", "O2"]}),
-            processors.Bioelements(channels={"file": ["O1", "O2"]}),
+            processors.Bioelements(channels={"file": ["C3"]}),
+            processors.Biocolor(channels={"file": ["C3"]}),
+            processors.OpenAI("/file/biocolor/ch0_peak0_name", "/file/bioelements/ch0_bioelements", read_poem=True),
+            # processors.Biotuner(channels={"file": ["O1", "O2"]}),
         ],
         normalization=normalization.StaticBaselineNormal(duration=30),
         data_out=[
