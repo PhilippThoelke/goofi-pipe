@@ -10,3 +10,4 @@ webcolors
 openai
 gTTS
 playsound
+pytest

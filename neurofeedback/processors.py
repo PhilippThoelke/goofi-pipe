@@ -9,7 +9,8 @@ import numpy as np
 import openai
 from antropy import lziv_complexity, spectral_entropy
 from scipy.signal import welch
-from utils import (
+
+from neurofeedback.utils import (
     Processor,
     bioelements_realtime,
     biotuner_realtime,
@@ -190,7 +191,7 @@ class LempelZiv(Processor):
         # binarize raw signal
         if self.binarize_mode == "mean":
             binarized = raw >= np.mean(raw, axis=-1, keepdims=True)
-        else:
+        elif self.binarize_mode == "median":
             binarized = raw >= np.median(raw, axis=-1, keepdims=True)
 
         # compute Lempel-Ziv complexity

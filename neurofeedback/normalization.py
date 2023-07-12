@@ -2,7 +2,7 @@ import time
 from typing import Dict
 
 import numpy as np
-from utils import Normalization
+from neurofeedback.utils import Normalization
 
 
 class WelfordsZTransform(Normalization):

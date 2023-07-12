@@ -1,8 +1,7 @@
 import time
 from typing import Dict, List
 
-import numpy as np
-from utils import DataIn, DataOut, Normalization, Processor
+from neurofeedback.utils import DataIn, DataOut, Normalization, Processor
 
 
 class Manager:
@@ -70,18 +69,24 @@ class Manager:
         for out in self.data_out:
             out.update(self.data_in, finished)
 
-    def run(self):
+    def run(self, n_iterations: int = -1):
         """
         Start the fetching and processing loop and limit the loop to run at a
         constant update rate.
+
+        Parameters:
+            n_iterations (int): number of iterations to run the loop for (-1 for infinite)
         """
         print("Filling buffer(s)...", end="")
 
         last_time = time.time()
-        while True:
+        it = 0
+        while it != n_iterations:
             # receive, process and output data
             self.update()
+            it += 1
 
+            # limit the loop to run at a constant update rate
             if self.frequency > 0:
                 # ensure a constant sampling frequency
                 current_time = time.time()
@@ -98,10 +103,7 @@ class Manager:
 
 
 if __name__ == "__main__":
-    import data_in
-    import data_out
-    import normalization
-    import processors
+    from neurofeedback import data_in, data_out, normalization, processors
 
     mngr = Manager(
         data_in={

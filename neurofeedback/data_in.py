@@ -9,10 +9,71 @@ import serial.tools.list_ports
 from mne.datasets import eegbci
 from mne.io import BaseRaw, concatenate_raws, read_raw
 from mne_realtime import LSLClient, MockLSLStream
-from utils import DataIn
+
+from neurofeedback.utils import DataIn
 
 mne.set_log_level(False)
-import numpy as np
+
+
+class DummyStream(DataIn):
+    """
+    Dummy stream for testing purposes.
+
+    Parameters:
+        data (str): the type of data to generate, one of "normal", "zeros", "arange", "exp"
+        n_channels (int): number of channels to generate
+        sfreq (int): sampling frequency
+        buffer_seconds (int): number of seconds to buffer
+    """
+
+    def __init__(self, data="normal", n_channels=5, sfreq=100, buffer_seconds=5):
+        super().__init__(buffer_seconds)
+        assert data in ["normal", "zeros", "arange", "exp"]
+
+        self.data = data
+        self.n_channels = n_channels
+        self.sfreq = sfreq
+        self.last_receive = time.time() - buffer_seconds
+
+        # fill the buffer so we don't need to wait for the first receive
+        self.update()
+
+    @property
+    def info(self) -> mne.Info:
+        """
+        Returns an MNE info for this dummy stream
+        """
+        return mne.create_info(
+            [f"ch{i}" for i in range(self.n_channels)], self.sfreq, "eeg"
+        )
+
+    def receive(self) -> np.ndarray:
+        """
+        Returns a random NumPy array with shape (Channels, Time).
+        """
+        n_samples = int((time.time() - self.last_receive) * self.sfreq)
+        self.last_receive = time.time()
+
+        if self.data == "normal":
+            dat = np.random.normal(size=(self.n_channels, n_samples))
+        elif self.data == "zeros":
+            dat = np.zeros((self.n_channels, n_samples))
+        elif self.data == "arange":
+            dat = (
+                np.arange(n_samples)
+                .repeat(self.n_channels)
+                .reshape(n_samples, self.n_channels)
+                .T
+            )
+        elif self.data == "exp":
+            dat = (
+                np.exp(np.arange(n_samples) / self.sfreq)
+                .repeat(self.n_channels)
+                .reshape(n_samples, self.n_channels)
+                .T
+            )
+        # scale the data to microvolts
+        return dat.astype(np.float32) * 1e-6
 
 
 class SerialStream(DataIn):

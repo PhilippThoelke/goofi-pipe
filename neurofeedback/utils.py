@@ -1,5 +1,6 @@
 import colorsys
 import threading
+import time
 from abc import ABC, abstractmethod
 from collections import deque
 from tempfile import NamedTemporaryFile
