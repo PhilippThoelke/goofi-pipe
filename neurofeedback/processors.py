@@ -135,7 +135,7 @@ class PSD(Processor):
             return {
                 self.label: np.mean(
                     [intermediates[f"{spec_key}-{ch}"][mask] for ch in info["ch_names"]]
-                )
+                ).item()
             }
 
         raise RuntimeError(
