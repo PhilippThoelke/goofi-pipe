@@ -396,7 +396,9 @@ class DiffOverSum(BinaryOperator):
     """
 
     def __init__(self, feature1: str, feature2: str, label: str = "diff-over-sum"):
-        func = lambda f1, f2: (f1 - f2) / (f1 + f2)
+        def func(f1, f2):
+            return (f1 - f2) / (f1 + f2)
+
         super(DiffOverSum, self).__init__(func, feature1, feature2, label)
 
 
