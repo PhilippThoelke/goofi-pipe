@@ -6,7 +6,7 @@ import time
 import warnings
 from io import BytesIO
 from os.path import exists
-from typing import Callable, Dict, List, Optional, Tuple, Union
+from typing import Any, Callable, Dict, List, Optional, Tuple, Union
 
 import mne
 import numpy as np
@@ -111,7 +111,7 @@ class PSD(Processor):
         raw: np.ndarray,
         info: mne.Info,
         processed: Dict[str, float],
-        intermediates: Dict[str, np.ndarray],
+        intermediates: Dict[str, Any],
     ):
         """
         This function computes the power spectrum using Welch's method, if it is not provided
@@ -122,7 +122,7 @@ class PSD(Processor):
             raw (np.ndarray): the raw EEG buffer with shape (Channels, Time)
             info (mne.Info): info object containing e.g. channel names, sampling frequency, etc.
             processed (Dict[str, float]): dictionary collecting extracted features
-            intermediates (Dict[str, np.ndarray]): dictionary containing intermediate representations
+            intermediates (Dict[str, Any]): dictionary containing intermediate representations
 
         Returns:
             features (Dict[str, float]): the extracted features from this processor
@@ -179,7 +179,7 @@ class LempelZiv(Processor):
         raw: np.ndarray,
         info: mne.Info,
         processed: Dict[str, float],
-        intermediates: Dict[str, np.ndarray],
+        intermediates: Dict[str, Any],
     ):
         """
         This function computes channel-wise Lempel-Ziv complexity on the binarized signal.
@@ -188,7 +188,7 @@ class LempelZiv(Processor):
             raw (np.ndarray): the raw EEG buffer with shape (Channels, Time)
             info (mne.Info): info object containing e.g. channel names, sampling frequency, etc.
             processed (Dict[str, float]): dictionary collecting extracted features
-            intermediates (Dict[str, np.ndarray]): dictionary containing intermediate representations
+            intermediates (Dict[str, Any]): dictionary containing intermediate representations
 
         Returns:
             features (Dict[str, float]): the extracted features from this processor
@@ -228,7 +228,7 @@ class SpectralEntropy(Processor):
         raw: np.ndarray,
         info: mne.Info,
         processed: Dict[str, float],
-        intermediates: Dict[str, np.ndarray],
+        intermediates: Dict[str, Any],
     ):
         """
         This function computes channel-wise spectral entropy.
@@ -237,7 +237,7 @@ class SpectralEntropy(Processor):
             raw (np.ndarray): the raw EEG buffer with shape (Channels, Time)
             info (mne.Info): info object containing e.g. channel names, sampling frequency, etc.
             processed (Dict[str, float]): dictionary collecting extracted features
-            intermediates (Dict[str, np.ndarray]): dictionary containing intermediate representations
+            intermediates (Dict[str, Any]): dictionary containing intermediate representations
 
         Returns:
             features (Dict[str, float]): the extracted features from this processor
@@ -283,7 +283,7 @@ class BinaryOperator(Processor):
         raw: np.ndarray,
         info: mne.Info,
         processed: Dict[str, float],
-        intermediates: Dict[str, np.ndarray],
+        intermediates: Dict[str, Any],
     ):
         """
         Applies the binary operation to the two specified features. Throws an error if the features
@@ -293,7 +293,7 @@ class BinaryOperator(Processor):
             raw (np.ndarray): the raw EEG buffer with shape (Channels, Time)
             info (mne.Info): info object containing e.g. channel names, sampling frequency, etc.
             processed (Dict[str, float]): dictionary collecting extracted features
-            intermediates (Dict[str, np.ndarray]): dictionary containing intermediate representations
+            intermediates (Dict[str, Any]): dictionary containing intermediate representations
 
         Returns:
             features (Dict[str, float]): the extracted features from this processor
@@ -483,7 +483,7 @@ class Biocolor(Processor):
         raw: np.ndarray,
         info: mne.Info,
         processed: Dict[str, float],
-        intermediates: Dict[str, np.ndarray],
+        intermediates: Dict[str, Any],
     ):
         """
         This function computes the biotuner metrics for each channel.
@@ -492,7 +492,7 @@ class Biocolor(Processor):
             raw (np.ndarray): the raw EEG buffer with shape (Channels, Time)
             info (mne.Info): info object containing e.g. channel names, sampling frequency, etc.
             processed (Dict[str, float]): dictionary collecting extracted features
-            intermediates (Dict[str, np.ndarray]): dictionary containing intermediate representations
+            intermediates (Dict[str, Any]): dictionary containing intermediate representations
         """
         if self.biotuner is None:
             from biotuner import biotuner_object
@@ -607,7 +607,7 @@ class Biotuner(Processor):
         raw: np.ndarray,
         info: mne.Info,
         processed: Dict[str, float],
-        intermediates: Dict[str, np.ndarray],
+        intermediates: Dict[str, Any],
     ):
         """
         This function computes the biotuner metrics for each channel.
@@ -616,7 +616,7 @@ class Biotuner(Processor):
             raw (np.ndarray): the raw EEG buffer with shape (Channels, Time)
             info (mne.Info): info object containing e.g. channel names, sampling frequency, etc.
             processed (Dict[str, float]): dictionary collecting extracted features
-            intermediates (Dict[str, np.ndarray]): dictionary containing intermediate representations
+            intermediates (Dict[str, Any]): dictionary containing intermediate representations
         """
         self.sfreq = info["sfreq"]
 
@@ -746,7 +746,7 @@ class Bioelements(Processor):
         raw: np.ndarray,
         info: mne.Info,
         processed: Dict[str, float],
-        intermediates: Dict[str, np.ndarray],
+        intermediates: Dict[str, Any],
     ):
         """
         This function computes the biotuner metrics for each channel.
@@ -755,7 +755,7 @@ class Bioelements(Processor):
             raw (np.ndarray): the raw EEG buffer with shape (Channels, Time)
             info (mne.Info): info object containing e.g. channel names, sampling frequency, etc.
             processed (Dict[str, float]): dictionary collecting extracted features
-            intermediates (Dict[str, np.ndarray]): dictionary containing intermediate representations
+            intermediates (Dict[str, Any]): dictionary containing intermediate representations
         """
         self.sfreq = info["sfreq"]
 
@@ -941,7 +941,7 @@ class TextGeneration(Processor):
         raw: np.ndarray,
         info: mne.Info,
         processed: Dict[str, float],
-        intermediates: Dict[str, np.ndarray],
+        intermediates: Dict[str, Any],
     ):
         """
         This function provides responses from OpenAI API calls.
@@ -950,7 +950,7 @@ class TextGeneration(Processor):
             raw (np.ndarray): the raw EEG buffer with shape (Channels, Time)
             info (mne.Info): info object containing e.g. channel names, sampling frequency, etc.
             processed (Dict[str, float]): dictionary collecting extracted features
-            intermediates (Dict[str, np.ndarray]): dictionary containing intermediate representations
+            intermediates (Dict[str, Any]): dictionary containing intermediate representations
         """
         # grab the latest features
         features = []
@@ -1095,7 +1095,7 @@ class ImageGeneration(Processor):
         raw: np.ndarray,
         info: mne.Info,
         processed: Dict[str, float],
-        intermediates: Dict[str, np.ndarray],
+        intermediates: Dict[str, Any],
     ):
         """
         This function provides responses from OpenAI API calls.
@@ -1104,7 +1104,7 @@ class ImageGeneration(Processor):
             raw (np.ndarray): the raw EEG buffer with shape (Channels, Time)
             info (mne.Info): info object containing e.g. channel names, sampling frequency, etc.
             processed (Dict[str, float]): dictionary collecting extracted features
-            intermediates (Dict[str, np.ndarray]): dictionary containing intermediate representations
+            intermediates (Dict[str, Any]): dictionary containing intermediate representations
         """
         if processed[self.prompt_feature] is not None:
             with self.prompt_lock:

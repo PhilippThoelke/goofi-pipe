@@ -1,6 +1,6 @@
 import time
 from os.path import exists
-from typing import Dict
+from typing import Any, Dict
 
 import mne
 import numpy as np
@@ -10,6 +10,7 @@ from pyedflib import EdfWriter, highlevel
 from pythonosc import osc_bundle_builder
 from pythonosc.osc_message_builder import OscMessageBuilder
 from pythonosc.udp_client import UDPClient
+
 from neurofeedback.utils import DataIn, DataOut
 
 
@@ -42,6 +43,7 @@ class PlotRaw(DataOut):
         self,
         data_in: Dict[str, DataIn],
         processed: Dict[str, float],
+        intermediates: Dict[str, Any],
     ):
         """
         Update the plot of the raw EEG signal.
@@ -49,6 +51,7 @@ class PlotRaw(DataOut):
         Parameters:
             data_in (Dict[str, DataIn]): list of input streams
             processed (Dict[str, float]): dictionary of extracted, normalized features
+            intermediates (Dict[str, Any]): dictionary containing intermediate representations
         """
         assert (
             self.data_in_name is not None or len(data_in) == 1
@@ -123,6 +126,7 @@ class PlotProcessed(DataOut):
         self,
         data_in: Dict[str, DataIn],
         processed: Dict[str, float],
+        intermediates: Dict[str, Any],
     ):
         """
         Update the plot of extracted features.
@@ -130,6 +134,7 @@ class PlotProcessed(DataOut):
         Parameters:
             data_in (Dict[str, DataIn]): list of input streams
             processed (Dict[str, float]): dictionary of extracted, normalized features
+            intermediates (Dict[str, Any]): dictionary containing intermediate representations
         """
         if (self.fig_size != self.fig.get_size_inches()).any():
             # hide bars
@@ -191,7 +196,12 @@ class OSCStream(DataOut):
         self.address_prefix = address_prefix
         self.client = UDPClient(ip, port)
 
-    def update(self, data_in: Dict[str, DataIn], processed: Dict[str, float]):
+    def update(
+        self,
+        data_in: Dict[str, DataIn],
+        processed: Dict[str, float],
+        intermediates: Dict[str, Any],
+    ):
         """
         Send the extracted features to the target OSC server. The processed dictionary
         gets combined into a single OSC Bundle with a different OSC address per feature.
@@ -199,6 +209,7 @@ class OSCStream(DataOut):
         Parameters:
             data_in (Dict[str, DataIn]): list of input streams
             processed (Dict[str, float]): dictionary of extracted, normalized features
+            intermediates (Dict[str, Any]): dictionary containing intermediate representations
         """
         # Initialize an empty bundle
         bundle = osc_bundle_builder.OscBundleBuilder(osc_bundle_builder.IMMEDIATELY)
@@ -268,6 +279,7 @@ class RawToFile(DataOut):
         self,
         data_in: Dict[str, DataIn],
         processed: Dict[str, float],
+        intermediates: Dict[str, Any],
     ):
         """
         Receives new raw data points and stores them in an EDF file in 1 second chunks.
@@ -275,7 +287,7 @@ class RawToFile(DataOut):
         Parameters:
             data_in (Dict[str, DataIn]): list of input streams
             processed (Dict[str, float]): dictionary of extracted, normalized features
-            n_samples_received (int): number of new samples in the raw buffer
+            intermediates (Dict[str, Any]): dictionary containing intermediate representations
         """
         assert (
             self.data_in_name is not None or len(data_in) == 1
@@ -401,6 +413,7 @@ class ProcessedToFile(DataOut):
         self,
         data_in: Dict[str, DataIn],
         processed: Dict[str, float],
+        intermediates: Dict[str, Any],
     ):
         """
         Appends newly extracted features as a new row to a CSV file. If the file doesn't exist yet
@@ -409,6 +422,7 @@ class ProcessedToFile(DataOut):
         Parameters:
             data_in (Dict[str, DataIn]): list of input streams
             processed (Dict[str, float]): dictionary of extracted, normalized features
+            intermediates (Dict[str, Any]): dictionary containing intermediate representations
         """
         file_mode = "a"
         if not self.header_done:

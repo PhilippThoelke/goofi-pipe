@@ -3,7 +3,7 @@ import threading
 from abc import ABC, abstractmethod
 from collections import deque
 from tempfile import NamedTemporaryFile
-from typing import Dict, List, Tuple, Union
+from typing import Any, Dict, List, Tuple, Union
 
 import mne
 import numpy as np
@@ -108,6 +108,7 @@ class DataOut(ABC):
         self,
         data_in: Dict[str, DataIn],
         processed: Dict[str, float],
+        intermediates: Dict[str, Any],
     ):
         """
         This function is called by the Manager to send a new batch of data to the output stream.
@@ -115,6 +116,7 @@ class DataOut(ABC):
         Parameters:
             data_in (Dict[str, DataIn]): list of input streams
             processed (Dict[str, float]): dictionary of extracted normalized features
+            intermediates (Dict[str, Any]): dictionary of intermediate representations
         """
         pass
 
@@ -145,7 +147,7 @@ class Processor(ABC):
         raw: np.ndarray,
         info: mne.Info,
         processed: Dict[str, float],
-        intermediates: Dict[str, np.ndarray],
+        intermediates: Dict[str, Any],
     ) -> Dict[str, float]:
         """
         This function is called internally by __call__ to run the feature extraction.
@@ -158,7 +160,7 @@ class Processor(ABC):
             raw (np.ndarray): the raw EEG buffer with shape (Channels, Time)
             info (mne.Info): info object containing e.g. channel names, sampling frequency, etc.
             processed (Dict[str, float]): dictionary collecting extracted features
-            intermediates (Dict[str, np.ndarray]): dictionary containing intermediate representations
+            intermediates (Dict[str, Any]): dictionary containing intermediate representations
 
         Returns:
             features (Dict[str, float]): the extracted features from this processor
@@ -169,7 +171,7 @@ class Processor(ABC):
         self,
         data_in: List[DataIn],
         processed: Dict[str, float],
-        intermediates: Dict[str, np.ndarray],
+        intermediates: Dict[str, Any],
     ) -> Dict[str, bool]:
         """
         Deriving classes should not override this method. It get's called by the Manager,
@@ -178,7 +180,7 @@ class Processor(ABC):
         Parameters:
             data_in (List[DataIn]): list of input streams
             processed (Dict[str, float]): dictionary collecting extracted features
-            intermediates (Dict[str, np.ndarray]): dictionary containing intermediate representations
+            intermediates (Dict[str, Any]): dictionary containing intermediate representations
 
         Returns:
             normalization_mask (Dict[str, bool]): dictionary indicating which features should be normalized

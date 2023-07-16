@@ -67,7 +67,7 @@ class Manager:
 
         # update data outputs
         for out in self.data_out:
-            out.update(self.data_in, finished)
+            out.update(self.data_in, finished, intermediates)
 
     def run(self, n_iterations: int = -1):
         """
