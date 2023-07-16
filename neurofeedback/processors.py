@@ -1,14 +1,18 @@
+import base64
 import colorsys
 import operator
 import threading
 import time
+import warnings
+from io import BytesIO
 from os.path import exists
-from typing import Callable, Dict, List, Optional, Tuple
+from typing import Callable, Dict, List, Optional, Tuple, Union
 
 import mne
 import numpy as np
 import openai
 from antropy import lziv_complexity, spectral_entropy
+from PIL import Image
 from scipy.signal import welch
 
 from neurofeedback.utils import (
@@ -778,16 +782,20 @@ class Bioelements(Processor):
 
 class TextGeneration(Processor):
     """
-    LLM based text generation using features from other processors as inspiration. The text is built up
-    line by line, with each line being generated based on the previous line and the new features
-    of the current iteration. The text is generated using the OpenAI API.
+    LLM based text generation using features from other processors as inspiration. The text can either
+    be built up line by line (if keep_conversation is True), with each line being generated based on
+    the previous line and the new features of the current iteration. If keep_conversation is False,
+    the conversation is reset with every API call. Text is generated using the OpenAI API.
 
     This class defines a range of prompts for generation of different types of text.
 
     Parameters:
         prompt (str): the prompt to use for the API call
         feature_names (str): features used to use inspire the LLM
+        model (str): the model to use for the API call, choose from https://platform.openai.com/docs/models/model-endpoint-compatibility
         temperature (float): the temperature parameter for the text generation
+        max_tokens (int): the maximum number of tokens to generate
+        keep_conversation (bool): whether to keep the conversation history or reset after each generation
         read_text (bool): whether to read the text using text-to-speech
         label (str): label under which to save the extracted feature
         channels (Dict[str, List[str]]): channel list for each input stream
@@ -811,23 +819,40 @@ class TextGeneration(Processor):
         "imagery."
     )
 
+    TXT2IMG_PROMPT = (
+        "Your job is to come up with a prompt for a text-to-image model. The prompt should be concise but "
+        "very detailed. Use many adjectives and use creative, abstract and mystical words. Generate only a "
+        "single prompt, which should be as short as possible (max. one long sentence, preferably less). "
+        "I will provide some words to inspire the image prompt. Use these words to construct the content of "
+        "the image, and use the symbolism associated with these words to construct the style of the image. "
+        "To express the style, use terms from visual arts to describe e.g. the image medium (photo, painting, "
+        "digital art, ...), the composition, the style, the setting and so on. These style terms should be "
+        "single words, separated by commas. The content should be described in a single sentence, and should "
+        "be as detailed as possible. Be purely descriptive, your response does not have to be a complete sentence."
+    )
+
     def __init__(
         self,
         prompt: str,
         *feature_names: str,
+        model: str = "gpt-3.5-turbo",
         temperature: float = 1.2,
+        max_tokens=128,
+        keep_conversation: bool = True,
         read_text: bool = False,
-        label: str = "openai",
-        channels: Dict[str, List[str]] = None,
-        api_call_frequency: float = 0.5,
+        label: str = "text-generation",
+        update_frequency: float = 0.25,
     ):
-        super(TextGeneration, self).__init__(label, channels, normalize=False)
+        super(TextGeneration, self).__init__(label, None, normalize=False)
         self.prompt = prompt
         self.feature_names = feature_names
+        self.model = model
         self.temperature = temperature
+        self.max_tokens = max_tokens
+        self.keep_conversation = keep_conversation
         self.read_text = read_text
-        self.api_call_frequency = api_call_frequency
-        self.latest_chat_messages = None
+        self.update_frequency = update_frequency
+        self.latest_chat_message = None
         self.api_lock = threading.Lock()
         self.latest_features = None
         self.features_lock = threading.Lock()
@@ -849,52 +874,66 @@ class TextGeneration(Processor):
             openai.api_key = f.read().strip()
 
         # start a conversation with the AI
-        messages = [{"role": "system", "content": self.prompt}]
+        system_msg = {"role": "system", "content": self.prompt}
+        messages = [system_msg]
 
         while True:
             try:
                 with self.features_lock:
-                    if self.latest_features is None:
-                        # wait for features to be available
-                        time.sleep(0.05)
-                        continue
+                    features = self.latest_features
+                # wait for features to be available
+                if features is None:
+                    time.sleep(0.1)
+                    continue
 
-                    # add a user message to the conversation
+                # add a user message to the conversation
+                if self.keep_conversation:
                     messages.append(
                         {
                             "role": "user",
                             "content": (
-                                f"Continue with meaningful coherence, using the symbolism of the following "
-                                f"words: {', '.join(self.latest_features)}. Do not use these words in your "
-                                "production."
+                                "Continue with meaningful coherence, using the the following  words as inspiration: "
+                                f"{', '.join(features)}. Do not use these words in your production."
                             ),
                         }
                     )
+                else:
+                    messages = [
+                        system_msg,
+                        {
+                            "role": "user",
+                            "content": (
+                                f"Generate the text using the following words as inspiration: {', '.join(features)}."
+                            ),
+                        },
+                    ]
 
-                # Make an API call
+                # make an API call
                 response = openai.ChatCompletion.create(
-                    model="gpt-3.5-turbo",
+                    model=self.model,
                     messages=messages,
                     temperature=self.temperature,
+                    max_tokens=self.max_tokens,
                 )
                 response = response["choices"][0]["message"]
 
-                # Add the response to the conversation
-                messages.append(dict(response))
+                if self.keep_conversation:
+                    # add the response to the conversation
+                    messages.append(dict(response))
 
                 with self.api_lock:
-                    self.latest_chat_messages = response["content"]
+                    self.latest_chat_message = response["content"]
 
                 if self.read_text:
-                    # Read the poem using text to speech
+                    # read the new text using text to speech
                     text2speech(response["content"])
 
             except Exception as e:
                 print(f"OpenAI API call failed: {e}")
                 continue
 
-            if self.api_call_frequency is not None:
-                sleep_time = 1 / self.api_call_frequency
+            if self.update_frequency is not None:
+                sleep_time = 1 / self.update_frequency
                 time.sleep(sleep_time)
 
     def process(
@@ -913,14 +952,164 @@ class TextGeneration(Processor):
             processed (Dict[str, float]): dictionary collecting extracted features
             intermediates (Dict[str, np.ndarray]): dictionary containing intermediate representations
         """
-        with self.features_lock:
-            self.latest_features = []
-            for ft in self.feature_names:
-                if isinstance(processed[ft], list):
-                    self.latest_features.extend(processed[ft])
-                else:
-                    self.latest_features.append(processed[ft])
+        # grab the latest features
+        features = []
+        for ft in self.feature_names:
+            if processed[ft] is None:
+                continue
+            if isinstance(processed[ft], list):
+                features.extend(processed[ft])
+            else:
+                features.append(processed[ft])
+        if len(features) != len(self.feature_names):
+            features = None
+            warnings.warn(
+                f"Could not find all features {self.feature_names} in the processed features."
+            )
+
+        if features is not None:
+            with self.features_lock:
+                self.latest_features = features
+
+        # return the latest chat message
+        with self.api_lock:
+            return {self.label: self.latest_chat_message}
+
+
+class ImageGeneration(Processor):
+    """
+    This processor generates images from text prompts using a locally executed StableDiffusion model
+    or the DALL-E model from the OpenAI API.
+
+    Note: Due to the relatively large size of images and limitations from OSC, the image is not returned
+    in the processed dictionary, but instead stored in the shared `intermediates` dictionary.
+
+    Parameters:
+        prompt_feature (str): the name of the feature to use as a prompt
+        model (int, optional): the model to use, either ImageGeneration.DALLE or ImageGeneration.STABLE_DIFFUSION
+        img_size (int, optional): the size of the generated image, either 256, 512 or 1024
+        return_format (str, optional): the format of the returned image, either 'np' for a numpy array or 'b64' for a base64 string
+        label (str, optional): the name of the feature to store the generated image in
+        update_frequency (float, optional): the frequency at which to update the generated image, in Hz
+    """
+
+    DALLE = 0
+    STABLE_DIFFUSION = 1
+
+    def __init__(
+        self,
+        prompt_feature: str,
+        model: int = DALLE,
+        img_size: int = 256,
+        return_format: str = "np",
+        label: str = "text2img",
+        update_frequency: float = 0.2,
+    ):
+        super(ImageGeneration, self).__init__(label, None, normalize=False)
+        assert img_size in [256, 512, 1024], "Image size must be 256, 512 or 1024"
+        assert return_format in ["np", "b64"], "Return format must be 'np' or 'b64'"
+
+        self.prompt_feature = prompt_feature
+        self.model = model
+        self.img_size = img_size
+        self.return_format = return_format
+        self.update_frequency = update_frequency
+        self.latest_img = None
+        self.api_lock = threading.Lock()
+        self.latest_prompt = None
+        self.prompt_lock = threading.Lock()
+        self.api_call_thread = threading.Thread(target=self.update_loop, daemon=True)
+        self.api_call_thread.start()
+
+    @staticmethod
+    def encode_image(image: np.ndarray) -> str:
+        image = Image.fromarray(image)
+        buffer = BytesIO()
+        image.save(buffer, format="jpeg")
+        return base64.b64encode(buffer.getvalue()).decode("utf-8")
+
+    @staticmethod
+    def decode_image(image: str) -> np.ndarray:
+        return np.array(Image.open(BytesIO(base64.b64decode(image))))
+
+    def generate_dalle(self, prompt: str) -> Union[np.ndarray, str]:
+        # make an API call
+        response = openai.Image.create(
+            prompt=prompt,
+            n=1,
+            size=f"{self.img_size}x{self.img_size}",
+            response_format="b64_json",
+        )
+        response = response["data"][0]["b64_json"]
+        if self.return_format == "b64":
+            return response
+
+        # convert the image to a numpy array
+        return self.decode_image(response)
+
+    def generate_stable_diffusion(self, prompt: str) -> Union[np.ndarray, str]:
+        raise NotImplementedError("StableDiffusion is not yet supported")
+
+    def update_loop(self):
+        """
+        This function generates images in a loop, using a locally executed StableDiffusion model
+        or the DALL-E model from the OpenAI API.
+        """
+        if self.model == ImageGeneration.DALLE:
+            # set the OpenAI API key
+            if not exists("openai.key"):
+                raise FileNotFoundError(
+                    "Please create a file called openai.key in the current directory, containing your "
+                    "OpenAI API key."
+                )
+            with open("openai.key", "r") as f:
+                openai.api_key = f.read().strip()
+
+        while True:
+            try:
+                with self.prompt_lock:
+                    prompt = self.latest_prompt
+                # wait for features to be available
+                if prompt is None:
+                    time.sleep(0.1)
+                    continue
+
+                if self.model == ImageGeneration.DALLE:
+                    result = self.generate_dalle(prompt)
+                elif self.model == ImageGeneration.STABLE_DIFFUSION:
+                    result = self.generate_stable_diffusion(prompt)
+
+                with self.api_lock:
+                    self.latest_img = result
+
+            except Exception as e:
+                print(f"OpenAI API call failed: {e}")
+                continue
+
+            if self.update_frequency is not None:
+                sleep_time = 1 / self.update_frequency
+                time.sleep(sleep_time)
+
+    def process(
+        self,
+        raw: np.ndarray,
+        info: mne.Info,
+        processed: Dict[str, float],
+        intermediates: Dict[str, np.ndarray],
+    ):
+        """
+        This function provides responses from OpenAI API calls.
+
+        Parameters:
+            raw (np.ndarray): the raw EEG buffer with shape (Channels, Time)
+            info (mne.Info): info object containing e.g. channel names, sampling frequency, etc.
+            processed (Dict[str, float]): dictionary collecting extracted features
+            intermediates (Dict[str, np.ndarray]): dictionary containing intermediate representations
+        """
+        if processed[self.prompt_feature] is not None:
+            with self.prompt_lock:
+                self.latest_prompt = processed[self.prompt_feature]
 
         with self.api_lock:
-            result = {self.label: self.latest_chat_messages}
-        return result
+            intermediates[self.label] = self.latest_img
+        return {}
