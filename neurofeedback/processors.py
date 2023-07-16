@@ -1011,7 +1011,7 @@ class ImageGeneration(Processor):
         display: bool = False,
     ):
         super(ImageGeneration, self).__init__(label, None, normalize=False)
-        assert img_size in [256, 512, 1024], "Image size must be 256, 512 or 1024"
+        assert img_size in [None, 256, 512, 1024], "Image size must be 256, 512 or 1024"
         assert return_format in ["np", "b64"], "Return format must be 'np' or 'b64'"
         assert (
             model == ImageGeneration.STABLE_DIFFUSION or inference_steps is None
@@ -1084,7 +1084,8 @@ class ImageGeneration(Processor):
         )
         response = response["data"][0]["b64_json"]
         if self.return_format == "b64":
-            return response
+            # re-encode the image as a JPEG to make sending it over OSC viable
+            return self.encode_image(self.decode_image(response))
 
         # convert the image to a numpy array
         return self.decode_image(response)
