@@ -776,7 +776,7 @@ class Bioelements(Processor):
         return result
 
 
-class OpenAI(Processor):
+class TextGeneration(Processor):
     """
     LLM based text generation using features from other processors as inspiration. The text is built up
     line by line, with each line being generated based on the previous line and the new features
@@ -821,7 +821,7 @@ class OpenAI(Processor):
         channels: Dict[str, List[str]] = None,
         api_call_frequency: float = 0.5,
     ):
-        super(OpenAI, self).__init__(label, channels, normalize=False)
+        super(TextGeneration, self).__init__(label, channels, normalize=False)
         self.prompt = prompt
         self.feature_names = feature_names
         self.temperature = temperature

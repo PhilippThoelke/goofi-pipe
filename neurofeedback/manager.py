@@ -119,7 +119,8 @@ if __name__ == "__main__":
             processors.Ratio("/file/alpha", "/file/theta", "alpha/theta"),
             processors.Bioelements(channels={"file": ["C3"]}),
             processors.Biocolor(channels={"file": ["C3"]}),
-            processors.OpenAI(
+            processors.TextGeneration(
+                processors.TextGeneration.SYMBOLISM_PROMPT,
                 "/file/biocolor/ch0_peak0_name",
                 "/file/bioelements/ch0_bioelements",
                 read_text=True,
