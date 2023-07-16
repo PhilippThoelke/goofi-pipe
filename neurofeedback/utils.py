@@ -366,6 +366,7 @@ def biotuner_realtime(data, Fs):
 
 
 def bioelements_realtime(data, Fs):
+    # initialize biotuner object
     biotuning = compute_biotuner(
         1000,
         peaks_function="EMD",
@@ -374,13 +375,12 @@ def bioelements_realtime(data, Fs):
         ratios_n_harms=10,
         ratios_inc_fit=False,
         ratios_inc=False,
-    )  # Initialize biotuner object
+    )
     biotuning.peaks_extraction(data, ratios_extension=True, max_freq=50)
     _, _, _ = biotuning.peaks_extension(
         method="harmonic_fit", harm_function="mult", cons_limit=0.1
     )
     peaks_nm = [hertz_to_nm(x) for x in biotuning.extended_peaks]
-    print("PEAKS BIOLEMENTS", peaks_nm)
     res = find_matching_spectral_lines(
         peaks_nm, convert_to_nm(ALL_ELEMENTS), tolerance=10
     )

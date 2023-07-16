@@ -1078,7 +1078,9 @@ class ImageGeneration(Processor):
                     result = self.generate_dalle(prompt)
                 elif self.model == ImageGeneration.STABLE_DIFFUSION:
                     result = self.generate_stable_diffusion(prompt)
-
+                else:
+                    raise ValueError(f"Unknown model {self.model}")
+                
                 with self.api_lock:
                     self.latest_img = result
 
