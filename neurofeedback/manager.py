@@ -126,7 +126,12 @@ if __name__ == "__main__":
                 keep_conversation=False,
                 read_text=False,
             ),
-            processors.ImageGeneration("/file/text-generation", return_format="b64"),
+            processors.ImageGeneration(
+                "/file/text-generation",
+                model=processors.ImageGeneration.STABLE_DIFFUSION,
+                return_format="b64",
+                display=True,
+            ),
             # processors.Biotuner(channels={"file": ["O1", "O2"]}),
         ],
         normalization=normalization.StaticBaselineNormal(duration=30),

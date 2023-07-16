@@ -8,6 +8,7 @@ from io import BytesIO
 from os.path import exists
 from typing import Any, Callable, Dict, List, Optional, Tuple, Union
 
+import cv2
 import mne
 import numpy as np
 import openai
@@ -989,8 +990,10 @@ class ImageGeneration(Processor):
         model (int, optional): the model to use, either ImageGeneration.DALLE or ImageGeneration.STABLE_DIFFUSION
         img_size (int, optional): the size of the generated image, either 256, 512 or 1024
         return_format (str, optional): the format of the returned image, either 'np' for a numpy array or 'b64' for a base64 string
+        inference_steps (int, optional): the number of inference steps to use for the StableDiffusion model (default: 25)
         label (str, optional): the name of the feature to store the generated image in
         update_frequency (float, optional): the frequency at which to update the generated image, in Hz
+        display (bool, optional): whether to display the generated image (uses cv2)
     """
 
     DALLE = 0
@@ -1002,18 +1005,54 @@ class ImageGeneration(Processor):
         model: int = DALLE,
         img_size: int = 256,
         return_format: str = "np",
+        inference_steps: int = None,
         label: str = "text2img",
         update_frequency: float = 0.2,
+        display: bool = False,
     ):
         super(ImageGeneration, self).__init__(label, None, normalize=False)
         assert img_size in [256, 512, 1024], "Image size must be 256, 512 or 1024"
         assert return_format in ["np", "b64"], "Return format must be 'np' or 'b64'"
+        assert (
+            model == ImageGeneration.STABLE_DIFFUSION or inference_steps is None
+        ), "The inference_steps argument is only supported for the StableDiffusion model"
+
+        if model == ImageGeneration.STABLE_DIFFUSION:
+            try:
+                import torch
+                from diffusers import (
+                    DPMSolverMultistepScheduler,
+                    StableDiffusionPipeline,
+                )
+            except ImportError:
+                raise ImportError(
+                    "Please install PyTorch and the diffusers package "
+                    "to use the StableDiffusion model."
+                )
+
+            model_id = "stabilityai/stable-diffusion-2-1"
+
+            # Use the DPMSolverMultistepScheduler (DPM-Solver++) scheduler here instead
+            self.sd_pipe = StableDiffusionPipeline.from_pretrained(
+                model_id, torch_dtype=torch.float16
+            )
+            self.sd_pipe.scheduler = DPMSolverMultistepScheduler.from_config(
+                self.sd_pipe.scheduler.config
+            )
+            if torch.cuda.is_available():
+                self.sd_pipe = self.sd_pipe.to("cuda")
+            else:
+                warnings.warn(
+                    "No CUDA device found, image generation will be very slow."
+                )
 
         self.prompt_feature = prompt_feature
         self.model = model
         self.img_size = img_size
         self.return_format = return_format
         self.update_frequency = update_frequency
+        self.inference_steps = inference_steps = inference_steps or 25
+        self.display = display
         self.latest_img = None
         self.api_lock = threading.Lock()
         self.latest_prompt = None
@@ -1048,7 +1087,15 @@ class ImageGeneration(Processor):
         return self.decode_image(response)
 
     def generate_stable_diffusion(self, prompt: str) -> Union[np.ndarray, str]:
-        raise NotImplementedError("StableDiffusion is not yet supported")
+        # generate an image using the StableDiffusion model
+        image = self.sd_pipe(
+            prompt, num_inference_steps=self.inference_steps, output_type="np"
+        ).images[0]
+        image = (image * 255).astype(np.uint8)
+
+        if self.return_format == "b64":
+            return self.encode_image(image)
+        return image
 
     def update_loop(self):
         """
@@ -1080,7 +1127,7 @@ class ImageGeneration(Processor):
                     result = self.generate_stable_diffusion(prompt)
                 else:
                     raise ValueError(f"Unknown model {self.model}")
-                
+
                 with self.api_lock:
                     self.latest_img = result
 
@@ -1113,5 +1160,13 @@ class ImageGeneration(Processor):
                 self.latest_prompt = processed[self.prompt_feature]
 
         with self.api_lock:
-            intermediates[self.label] = self.latest_img
-        return {}
+            img = self.latest_img
+
+        # display the image
+        if self.display and img is not None:
+            if self.return_format == "b64":
+                img = self.decode_image(img)
+            cv2.imshow(self.label, cv2.cvtColor(img, cv2.COLOR_RGB2BGR))
+            cv2.waitKey(1)
+
+        return {self.label: img}

@@ -10,4 +10,5 @@ webcolors
 openai
 gTTS
 playsound
+opencv-python
 pytest
