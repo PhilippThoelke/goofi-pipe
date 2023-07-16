@@ -1,3 +1,4 @@
+import asyncio
 import base64
 import colorsys
 import operator
@@ -12,6 +13,7 @@ import cv2
 import mne
 import numpy as np
 import openai
+import websockets
 from antropy import lziv_complexity, spectral_entropy
 from PIL import Image
 from scipy.signal import welch
@@ -985,6 +987,9 @@ class ImageGeneration(Processor):
     Note: Due to the relatively large size of images and limitations from OSC, the image is not returned
     in the processed dictionary, but instead stored in the shared `intermediates` dictionary.
 
+    It is optionally possible to send the generated images via websockets by setting the `websocket_addr`
+    parameter.
+
     Parameters:
         prompt_feature (str): the name of the feature to use as a prompt
         model (int, optional): the model to use, either ImageGeneration.DALLE or ImageGeneration.STABLE_DIFFUSION
@@ -994,6 +999,7 @@ class ImageGeneration(Processor):
         label (str, optional): the name of the feature to store the generated image in
         update_frequency (float, optional): the frequency at which to update the generated image, in Hz
         display (bool, optional): whether to display the generated image (uses cv2)
+        websocket_addr (Tuple[str, int], optional): the address and port of the websocket server to send the generated image to
     """
 
     DALLE = 0
@@ -1009,6 +1015,7 @@ class ImageGeneration(Processor):
         label: str = "text2img",
         update_frequency: float = 0.2,
         display: bool = False,
+        websocket_addr: Tuple[str, int] = None,
     ):
         super(ImageGeneration, self).__init__(label, None, normalize=False)
         assert img_size in [None, 256, 512, 1024], "Image size must be 256, 512 or 1024"
@@ -1056,6 +1063,7 @@ class ImageGeneration(Processor):
         self.update_frequency = update_frequency
         self.inference_steps = inference_steps = inference_steps or 25
         self.display = display
+        self.websocket_addr = websocket_addr
         self.latest_img = None
         self.api_lock = threading.Lock()
         self.latest_prompt = None
@@ -1075,16 +1083,21 @@ class ImageGeneration(Processor):
         return np.array(Image.open(BytesIO(base64.b64decode(image))))
 
     def generate_dalle(self, prompt: str) -> Union[np.ndarray, str]:
-        # make an API call
-        response = openai.Image.create(
-            prompt=prompt,
-            n=1,
-            size=f"{self.img_size}x{self.img_size}",
-            response_format="b64_json",
-        )
+        try:
+            # make an API call
+            response = openai.Image.create(
+                prompt=prompt,
+                n=1,
+                size=f"{self.img_size}x{self.img_size}",
+                response_format="b64_json",
+            )
+        except Exception as e:
+            print(f"OpenAI API call failed: {e}")
+            return None
+
         response = response["data"][0]["b64_json"]
         if self.return_format == "b64":
-            # re-encode the image as a JPEG to make sending it over OSC viable
+            # re-encode the image as a JPEG to reduce the size for file transfer
             return self.encode_image(self.decode_image(response))
 
         # convert the image to a numpy array
@@ -1101,6 +1114,10 @@ class ImageGeneration(Processor):
             return self.encode_image(image)
         return image
 
+    async def send_image(self, ws: websockets.WebSocketClientProtocol, image: str):
+        # send the image to the websocket server
+        await ws.send(image)
+
     def update_loop(self):
         """
         This function generates images in a loop, using a locally executed StableDiffusion model
@@ -1116,28 +1133,54 @@ class ImageGeneration(Processor):
             with open("openai.key", "r") as f:
                 openai.api_key = f.read().strip()
 
+        ws = None
+        if self.websocket_addr is not None:
+            # create a new event loop for the websocket client
+            loop = asyncio.new_event_loop()
+            asyncio.set_event_loop(loop)
+
+            # create WebSocket client
+            ws = loop.run_until_complete(
+                websockets.connect(
+                    f"ws://{self.websocket_addr[0]}:{self.websocket_addr[1]}"
+                )
+            )
+
         while True:
-            try:
-                with self.prompt_lock:
-                    prompt = self.latest_prompt
-                # wait for features to be available
-                if prompt is None:
+            with self.prompt_lock:
+                prompt = self.latest_prompt
+            # wait for features to be available
+            if prompt is None:
+                time.sleep(0.1)
+                continue
+
+            if self.model == ImageGeneration.DALLE:
+                result = self.generate_dalle(prompt)
+                if result is None:
+                    # API call failed, try again
                     time.sleep(0.1)
                     continue
+            elif self.model == ImageGeneration.STABLE_DIFFUSION:
+                result = self.generate_stable_diffusion(prompt)
+            else:
+                raise ValueError(f"Unknown model {self.model}")
 
-                if self.model == ImageGeneration.DALLE:
-                    result = self.generate_dalle(prompt)
-                elif self.model == ImageGeneration.STABLE_DIFFUSION:
-                    result = self.generate_stable_diffusion(prompt)
-                else:
-                    raise ValueError(f"Unknown model {self.model}")
+            with self.api_lock:
+                self.latest_img = result
 
-                with self.api_lock:
-                    self.latest_img = result
+            # display the image
+            if self.display:
+                if self.return_format == "b64":
+                    img = self.decode_image(img)
+                cv2.imshow(self.label, cv2.cvtColor(img, cv2.COLOR_RGB2BGR))
+                cv2.waitKey(1)
 
-            except Exception as e:
-                print(f"OpenAI API call failed: {e}")
-                continue
+            # send the image via websockets
+            if ws is not None:
+                if self.return_format != "b64":
+                    result = self.encode_image(result)
+                # asynchronously send the image
+                asyncio.run(self.send_image(ws, result))
 
             if self.update_frequency is not None:
                 sleep_time = 1 / self.update_frequency
@@ -1166,11 +1209,8 @@ class ImageGeneration(Processor):
         with self.api_lock:
             img = self.latest_img
 
-        # display the image
-        if self.display and img is not None:
-            if self.return_format == "b64":
-                img = self.decode_image(img)
-            cv2.imshow(self.label, cv2.cvtColor(img, cv2.COLOR_RGB2BGR))
-            cv2.waitKey(1)
+        # insert the image into the intermediates dictionary
+        intermediates[self.label] = img
 
-        return {self.label: img}
+        # we don't return the image to avoid conflicts with sending features via OSC
+        return {}

@@ -128,9 +128,9 @@ if __name__ == "__main__":
             ),
             processors.ImageGeneration(
                 "/file/text-generation",
-                model=processors.ImageGeneration.STABLE_DIFFUSION,
+                model=processors.ImageGeneration.DALLE,
                 return_format="b64",
-                display=True,
+                websocket_addr=("localhost", 5105),
             ),
             # processors.Biotuner(channels={"file": ["O1", "O2"]}),
         ],
