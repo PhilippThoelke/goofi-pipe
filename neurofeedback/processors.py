@@ -2,6 +2,7 @@ import colorsys
 import operator
 import threading
 import time
+from os.path import exists
 from typing import Callable, Dict, List, Optional, Tuple
 
 import mne
@@ -777,10 +778,15 @@ class Bioelements(Processor):
 
 class OpenAI(Processor):
     """
-    Feature extractor for OpenAI API responses.
+    LLM based text generation using features from other processors as inspiration. The text is built up
+    line by line, with each line being generated based on the previous line and the new features
+    of the current iteration. The text is generated using the OpenAI API.
+
+    This class defines a range of prompts for generation of different types of text.
 
     Parameters:
-        color_feature (str): a list of features to use in the API call
+        prompt (str): the prompt to use for the API call
+        feature_names (str): features used to use inspire the LLM
         temperature (float): the temperature parameter for the text generation
         read_text (bool): whether to read the text using text-to-speech
         label (str): label under which to save the extracted feature
@@ -788,8 +794,26 @@ class OpenAI(Processor):
         api_call_frequency (float, optional): the frequency in Hz at which to run the API call loop
     """
 
+    POETRY_PROMPT = (
+        "I want you to inspire yourself from a list of words to write surrealist poetry. Only use the "
+        "symbolism related to these words to construct the poetry, without naming any of the words "
+        "directly. Use unconventional words and surprising imagery. Build up a coherent poem with "
+        "every response, referring back to previous lines and combining them with new symbols. Only "
+        "respond with a single line at a time."
+    )
+
+    SYMBOLISM_PROMPT = (
+        "Come up with a symbolism, based on a list of words. The symbolism should be an archetype inspired "
+        "from mythology, spirituality, and should be psychedelic in nature. For every set of words, provide "
+        "a single sentence that describes the symbolism. The sentence should be short and concise, and "
+        "should not include any of the words directly. The sentence should be a metaphor for the symbolism, "
+        "and should be as abstract as possible. Be creative and and use unconventional and surprising "
+        "imagery."
+    )
+
     def __init__(
         self,
+        prompt: str,
         *feature_names: str,
         temperature: float = 1.2,
         read_text: bool = False,
@@ -798,6 +822,7 @@ class OpenAI(Processor):
         api_call_frequency: float = 0.5,
     ):
         super(OpenAI, self).__init__(label, channels, normalize=False)
+        self.prompt = prompt
         self.feature_names = feature_names
         self.temperature = temperature
         self.read_text = read_text
@@ -814,34 +839,35 @@ class OpenAI(Processor):
         This function calls the OpenAI API in a loop to iteratively build up a text, based
         on some features.
         """
+        # set the OpenAI API key
+        if not exists("openai.key"):
+            raise FileNotFoundError(
+                "Please create a file called openai.key in the current directory, containing your "
+                "OpenAI API key."
+            )
         with open("openai.key", "r") as f:
             openai.api_key = f.read().strip()
 
-        # Start a conversation with the AI
-        messages = [
-            {
-                "role": "system",
-                "content": (
-                    "I want you to inspire yourself from a list of elements to write a surrealist poetry of 2 lines. "
-                    "Only use the symbolism related to these elements to construct the poetry, without naming "
-                    "any of the elements. Use unconventional words and surprising imagery."
-                ),
-            }
-        ]
+        # start a conversation with the AI
+        messages = [{"role": "system", "content": self.prompt}]
 
         while True:
             try:
-                # Add a user message to the conversation
                 with self.features_lock:
                     if self.latest_features is None:
-                        # Wait for the next features to be available
+                        # wait for features to be available
                         time.sleep(0.05)
                         continue
 
+                    # add a user message to the conversation
                     messages.append(
                         {
                             "role": "user",
-                            "content": f"continue this poetry, with meaningful continuity with the following elements: {', '.join(self.latest_features)}. Do not name the element names explicitly.",
+                            "content": (
+                                f"Continue with meaningful coherence, using the symbolism of the following "
+                                f"words: {', '.join(self.latest_features)}. Do not use these words in your "
+                                "production."
+                            ),
                         }
                     )
 
