@@ -823,13 +823,13 @@ class TextGeneration(Processor):
     TXT2IMG_PROMPT = (
         "Your job is to come up with a prompt for a text-to-image model. The prompt should be concise but "
         "very detailed. Use many adjectives and use creative, abstract and mystical words. Generate only a "
-        "single prompt, which should be as short as possible (max. one long sentence, preferably less). "
-        "I will provide some words to inspire the image prompt. Use these words to construct the content of "
-        "the image, and use the symbolism associated with these words to construct the style of the image. "
-        "To express the style, use terms from visual arts to describe e.g. the image medium (photo, painting, "
-        "digital art, ...), the composition, the style, the setting and so on. These style terms should be "
-        "single words, separated by commas. The content should be described in a single sentence, and should "
-        "be as detailed as possible. Be purely descriptive, your response does not have to be a complete sentence."
+        "single prompt, which should be as short as possible (max. one sentence). I will provide some words "
+        "to inspire the image prompt. Use these words to construct the content of the image, and use the "
+        "symbolism associated with these words to construct the style of the image. To express the style, "
+        "use terms from visual arts to describe e.g. the image medium (photo, painting, digital art, ...), "
+        "the composition, the style, the setting and so on. These style terms should be single words, "
+        "separated by commas. The content should be described in a single sentence, and should be as "
+        "detailed as possible. Be purely descriptive, your response does not have to be a complete sentence."
     )
 
     def __init__(
@@ -988,7 +988,7 @@ class ImageGeneration(Processor):
     Parameters:
         prompt_feature (str): the name of the feature to use as a prompt
         model (int, optional): the model to use, either ImageGeneration.DALLE or ImageGeneration.STABLE_DIFFUSION
-        img_size (int, optional): the size of the generated image, either 256, 512 or 1024
+        img_size (int, optional): the size of the generated image, either 256, 512 or 1024 (default: 512)
         return_format (str, optional): the format of the returned image, either 'np' for a numpy array or 'b64' for a base64 string
         inference_steps (int, optional): the number of inference steps to use for the StableDiffusion model (default: 25)
         label (str, optional): the name of the feature to store the generated image in
@@ -1003,7 +1003,7 @@ class ImageGeneration(Processor):
         self,
         prompt_feature: str,
         model: int = DALLE,
-        img_size: int = 256,
+        img_size: int = None,
         return_format: str = "np",
         inference_steps: int = None,
         label: str = "text2img",
@@ -1016,6 +1016,9 @@ class ImageGeneration(Processor):
         assert (
             model == ImageGeneration.STABLE_DIFFUSION or inference_steps is None
         ), "The inference_steps argument is only supported for the StableDiffusion model"
+        assert (
+            model == ImageGeneration.DALLE or img_size is None
+        ), "The img_size argument is only supported for the DALL-E model"
 
         if model == ImageGeneration.STABLE_DIFFUSION:
             try:
@@ -1048,7 +1051,7 @@ class ImageGeneration(Processor):
 
         self.prompt_feature = prompt_feature
         self.model = model
-        self.img_size = img_size
+        self.img_size = img_size or 512
         self.return_format = return_format
         self.update_frequency = update_frequency
         self.inference_steps = inference_steps = inference_steps or 25
