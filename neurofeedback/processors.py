@@ -828,12 +828,14 @@ class TextGeneration(Processor):
         "Your job is to come up with a prompt for a text-to-image model. The prompt should be concise and "
         "describe a simple scene with few descriptive words. Use creative, abstract and mystical adjectives. "
         "Generate only a single prompt, which is more a collection of descriptors than a grammatical sentence. "
-        "I will provide some words to set the content and emotion of the image. Use the archetypes and "
+        "I will provide some guiding words to set the content and emotion of the image. Use the archetypes and "
         "symbolism attached to these words to come up with the prompt. Be sure to describe the artstyle, "
         "e.g. photo, painting, digital art, rendering, ... and define the lighting of the scene. Define "
         "the perspective using terms from cinematography. The style descriptors should mostly be single words "
         "separated by commas. Be purely descriptive, your response does not have to be a complete sentence. "
-        "Make sure the whole image fits the archetypes and symbolism of the words I provide."
+        "Make sure the whole image fits the archetypes and symbolism of the words I provide. Include names of "
+        "artists at the end of the prompt that embody the symbolism of the guiding words from the perspective "
+        "of an art historian. Limit yourself to a maximum of 70 tokens."
     )
 
     def __init__(
@@ -846,7 +848,7 @@ class TextGeneration(Processor):
         keep_conversation: bool = True,
         read_text: bool = False,
         label: str = "text-generation",
-        update_frequency: float = 0.25,
+        update_frequency: float = 0.2,
     ):
         super(TextGeneration, self).__init__(label, None, normalize=False)
         self.prompt = prompt
@@ -966,11 +968,6 @@ class TextGeneration(Processor):
                 features.extend(processed[ft])
             else:
                 features.append(processed[ft])
-        if len(features) != len(self.feature_names):
-            features = None
-            warnings.warn(
-                f"Could not find all features {self.feature_names} in the processed features."
-            )
 
         if features is not None:
             with self.features_lock:
@@ -1015,7 +1012,7 @@ class ImageGeneration(Processor):
         return_format: str = "np",
         inference_steps: int = None,
         label: str = "text2img",
-        update_frequency: float = 0.2,
+        update_frequency: float = 0.3,
         display: bool = False,
         websocket_addr: Tuple[str, int] = None,
     ):
@@ -1071,7 +1068,7 @@ class ImageGeneration(Processor):
         self.img_size = img_size or 512
         self.return_format = return_format
         self.update_frequency = update_frequency
-        self.inference_steps = inference_steps or 25
+        self.inference_steps = inference_steps or 50
         self.display = display
         self.websocket_addr = websocket_addr
         self.latest_img = None
@@ -1118,6 +1115,8 @@ class ImageGeneration(Processor):
             # generate an image using the StableDiffusion model
             image = self.sd_pipe(
                 prompt,
+                width=1024,
+                height=768,
                 num_inference_steps=self.inference_steps,
                 output_type="np",
                 negative_prompt="nfixer, nrealfixer",
