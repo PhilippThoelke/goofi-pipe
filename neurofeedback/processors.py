@@ -688,7 +688,7 @@ class Biotuner(Processor):
                 normalization_mask[f"{self.label}/harm_conn/{i}/{j}"] = False
         return result
 
-
+import pandas as pd
 class Bioelements(Processor):
     """
     Feature extractor for bioelement matching.
@@ -715,6 +715,9 @@ class Bioelements(Processor):
         self.extraction_thread = threading.Thread(
             target=self.extraction_loop, daemon=True
         )
+        # load elements data from csv
+        self.vac_elements = pd.read_csv('embeddings/vacuum_elements.csv')
+        self.air_elements = pd.read_csv('embeddings/air_elements.csv')
         self.extraction_thread.start()
 
     def extraction_loop(self):
@@ -733,7 +736,7 @@ class Bioelements(Processor):
             bioelements_list = []
             try:
                 for ch in raw:
-                    res = bioelements_realtime(ch, self.sfreq)
+                    res = bioelements_realtime(ch, self.sfreq, self.air_elements)
                     bioelements_list.append(list(res.keys()))
             except:
                 print("bioelements computation failed.")

@@ -377,7 +377,7 @@ def biotuner_realtime(data, Fs):
     return peaks, extended_peaks, metrics, tuning, harm_tuning
 
 
-def bioelements_realtime(data, Fs):
+def bioelements_realtime(data, Fs, df):
     # initialize biotuner object
     biotuning = compute_biotuner(
         1000,
@@ -392,11 +392,13 @@ def bioelements_realtime(data, Fs):
     _, _, _ = biotuning.peaks_extension(
         method="harmonic_fit", harm_function="mult", cons_limit=0.1
     )
-    peaks_nm = [hertz_to_nm(x) for x in biotuning.extended_peaks]
-    res = find_matching_spectral_lines(
-        peaks_nm, convert_to_nm(ALL_ELEMENTS), tolerance=10
-    )
-    return res
+    peaks_ang = [hertz_to_nm(x)*10 for x in biotuning.peaks]# convert to Angstrom
+    res = find_matching_spectral_lines(df, peaks_ang, tolerance=0.2)
+    elements_count = res['element'].value_counts()
+    elements_final = elements_count.index.tolist()
+    # take the three most common elements
+    elements_final = elements_final[:3]
+    return elements_final
 
 
 # Helper function for computing a single connectivity matrix
