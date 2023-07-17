@@ -2,6 +2,7 @@ import asyncio
 import base64
 import colorsys
 import operator
+import queue
 import threading
 import time
 import warnings
@@ -16,6 +17,7 @@ import openai
 import websockets
 from antropy import lziv_complexity, spectral_entropy
 from PIL import Image
+from pythonosc import dispatcher, osc_server
 from scipy.signal import welch
 
 from neurofeedback.utils import (
@@ -1226,3 +1228,49 @@ class ImageGeneration(Processor):
 
         # we don't return the image to avoid conflicts with sending features via OSC
         return {}
+
+
+class OSCInput(Processor):
+    """
+    This OSC input processor receives features via OSC messages and adds them
+    to the processed features dictionary.
+
+    Although this class is a data source, it is implemented as a Processor since
+    it is a source of processed features, not raw data.
+
+    Parameters:
+        host (str): the hostname of the OSC server
+        port (int): the port of the OSC server
+        label (str): the label of the feature to receive
+    """
+
+    def __init__(self, host: str, port: int, label: str = "osc-input"):
+        super().__init__(label, None, False)
+        # Set up a queue to hold messages as they come in
+        self.msg_queue = queue.Queue()
+
+        def queue_msg(addr, *args):
+            if len(args) == 1:
+                args = args[0]
+            self.msg_queue.put((addr, args))
+
+        # Set up a dispatcher and register the queue function to the default handlers
+        disp = dispatcher.Dispatcher()
+        disp.set_default_handler(queue_msg)
+
+        # Set up the server
+        server = osc_server.ThreadingOSCUDPServer((host, port), disp)
+
+        # Run the server in a new thread so that it doesn't block
+        server_thread = threading.Thread(target=server.serve_forever, daemon=True)
+        server_thread.start()
+
+    def process(self, *args, **kwargs):
+        """
+        This function returns the latest features received via OSC.
+        """
+        features = {}
+        while not self.msg_queue.empty():
+            address, values = self.msg_queue.get()
+            features[address] = values
+        return features
