@@ -33,7 +33,7 @@ class Manager:
         # auxiliary attributes
         self.frequency = frequency
         self.too_slow_count = 0
-        self.filling_buffer = True
+        self.filling_buffer = len(self.data_in) > 0
 
     def update(self):
         """
@@ -41,7 +41,7 @@ class Manager:
         outputs the processed data to the output channels.
         """
         # fetch raw data
-        if any(d.update() == -1 for d in self.data_in.values()):
+        if len(self.data_in) > 0 and any(d.update() == -1 for d in self.data_in.values()):
             return
         elif self.filling_buffer:
             print("done")

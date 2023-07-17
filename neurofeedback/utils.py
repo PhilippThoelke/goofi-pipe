@@ -197,23 +197,34 @@ class Processor(ABC):
             )
 
         if self.channels is None:
-            # use all channels
-            self.channels = {name: [] for name in data_in.keys()}
+            if len(data_in) == 0:
+                # no input devices,
+                self.channels = {None: []}
+            else:
+                # use all channels
+                self.channels = {name: [] for name in data_in.keys()}
 
         normalize_mask = {}
         for name in self.channels.keys():
-            stream = data_in[name]
+            if name is not None:
+                stream = data_in[name]
 
-            # pick channels
-            assert isinstance(self.channels[name], list), "Channels must be a list."
-            ch_idxs = mne.pick_channels(
-                stream.info["ch_names"], self.channels[name], []
-            )
+                # pick channels
+                assert isinstance(self.channels[name], list), "Channels must be a list."
+                ch_idxs = mne.pick_channels(
+                    stream.info["ch_names"], self.channels[name], []
+                )
 
-            # grab current stream's data
-            raw = np.array(stream.buffer).T
-            raw = raw[ch_idxs]
-            info = mne.pick_info(stream.info, ch_idxs, copy=True)
+                # grab current stream's data
+                raw = np.array(stream.buffer).T
+                raw = raw[ch_idxs]
+                info = mne.pick_info(stream.info, ch_idxs, copy=True)
+
+                name_prefix = f"/{name}/"
+            else:
+                # no input stream
+                raw, info = None, None
+                name_prefix = ""
 
             # process the data
             new_features = self.process(
@@ -222,15 +233,16 @@ class Processor(ABC):
                 processed,
                 intermediates,
             )
+
             new_normalize_mask = None
             if isinstance(new_features, tuple) or isinstance(new_features, list):
                 new_features, new_normalize_mask = new_features
-            new_features = {f"/{name}/{k}": v for k, v in new_features.items()}
+            new_features = {f"{name_prefix}{k}": v for k, v in new_features.items()}
             processed.update(new_features)
 
             if new_normalize_mask is not None:
                 new_normalize_mask = {
-                    f"/{name}/{k}": v for k, v in new_normalize_mask.items()
+                    f"{name_prefix}{k}": v for k, v in new_normalize_mask.items()
                 }
                 normalize_mask.update(new_normalize_mask)
             else:
