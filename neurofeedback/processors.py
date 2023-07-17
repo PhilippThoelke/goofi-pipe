@@ -737,7 +737,7 @@ class Bioelements(Processor):
             try:
                 for ch in raw:
                     res = bioelements_realtime(ch, self.sfreq, self.air_elements)
-                    bioelements_list.append(list(res.keys()))
+                    bioelements_list.append(res)
             except:
                 print("bioelements computation failed.")
                 continue
