@@ -823,15 +823,15 @@ class TextGeneration(Processor):
     )
 
     TXT2IMG_PROMPT = (
-        "Your job is to come up with a prompt for a text-to-image model. The prompt should be concise but "
-        "very detailed. Use many adjectives and use creative, abstract and mystical words. Generate only a "
-        "single prompt, which should be as short as possible (max. one sentence). I will provide some words "
-        "to inspire the image prompt. Use these words to construct the content of the image, and use the "
-        "symbolism associated with these words to construct the style of the image. To express the style, "
-        "use terms from visual arts to describe e.g. the image medium (photo, painting, digital art, ...), "
-        "the composition, the style, the setting and so on. These style terms should be single words, "
-        "separated by commas. The content should be described in a single sentence, and should be as "
-        "detailed as possible. Be purely descriptive, your response does not have to be a complete sentence."
+        "Your job is to come up with a prompt for a text-to-image model. The prompt should be concise and "
+        "describe a simple scene with few descriptive words. Use creative, abstract and mystical adjectives. "
+        "Generate only a single prompt, which is more a collection of descriptors than a grammatical sentence. "
+        "I will provide some words to set the content and emotion of the image. Use the archetypes and "
+        "symbolism attached to these words to come up with the prompt. Be sure to describe the artstyle, "
+        "e.g. photo, painting, digital art, rendering, ... and define the lighting of the scene. Define "
+        "the perspective using terms from cinematography. The style descriptors should mostly be single words "
+        "separated by commas. Be purely descriptive, your response does not have to be a complete sentence. "
+        "Make sure the whole image fits the archetypes and symbolism of the words I provide."
     )
 
     def __init__(
@@ -1055,7 +1055,7 @@ class ImageGeneration(Processor):
             # load textual inversion embeddings for improved image quality
             self.sd_pipe.load_textual_inversion("embeddings/nfixer.pt")
             self.sd_pipe.load_textual_inversion("embeddings/nrealfixer.pt")
-            
+
             # move to GPU if available
             if torch.cuda.is_available():
                 self.sd_pipe = self.sd_pipe.to("cuda")
@@ -1069,7 +1069,7 @@ class ImageGeneration(Processor):
         self.img_size = img_size or 512
         self.return_format = return_format
         self.update_frequency = update_frequency
-        self.inference_steps = inference_steps = inference_steps or 25
+        self.inference_steps = inference_steps or 25
         self.display = display
         self.websocket_addr = websocket_addr
         self.latest_img = None
