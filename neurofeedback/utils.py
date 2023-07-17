@@ -10,8 +10,6 @@ import numpy as np
 import webcolors
 from biotuner.biocolors import audible2visible, scale2freqs, wavelength_to_rgb
 from biotuner.bioelements import (
-    ALL_ELEMENTS,
-    convert_to_nm,
     find_matching_spectral_lines,
     hertz_to_nm,
 )
