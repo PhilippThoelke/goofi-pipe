@@ -41,7 +41,9 @@ class Manager:
         outputs the processed data to the output channels.
         """
         # fetch raw data
-        if len(self.data_in) > 0 and any(d.update() == -1 for d in self.data_in.values()):
+        if len(self.data_in) > 0 and any(
+            d.update() == -1 for d in self.data_in.values()
+        ):
             return
         elif self.filling_buffer:
             print("done")
@@ -107,28 +109,37 @@ if __name__ == "__main__":
 
     mngr = Manager(
         data_in={
-            "file": data_in.EEGRecording.make_eegbci(),
+            # "muse": data_in.EEGRecording.make_eegbci(),
+            "muse": data_in.EEGStream("Muse00:55:DA:B0:49:D3")
         },
         processors=[
-            processors.PSD(label="delta"),
-            processors.PSD(label="theta"),
-            processors.PSD(label="alpha"),
-            processors.PSD(label="beta"),
-            processors.PSD(label="gamma"),
-            processors.LempelZiv(),
-            processors.Ratio("/file/alpha", "/file/theta", "alpha/theta"),
-            processors.Bioelements(channels={"file": ["C3"]}),
-            processors.Biocolor(channels={"file": ["C3"]}),
+            # processors.PSD(label="delta"),
+            # processors.PSD(label="theta"),
+            # processors.PSD(label="alpha"),
+            # processors.PSD(label="beta"),
+            # processors.PSD(label="gamma"),
+            # processors.LempelZiv(),
+            # processors.Ratio("/file/alpha", "/file/theta", "alpha/theta"),
+            processors.Bioelements(channels={"muse": ["AF7"]}),
+            processors.Biocolor(channels={"muse": ["AF7"]}),
+            processors.TextGeneration(
+                processors.TextGeneration.POETRY_PROMPT,
+                "/muse/biocolor/ch0_peak0_name",
+                "/muse/bioelements/ch0_bioelements",
+                read_text=True,
+                keep_conversation=True,
+                label="poetry",
+            ),
             processors.TextGeneration(
                 processors.TextGeneration.TXT2IMG_PROMPT,
-                "/file/biocolor/ch0_peak0_name",
-                "/file/bioelements/ch0_bioelements",
+                "/muse/biocolor/ch0_peak0_name",
+                "/muse/bioelements/ch0_bioelements",
                 keep_conversation=False,
                 read_text=False,
             ),
             processors.ImageGeneration(
-                "/file/text-generation",
-                model=processors.ImageGeneration.DALLE,
+                "/muse/text-generation",
+                model=processors.ImageGeneration.STABLE_DIFFUSION,
                 return_format="b64",
                 websocket_addr=("localhost", 5105),
             ),
@@ -137,7 +148,7 @@ if __name__ == "__main__":
         normalization=normalization.StaticBaselineNormal(duration=30),
         data_out=[
             data_out.OSCStream("127.0.0.1", 5005),
-            data_out.PlotRaw("file"),
+            # data_out.PlotRaw("file"),
             data_out.PlotProcessed(),
         ],
     )
