@@ -1040,6 +1040,8 @@ class ImageGeneration(Processor):
                     "to use the StableDiffusion model."
                 )
 
+            self.torch_ref = torch
+
             model_id = "stabilityai/stable-diffusion-2-1"
 
             # Use the DPMSolverMultistepScheduler (DPM-Solver++) scheduler here instead
@@ -1049,6 +1051,12 @@ class ImageGeneration(Processor):
             self.sd_pipe.scheduler = DPMSolverMultistepScheduler.from_config(
                 self.sd_pipe.scheduler.config
             )
+
+            # load textual inversion embeddings for improved image quality
+            self.sd_pipe.load_textual_inversion("embeddings/nfixer.pt")
+            self.sd_pipe.load_textual_inversion("embeddings/nrealfixer.pt")
+            
+            # move to GPU if available
             if torch.cuda.is_available():
                 self.sd_pipe = self.sd_pipe.to("cuda")
             else:
@@ -1104,10 +1112,14 @@ class ImageGeneration(Processor):
         return self.decode_image(response)
 
     def generate_stable_diffusion(self, prompt: str) -> Union[np.ndarray, str]:
-        # generate an image using the StableDiffusion model
-        image = self.sd_pipe(
-            prompt, num_inference_steps=self.inference_steps, output_type="np"
-        ).images[0]
+        with self.torch_ref.inference_mode():
+            # generate an image using the StableDiffusion model
+            image = self.sd_pipe(
+                prompt,
+                num_inference_steps=self.inference_steps,
+                output_type="np",
+                negative_prompt="nfixer, nrealfixer",
+            ).images[0]
         image = (image * 255).astype(np.uint8)
 
         if self.return_format == "b64":
