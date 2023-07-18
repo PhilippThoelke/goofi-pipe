@@ -350,11 +350,11 @@ def viz_scale_colors(scale: List[float], fund: float) -> List[Tuple[int, int, in
 
 
 def biotuner_realtime(data, Fs):
-    bt_plant = compute_biotuner(peaks_function="harmonic_recurrence", sf=Fs)
+    bt_plant = compute_biotuner(peaks_function="EMD", sf=Fs)
     bt_plant.peaks_extraction(
         np.array(data),
         graph=False,
-        min_freq=0.1,
+        min_freq=1,
         max_freq=65,
         precision=0.1,
         nIMFs=5,
@@ -362,15 +362,23 @@ def biotuner_realtime(data, Fs):
         smooth_fft=4,
     )
     bt_plant.peaks_extension(method="harmonic_fit")
-    bt_plant.compute_peaks_metrics(n_harm=3, delta_lim=50)
-    harm_tuning = harmonic_tuning(bt_plant.all_harmonics)
+    bt_plant.compute_peaks_metrics(n_harm=3, delta_lim=250)
+    if hasattr(bt_plant, "all_harmonics"):
+        harm_tuning = harmonic_tuning(bt_plant.all_harmonics)
+    else:
+        harm_tuning = [0, 1]
     # bt_plant.compute_diss_curve(plot=True, input_type='peaks')
     # bt_plant.compute_spectromorph(comp_chords=True, graph=False)
     peaks = bt_plant.peaks
-    extended_peaks = bt_plant.peaks
+    extended_peaks = bt_plant.extended_peaks
     metrics = bt_plant.peaks_metrics
+    
     if not isinstance(metrics["subharm_tension"][0], float):
-        metrics["subharm_tension"][0] = -1
+        metrics["subharm_tension"] = -1
+    print(metrics)
+    metrics['harmsim'] = metrics['harmsim']/100
+    # rescale tenney height from between 4 to 9 to between 0 and 1
+    metrics['tenney'] = (metrics['tenney']-4)/5
     tuning = bt_plant.peaks_ratios
     return peaks, extended_peaks, metrics, tuning, harm_tuning
 
