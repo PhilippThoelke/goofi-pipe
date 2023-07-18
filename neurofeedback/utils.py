@@ -449,35 +449,41 @@ def text2speech(txt, lang="en"):
 
 class ImageSender:
     def __init__(self, host="localhost", port=8000):
+        self.host = host
+        self.port = port
         self.thread = None
         self.client_socket = None
-        self.server_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-        self.server_socket.bind((host, port))
-        self.server_socket.listen(5)
+        self.server_socket = None
+        self.start_server()
+        
         atexit.register(self.close)
-        self.interrupt = threading.Event()
+
+    def start_server(self):
+        if self.server_socket is not None:
+            self.server_socket.shutdown(socket.SHUT_RDWR)
+            self.server_socket.close()
+
+        self.server_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        self.server_socket.bind((self.host, self.port))
+        self.server_socket.listen(5)
 
     def send(self, img):
         if self.thread is not None and self.thread.is_alive():
-            self.interrupt.set()
+            self.start_server()
             self.thread.join()
-            self.interrupt.clear()
 
         self.thread = threading.Thread(target=self._send_image, args=(img,))
         self.thread.start()
 
     def _send_image(self, image_b64):
         try:
-            while not self.interrupt.is_set():
-                self.client_socket, _ = self.server_socket.accept()
-                self.client_socket.sendall(image_b64.encode("utf-8"))
-                self.client_socket.close()
-                break
+            self.client_socket, _ = self.server_socket.accept()
+            self.client_socket.sendall(image_b64.encode("utf-8"))
+            self.client_socket.close()
         except socket.error:
             return
 
     def close(self):
-        self.interrupt.set()
         if self.thread is not None:
             self.thread.join()
         if self.client_socket:
