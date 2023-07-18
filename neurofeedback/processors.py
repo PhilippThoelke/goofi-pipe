@@ -711,6 +711,8 @@ class Bioelements(Processor):
         self.sfreq = None
         self.latest_raw = None
         self.latest_elements = None
+        self.latest_spectrum_regions = None
+        self.latest_types = None
         self.raw_lock = threading.Lock()
         self.features_lock = threading.Lock()
         self.extraction_frequency = extraction_frequency
@@ -736,16 +738,22 @@ class Bioelements(Processor):
                 continue
 
             bioelements_list = []
+            spectrum_regions_list = []
+            types_list = []
             try:
                 for ch in raw:
-                    res = bioelements_realtime(ch, self.sfreq, self.air_elements)
+                    res, spectrums, types = bioelements_realtime(ch, self.sfreq, self.air_elements)
                     bioelements_list.append(res)
+                    spectrum_regions_list.append(spectrums)
+                    types_list.append(types)
             except:
                 print("bioelements computation failed.")
                 continue
 
             with self.features_lock:
                 self.latest_elements = bioelements_list
+                self.latest_spectrum_regions = spectrum_regions_list
+                self.latest_types = types_list
 
             if self.extraction_frequency is not None:
                 sleep_time = 1 / self.extraction_frequency
@@ -774,19 +782,27 @@ class Bioelements(Processor):
 
         with self.features_lock:
             bioelements = self.latest_elements
+            spectrum_regions = self.latest_spectrum_regions
+            types = self.latest_types
 
         if bioelements is None:
             bioelements = [[""]] * info["nchan"]
+            
+        if spectrum_regions is None:
+            spectrum_regions = [[0]] * info["nchan"]
+            
+        if types is None:
+            types = [[0]] * info["nchan"]
 
         result = {}
-        normalization_mask = {}
 
         if not isinstance(bioelements, list):
             bioelements = [bioelements]
         for i in range(len(bioelements)):  # iterate over channels
             ch_prefix = f"ch{i}_"
             result[f"{self.label}/{ch_prefix}bioelements"] = bioelements[i]
-            normalization_mask[f"{self.label}/{ch_prefix}bioelements"] = True
+            result[f"{self.label}/{ch_prefix}spectrum_regions"] = spectrum_regions[i]
+            result[f"{self.label}/{ch_prefix}types"] = types[i]
         return result
 
 
@@ -809,15 +825,16 @@ class TextGeneration(Processor):
         read_text (bool): whether to read the text using text-to-speech
         label (str): label under which to save the extracted feature
         channels (Dict[str, List[str]]): channel list for each input stream
-        api_call_frequency (float, optional): the frequency in Hz at which to run the API call loop
+        update_frequency (float, optional): the frequency in Hz at which to run the API call loop
     """
 
     POETRY_PROMPT = (
         "I want you to inspire yourself from a list of words to write surrealist poetry. Only use the "
         "symbolism related to these words to construct the poetry, without naming any of the words "
         "directly. Use unconventional words and surprising imagery. Build up a coherent poem with "
-        "every response, referring back to previous lines and combining them with new symbols. Only "
-        "respond with a single line at a time."
+        "every response, referring back to previous lines and combining them with new symbols. "
+        "Provide a response of 30 words maximum."
+        "DO NOT NAME ANY OF THE PROVIDED WORDS, SO NO COLORS AND NO ELEMENTS."
     )
 
     SYMBOLISM_PROMPT = (
@@ -827,6 +844,15 @@ class TextGeneration(Processor):
         "should not include any of the words directly. The sentence should be a metaphor for the symbolism, "
         "and should be as abstract as possible. Be creative and and use unconventional and surprising "
         "imagery."
+    )
+    
+    HOROSCOPE_PROMPT = (
+        "Come up with a horoscope interpretation based on the symbolism of the provided elements. "
+        "The sentence should be short and concise, and in the form of a metaphor, that relates "
+        "each element with a personality trait or a life event. The sentence should be as abstract as possible. "
+        "Be creative and and use unconventional and surprising language. I want you to be nuanced and avoid cliches. "
+        "Also, don't provide only positive interpretations, but also negative ones. "
+        "The horoscope should be a single sentence of 20 words maximum. "
     )
 
     TXT2IMG_PROMPT = (
@@ -973,6 +999,7 @@ class TextGeneration(Processor):
             intermediates (Dict[str, Any]): dictionary containing intermediate representations
         """
         # grab the latest features
+        #print(processed)
         features = []
         for ft in self.feature_names:
             if processed[ft] is None:
