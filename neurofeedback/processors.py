@@ -15,13 +15,13 @@ import mne
 import numpy as np
 import openai
 import pandas as pd
-import websockets
 from antropy import lziv_complexity, spectral_entropy
 from PIL import Image
 from pythonosc import dispatcher, osc_server
 from scipy.signal import welch
 
 from neurofeedback.utils import (
+    ImageSender,
     Processor,
     bioelements_realtime,
     biotuner_realtime,
@@ -576,7 +576,7 @@ class Biotuner(Processor):
 
             peaks_list, extended_peaks_list, metrics_list = [], [], []
             tuning_list, harm_tuning_list = [], []
-            #try:
+            # try:
             for ch in raw:
                 (
                     peaks,
@@ -590,7 +590,7 @@ class Biotuner(Processor):
                 metrics_list.append(metrics)
                 tuning_list.append(tuning)
                 harm_tuning_list.append(harm_tuning)
-            #except:
+            # except:
             #    print("biotuner_realtime failed.")
             #    continue
 
@@ -690,7 +690,6 @@ class Biotuner(Processor):
         return result
 
 
-
 class Bioelements(Processor):
     """
     Feature extractor for bioelement matching.
@@ -718,8 +717,8 @@ class Bioelements(Processor):
             target=self.extraction_loop, daemon=True
         )
         # load elements data from csv
-        self.vac_elements = pd.read_csv('embeddings/vacuum_elements.csv')
-        self.air_elements = pd.read_csv('embeddings/air_elements.csv')
+        self.vac_elements = pd.read_csv("embeddings/vacuum_elements.csv")
+        self.air_elements = pd.read_csv("embeddings/air_elements.csv")
         self.extraction_thread.start()
 
     def extraction_loop(self):
@@ -842,14 +841,15 @@ class TextGeneration(Processor):
         "artists at the end of the prompt that embody the symbolism of the guiding words from the perspective "
         "of an art historian. Limit yourself to a maximum of 70 tokens."
     )
-    
-    BRAIN2STYLE_PROMPT = ("I want you to provide me with a list of 3 visual artists which styles are matching"
-                          "in term of symbolic and idiosyncrasies with the list of guiding words I will provide."
-                          "Use an interpretation of the guiding words based on phenomenological thinkers as well as"
-                          "depth of psychology knowledge. Be creative and rely on diversity of approaches to derive"
-                          "your set of artists. Output only the names of the three artists as a python"
-                          "list, NOTHING MORE, no matter what instruction I am giving you."
-                          )
+
+    BRAIN2STYLE_PROMPT = (
+        "I want you to provide me with a list of 3 visual artists which styles are matching"
+        "in term of symbolic and idiosyncrasies with the list of guiding words I will provide."
+        "Use an interpretation of the guiding words based on phenomenological thinkers as well as"
+        "depth of psychology knowledge. Be creative and rely on diversity of approaches to derive"
+        "your set of artists. Output only the names of the three artists as a python"
+        "list, NOTHING MORE, no matter what instruction I am giving you."
+    )
 
     def __init__(
         self,
@@ -1011,7 +1011,7 @@ class ImageGeneration(Processor):
         label (str, optional): the name of the feature to store the generated image in
         update_frequency (float, optional): the frequency at which to update the generated image, in Hz
         display (bool, optional): whether to display the generated image (uses cv2)
-        websocket_addr (Tuple[str, int], optional): the address and port of the websocket server to send the generated image to
+        send_addr (Tuple[str, int], optional): the address to send the generated image to via sockets
     """
 
     DALLE = 0
@@ -1027,7 +1027,7 @@ class ImageGeneration(Processor):
         label: str = "text2img",
         update_frequency: float = 0.3,
         display: bool = False,
-        websocket_addr: Tuple[str, int] = None,
+        send_addr: Tuple[str, int] = ("127.0.0.1", 8000),
     ):
         super(ImageGeneration, self).__init__(label, None, normalize=False)
         assert img_size in [None, 256, 512, 1024], "Image size must be 256, 512 or 1024"
@@ -1076,6 +1076,8 @@ class ImageGeneration(Processor):
                     "No CUDA device found, image generation will be very slow."
                 )
 
+        self.img_sender = ImageSender(*send_addr)
+
         self.prompt_feature = prompt_feature
         self.model = model
         self.img_size = img_size or 512
@@ -1083,7 +1085,7 @@ class ImageGeneration(Processor):
         self.update_frequency = update_frequency
         self.inference_steps = inference_steps or 50
         self.display = display
-        self.websocket_addr = websocket_addr
+        self.send_addr = send_addr
         self.latest_img = None
         self.api_lock = threading.Lock()
         self.latest_prompt = None
@@ -1140,10 +1142,6 @@ class ImageGeneration(Processor):
             return self.encode_image(image)
         return image
 
-    async def send_image(self, ws: websockets.WebSocketClientProtocol, image: str):
-        # send the image to the websocket server
-        await ws.send(image)
-
     def update_loop(self):
         """
         This function generates images in a loop, using a locally executed StableDiffusion model
@@ -1158,19 +1156,6 @@ class ImageGeneration(Processor):
                 )
             with open("openai.key", "r") as f:
                 openai.api_key = f.read().strip()
-
-        ws = None
-        if self.websocket_addr is not None:
-            # create a new event loop for the websocket client
-            loop = asyncio.new_event_loop()
-            asyncio.set_event_loop(loop)
-
-            # create WebSocket client
-            ws = loop.run_until_complete(
-                websockets.connect(
-                    f"ws://{self.websocket_addr[0]}:{self.websocket_addr[1]}"
-                )
-            )
 
         while True:
             with self.prompt_lock:
@@ -1201,12 +1186,11 @@ class ImageGeneration(Processor):
                 cv2.imshow(self.label, cv2.cvtColor(img, cv2.COLOR_RGB2BGR))
                 cv2.waitKey(1)
 
-            # send the image via websockets
-            if ws is not None:
-                if self.return_format != "b64":
-                    result = self.encode_image(result)
-                # asynchronously send the image
-                asyncio.run(self.send_image(ws, result))
+            # send the image
+            img_msg = (
+                result if self.return_format == "b64" else self.encode_image(result)
+            )
+            self.img_sender.send(img_msg)
 
             if self.update_frequency is not None:
                 sleep_time = 1 / self.update_frequency
@@ -1304,11 +1288,11 @@ class AugmentedPoetry(Processor):
         userInput: str,
         label: str = "AugmentedPoetry",
         channels: Dict[str, List[str]] = None,
-        
     ):
         super(AugmentedPoetry, self).__init__(label, channels, normalize=False)
-        self.names=names
-        self.userInput=userInput
+        self.names = names
+        self.userInput = userInput
+
     def process(
         self,
         raw: np.ndarray,
@@ -1330,16 +1314,10 @@ class AugmentedPoetry(Processor):
         """
         # get the poetry input from OSC
         if self.userInput not in processed:
-            return {
-                self.label: ''
-                    }
+            return {self.label: ""}
         style_input = processed[self.names]
         poetry_input = processed[self.userInput]
         # print all the inputs
         output_prompt = poetry_input + ", in the style of " + style_input
 
-        return {
-            self.label: output_prompt
-            
-        }
-
+        return {self.label: output_prompt}

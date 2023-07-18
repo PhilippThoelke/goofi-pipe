@@ -12,4 +12,3 @@ gTTS
 playsound
 opencv-python
 pytest
-websockets

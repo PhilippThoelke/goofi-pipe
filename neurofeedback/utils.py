@@ -1,4 +1,6 @@
+import atexit
 import colorsys
+import socket
 import threading
 from abc import ABC, abstractmethod
 from collections import deque
@@ -9,10 +11,7 @@ import mne
 import numpy as np
 import webcolors
 from biotuner.biocolors import audible2visible, scale2freqs, wavelength_to_rgb
-from biotuner.bioelements import (
-    find_matching_spectral_lines,
-    hertz_to_nm,
-)
+from biotuner.bioelements import find_matching_spectral_lines, hertz_to_nm
 from biotuner.biotuner_object import compute_biotuner, dyad_similarity, harmonic_tuning
 from biotuner.harmonic_connectivity import harmonic_connectivity
 from biotuner.metrics import tuning_cons_matrix
@@ -372,13 +371,13 @@ def biotuner_realtime(data, Fs):
     peaks = bt_plant.peaks
     extended_peaks = bt_plant.extended_peaks
     metrics = bt_plant.peaks_metrics
-    
+
     if not isinstance(metrics["subharm_tension"][0], float):
         metrics["subharm_tension"] = -1
     print(metrics)
-    metrics['harmsim'] = metrics['harmsim']/100
+    metrics["harmsim"] = metrics["harmsim"] / 100
     # rescale tenney height from between 4 to 9 to between 0 and 1
-    metrics['tenney'] = (metrics['tenney']-4)/5
+    metrics["tenney"] = (metrics["tenney"] - 4) / 5
     tuning = bt_plant.peaks_ratios
     return peaks, extended_peaks, metrics, tuning, harm_tuning
 
@@ -398,9 +397,9 @@ def bioelements_realtime(data, Fs, df):
     _, _, _ = biotuning.peaks_extension(
         method="harmonic_fit", harm_function="mult", cons_limit=0.1
     )
-    peaks_ang = [hertz_to_nm(x)*10 for x in biotuning.peaks]# convert to Angstrom
+    peaks_ang = [hertz_to_nm(x) * 10 for x in biotuning.peaks]  # convert to Angstrom
     res = find_matching_spectral_lines(df, peaks_ang, tolerance=0.2)
-    elements_count = res['element'].value_counts()
+    elements_count = res["element"].value_counts()
     elements_final = elements_count.index.tolist()
     # take the three most common elements
     elements_final = elements_final[:3]
@@ -446,3 +445,43 @@ def text2speech(txt, lang="en"):
     gTTS(text=txt, lang=lang).write_to_fp(voice := NamedTemporaryFile())
     playsound(voice.name)
     voice.close()
+
+
+class ImageSender:
+    def __init__(self, host="localhost", port=8000):
+        self.thread = None
+        self.client_socket = None
+        self.server_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        self.server_socket.bind((host, port))
+        self.server_socket.listen(5)
+        atexit.register(self.close)
+        self.interrupt = threading.Event()
+
+    def send(self, img):
+        if self.thread is not None and self.thread.is_alive():
+            self.interrupt.set()
+            self.thread.join()
+            self.interrupt.clear()
+
+        self.thread = threading.Thread(target=self._send_image, args=(img,))
+        self.thread.start()
+
+    def _send_image(self, image_b64):
+        try:
+            while not self.interrupt.is_set():
+                self.client_socket, _ = self.server_socket.accept()
+                self.client_socket.sendall(image_b64.encode("utf-8"))
+                self.client_socket.close()
+                break
+        except socket.error:
+            return
+
+    def close(self):
+        self.interrupt.set()
+        if self.thread is not None:
+            self.thread.join()
+        if self.client_socket:
+            self.client_socket.close()
+        if self.server_socket:
+            self.server_socket.shutdown(socket.SHUT_RDWR)
+            self.server_socket.close()
