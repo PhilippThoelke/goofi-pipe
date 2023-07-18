@@ -397,11 +397,7 @@ def bioelements_realtime(data, Fs, df):
     _, _, _ = biotuning.peaks_extension(
         method="harmonic_fit", harm_function="mult", cons_limit=0.1
     )
-<<<<<<< HEAD
     peaks_ang = [hertz_to_nm(x)*10 for x in biotuning.peaks] # convert to Angstrom
-=======
-    peaks_ang = [hertz_to_nm(x) * 10 for x in biotuning.peaks]  # convert to Angstrom
->>>>>>> c1507fc6727d050d6df07111e074bfe81cd9b264
     res = find_matching_spectral_lines(df, peaks_ang, tolerance=0.2)
     elements_count = res["element"].value_counts()
     elements_final = elements_count.index.tolist()
