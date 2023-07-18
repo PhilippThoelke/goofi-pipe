@@ -1252,6 +1252,7 @@ class OSCInput(Processor):
         super().__init__(label, None, False)
         # Set up a queue to hold messages as they come in
         self.msg_queue = queue.Queue()
+        self.features = {}
 
         def queue_msg(addr, *args):
             if len(args) == 1:
@@ -1273,8 +1274,7 @@ class OSCInput(Processor):
         """
         This function returns the latest features received via OSC.
         """
-        features = {}
         while not self.msg_queue.empty():
             address, values = self.msg_queue.get()
-            features[address] = values
-        return features
+            self.features[address] = values
+        return self.features
