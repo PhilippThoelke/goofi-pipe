@@ -842,6 +842,14 @@ class TextGeneration(Processor):
         "artists at the end of the prompt that embody the symbolism of the guiding words from the perspective "
         "of an art historian. Limit yourself to a maximum of 70 tokens."
     )
+    
+    BRAIN2STYLE_PROMPT = ("I want you to provide me with a list of 3 visual artists which styles are matching"
+                          "in term of symbolic and idiosyncrasies with the list of guiding words I will provide."
+                          "Use an interpretation of the guiding words based on phenomenological thinkers as well as"
+                          "depth of psychology knowledge. Be creative and rely on diversity of approaches to derive"
+                          "your set of artists. Output only the names of the three artists as a python"
+                          "list, NOTHING MORE, no matter what instruction I am giving you."
+                          )
 
     def __init__(
         self,
@@ -903,7 +911,7 @@ class TextGeneration(Processor):
                     {
                         "role": "user",
                         "content": (
-                            "Continue with meaningful coherence, using the the following  words as inspiration: "
+                            "Continue with meaningful coherence, using the the following words as inspiration: "
                             f"{', '.join(features)}. Do not use these words in your production."
                         ),
                     }
@@ -1168,7 +1176,7 @@ class ImageGeneration(Processor):
             with self.prompt_lock:
                 prompt = self.latest_prompt
             # wait for features to be available
-            if prompt is None:
+            if prompt is None or prompt == "":
                 time.sleep(0.1)
                 continue
 
@@ -1278,3 +1286,64 @@ class OSCInput(Processor):
             address, values = self.msg_queue.get()
             self.features[address] = values
         return self.features
+
+
+class AugmentedPoetry(Processor):
+    """
+    Assembling poetry input from the user with styles derived from brain signal.
+
+    Parameters:
+        label (str): label under which to save the extracted feature
+        channels (Dict[str, List[str]]): channel list for each input stream
+        name (str): name of the user input
+    """
+
+    def __init__(
+        self,
+        names: str,
+        userInput: str,
+        label: str = "AugmentedPoetry",
+        channels: Dict[str, List[str]] = None,
+        
+    ):
+        super(AugmentedPoetry, self).__init__(label, channels, normalize=False)
+        self.names=names
+        self.userInput=userInput
+    def process(
+        self,
+        raw: np.ndarray,
+        info: mne.Info,
+        processed: Dict[str, float],
+        intermediates: Dict[str, Any],
+    ):
+        """
+        This function computes channel-wise Lempel-Ziv complexity on the binarized signal.
+
+        Parameters:
+            raw (np.ndarray): the raw EEG buffer with shape (Channels, Time)
+            info (mne.Info): info object containing e.g. channel names, sampling frequency, etc.
+            processed (Dict[str, float]): dictionary collecting extracted features
+            intermediates (Dict[str, Any]): dictionary containing intermediate representations
+
+        Returns:
+            features (Dict[str, float]): the extracted features from this processor
+        """
+        # get the poetry input from OSC
+        if self.userInput not in processed:
+            print("user anything")
+            return {
+                self.label: ''
+                    }
+        style_input = processed[self.names]
+        poetry_input = processed[self.userInput]
+        # print all the inputs
+        print("user input: ", poetry_input)
+        print("style input: ", style_input)
+        output_prompt = poetry_input + ", in the style of " + style_input
+        print("output prompt: ", output_prompt)
+
+        return {
+            self.label: output_prompt
+            
+        }
+

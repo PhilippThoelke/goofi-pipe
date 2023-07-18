@@ -110,7 +110,8 @@ if __name__ == "__main__":
     mngr = Manager(
         data_in={
             # "muse": data_in.EEGRecording.make_eegbci(),
-            "muse": data_in.EEGStream("Muse00:55:DA:B0:49:D3")
+            #"muse": data_in.EEGStream("Muse00:55:DA:B0:49:D3")
+            "file": data_in.EEGRecording.make_eegbci(),
         },
         processors=[
             # processors.PSD(label="delta"),
@@ -120,30 +121,33 @@ if __name__ == "__main__":
             # processors.PSD(label="gamma"),
             # processors.LempelZiv(),
             # processors.Ratio("/file/alpha", "/file/theta", "alpha/theta"),
-            processors.Bioelements(channels={"muse": ["AF7"]}),
-            processors.Biocolor(channels={"muse": ["AF7"]}),
+            processors.Bioelements(channels={"file": ["C3"]}),
+            processors.Biocolor(channels={"file": ["C3"]}),
+            # processors.TextGeneration(
+            #     processors.TextGeneration.POETRY_PROMPT,
+            #     "/muse/biocolor/ch0_peak0_name",
+            #     "/muse/bioelements/ch0_bioelements",
+            #     read_text=True,
+            #     keep_conversation=True,
+            #     label="poetry",
+            # ),
             processors.TextGeneration(
-                processors.TextGeneration.POETRY_PROMPT,
-                "/muse/biocolor/ch0_peak0_name",
-                "/muse/bioelements/ch0_bioelements",
-                read_text=True,
-                keep_conversation=True,
-                label="poetry",
-            ),
-            processors.TextGeneration(
-                processors.TextGeneration.TXT2IMG_PROMPT,
-                "/muse/biocolor/ch0_peak0_name",
-                "/muse/bioelements/ch0_bioelements",
+                processors.TextGeneration.BRAIN2STYLE_PROMPT,
+                "/file/biocolor/ch0_peak0_name",
+                "/file/bioelements/ch0_bioelements",
                 keep_conversation=False,
                 read_text=False,
+                label="poetry",
             ),
+            processors.OSCInput(host='127.0.0.1', port=6666),
+            processors.AugmentedPoetry(userInput='/message', names="/file/poetry"),
             processors.ImageGeneration(
-                "/muse/text-generation",
-                model=processors.ImageGeneration.STABLE_DIFFUSION,
-                return_format="b64",
-                websocket_addr=("localhost", 5105),
+               "/file/AugmentedPoetry",
+               model=processors.ImageGeneration.DALLE,
+              return_format="b64",
+               websocket_addr=("localhost", 5105),
             ),
-            # processors.Biotuner(channels={"file": ["O1", "O2"]}),
+            #processors.Biotuner(channels={"file": ["O1", "O2"]}),
         ],
         normalization=normalization.StaticBaselineNormal(duration=30),
         data_out=[
