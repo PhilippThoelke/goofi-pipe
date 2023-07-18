@@ -19,6 +19,7 @@ from antropy import lziv_complexity, spectral_entropy
 from PIL import Image
 from pythonosc import dispatcher, osc_server
 from scipy.signal import welch
+import neurokit2 as nk
 
 from neurofeedback.utils import (
     ImageSender,
@@ -802,6 +803,114 @@ class Bioelements(Processor):
             result[f"{self.label}/{ch_prefix}bioelements"] = bioelements[i]
             result[f"{self.label}/{ch_prefix}spectrum_regions"] = spectrum_regions[i]
             result[f"{self.label}/{ch_prefix}types"] = types[i]
+        return result
+
+class Pulse(Processor):
+    """
+    Feature extractor for Pulse metrics (HRV).
+
+    Parameters:
+        label (str): label under which to save the extracted feature
+        channels (Dict[str, List[str]]): channel list for each input stream
+        extraction_frequency (float, optional): the frequency in Hz at which to run the peak extraction loop
+    """
+
+    def __init__(
+        self,
+        label: str = "pulse",
+        channels: Dict[str, List[str]] = None,
+        extraction_frequency: float = 1 / 5,
+    ):
+        super(Pulse, self).__init__(label, channels)
+        self.sfreq = None
+        self.latest_raw = None
+        self.latest_hrv = None
+        self.raw_lock = threading.Lock()
+        self.features_lock = threading.Lock()
+        self.extraction_frequency = extraction_frequency
+        self.extraction_thread = threading.Thread(
+            target=self.extraction_loop, daemon=True
+        )
+        self.extraction_thread.start()
+
+    def extraction_loop(self):
+        """
+        This function runs the biotuner_realtime function in a loop in a separate thread.
+        It continuously grabs the latest raw data, processes it, and updates the latest_hsvs.
+        """
+        import warnings
+        warnings.filterwarnings("ignore")
+        while True:
+            with self.raw_lock:
+                raw = self.latest_raw
+
+            if raw is None:
+                time.sleep(0.05)
+                continue
+            try:
+                if raw.shape[0] > 1:
+                    print("got more than one channel")
+                ppg, info_ppg = nk.ppg_process(raw[0], sampling_rate=self.sfreq)
+                hrv_df = nk.hrv(info_ppg, sampling_rate=self.sfreq)
+            except:
+                print("neurokit failed.")
+                continue
+
+            with self.features_lock:
+                self.latest_ppg = ppg
+                self.latest_info = info_ppg
+                self.latest_hrv = hrv_df
+
+            if self.extraction_frequency is not None:
+                sleep_time = 1 / self.extraction_frequency
+                time.sleep(sleep_time)
+        
+    def process(
+        self,
+        raw: np.ndarray,
+        info: mne.Info,
+        processed: Dict[str, float],
+        intermediates: Dict[str, np.ndarray],
+    ):
+        """
+        This function computes the HRV from the pulse signal.
+
+        Parameters:
+            raw (np.ndarray): the raw PPG buffer with shape (Channels, Time)
+            info (mne.Info): info object containing e.g. channel names, sampling frequency, etc.
+            processed (Dict[str, float]): dictionary collecting extracted features
+            intermediates (Dict[str, np.ndarray]): dictionary containing intermediate representations
+        """
+        self.sfreq = info["sfreq"]
+
+        with self.raw_lock:
+            self.latest_raw = raw
+            # self.latest_info = info_ppg
+            # self.latest_ppg = ppg
+
+        with self.features_lock:
+            hrv_df = self.latest_hrv
+        if hrv_df is None:
+            hrv_df = pd.DataFrame({"HRV_SDNN": [0], "HRV_RMSSD": [0], "HRV_MeanNN": [0], "HRV_pNN50": [0],
+                                   "HRV_LF": [0], "HRV_HF": [0], "HRV_LFHF": [0],
+                                   "HRV_SD1": [0], "HRV_SD2": [0], "HRV_SD1SD2": [0], "HRV_ApEn":[0], "HRV_SampEn":[0],
+                                   "HRV_DFA_alpha1": [0], })
+            
+        result = {}
+        result[f"{self.label}/sdnn"] = hrv_df["HRV_SDNN"].values[0]
+        result[f"{self.label}/rmssd"] = hrv_df["HRV_RMSSD"].values[0]
+        result[f"{self.label}/meanHR"] = hrv_df["HRV_MeanNN"].values[0]
+        result[f"{self.label}/pnn50"] = hrv_df["HRV_pNN50"].values[0]
+        result[f"{self.label}/lf"] = hrv_df["HRV_LF"].values[0]
+        result[f"{self.label}/hf"] = hrv_df["HRV_HF"].values[0]
+        result[f"{self.label}/lfhf"] = hrv_df["HRV_LFHF"].values[0]
+        result[f"{self.label}/sd1"] = hrv_df["HRV_SD1"].values[0]
+        result[f"{self.label}/sd2"] = hrv_df["HRV_SD2"].values[0]
+        result[f"{self.label}/sd1sd2"] = hrv_df["HRV_SD1SD2"].values[0]
+        result[f"{self.label}/apen"] = hrv_df["HRV_ApEn"].values[0]
+        result[f"{self.label}/sampen"] = hrv_df["HRV_SampEn"].values[0]
+        result[f"{self.label}/dfa1"] = hrv_df["HRV_DFA_alpha1"].values[0]
+
         return result
 
 
