@@ -221,6 +221,8 @@ class OSCStream(DataOut):
                 msg.add_arg(val, OscMessageBuilder.ARG_TYPE_FLOAT)
             elif isinstance(val, str):
                 msg.add_arg(val, OscMessageBuilder.ARG_TYPE_STRING)
+            else:
+                msg.add_arg(val)
 
             # Add the message to the bundle
             bundle.add_content(msg.build())

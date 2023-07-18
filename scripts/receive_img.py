@@ -1,12 +1,11 @@
-import asyncio
 import base64
+import socket
 import threading
 import time
 from io import BytesIO
 
 import cv2
 import numpy as np
-import websockets
 from PIL import Image
 
 curr_img = None
@@ -17,15 +16,37 @@ def decode_image(msg):
     return np.array(Image.open(BytesIO(base64.b64decode(msg))))
 
 
-async def server(websocket, _):
+def receive_image(host="localhost", port=8000):
+    global curr_img, trgt_img
     while True:
-        # Receive message
-        msg = await websocket.recv()
-        print("message received")
+        client_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        success = False
+        while not success:
+            try:
+                client_socket.connect((host, port))
+                success = True
+            except:
+                time.sleep(1)
 
-        # Decode message
-        global curr_img, trgt_img
-        new_img = decode_image(msg).astype(np.float32) / 255.0
+        try:
+            data = b""
+            while True:
+                part = client_socket.recv(1024)
+                if not part:
+                    client_socket.detach()
+                    break
+                data += part
+        except:
+            client_socket.detach()
+            continue
+
+        if len(data) == 0:
+            print("len 0")
+            time.sleep(0.1)
+            continue
+
+        new_img = decode_image(data).astype(np.float32) / 255.0
+
         if trgt_img is None:
             trgt_img = np.array(new_img)
             curr_img = np.array(new_img)
@@ -46,11 +67,10 @@ def display_img(alpha=0.97):
         cv2.waitKey(50)
 
 
-threading.Thread(target=display_img).start()
+# Create threads for receiving and displaying images
+thread_recv = threading.Thread(target=receive_image)
+thread_disp = threading.Thread(target=display_img)
 
-start_server = websockets.serve(
-    server, "localhost", 5105, ping_timeout=None, ping_interval=None
-)
-
-asyncio.get_event_loop().run_until_complete(start_server)
-asyncio.get_event_loop().run_forever()
+# Start the threads
+thread_recv.start()
+thread_disp.start()

@@ -109,8 +109,6 @@ if __name__ == "__main__":
 
     mngr = Manager(
         data_in={
-            # "muse": data_in.EEGRecording.make_eegbci(),
-            #"muse": data_in.EEGStream("Muse00:55:DA:B0:49:D3")
             "file": data_in.EEGRecording.make_eegbci(),
         },
         processors=[
@@ -132,22 +130,23 @@ if __name__ == "__main__":
             #     label="poetry",
             # ),
             processors.TextGeneration(
-                processors.TextGeneration.BRAIN2STYLE_PROMPT,
+                processors.TextGeneration.TXT2IMG_PROMPT,
                 "/file/biocolor/ch0_peak0_name",
                 "/file/bioelements/ch0_bioelements",
                 keep_conversation=False,
                 read_text=False,
-                label="poetry",
             ),
-            processors.OSCInput(host='127.0.0.1', port=6666),
-            processors.AugmentedPoetry(userInput='/file//message', names="/file/poetry"),
             processors.ImageGeneration(
-               "/file/AugmentedPoetry",
-               model=processors.ImageGeneration.DALLE,
-              return_format="b64",
-               websocket_addr=("localhost", 5105),
+                "/file/text-generation",
+                model=processors.ImageGeneration.STABLE_DIFFUSION,
+                inference_steps=10,
+                return_format="b64",
             ),
+<<<<<<< HEAD
             processors.Biotuner(channels={"file": ["O1", "O2"]}),
+=======
+            # processors.Biotuner(channels={"file": ["O1", "O2"]}),
+>>>>>>> 8ff768b65374ca05c4dff4771e0c21c5e6536fe4
         ],
         normalization=normalization.StaticBaselineNormal(duration=30),
         data_out=[
