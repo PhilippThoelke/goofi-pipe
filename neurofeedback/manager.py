@@ -142,11 +142,7 @@ if __name__ == "__main__":
                 inference_steps=10,
                 return_format="b64",
             ),
-<<<<<<< HEAD
             processors.Biotuner(channels={"file": ["O1", "O2"]}),
-=======
-            # processors.Biotuner(channels={"file": ["O1", "O2"]}),
->>>>>>> c1507fc6727d050d6df07111e074bfe81cd9b264
         ],
         normalization=normalization.StaticBaselineNormal(duration=30),
         data_out=[
