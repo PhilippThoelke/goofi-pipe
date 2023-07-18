@@ -14,6 +14,7 @@ import cv2
 import mne
 import numpy as np
 import openai
+import pandas as pd
 import websockets
 from antropy import lziv_complexity, spectral_entropy
 from PIL import Image
@@ -688,7 +689,8 @@ class Biotuner(Processor):
                 normalization_mask[f"{self.label}/harm_conn/{i}/{j}"] = False
         return result
 
-import pandas as pd
+
+
 class Bioelements(Processor):
     """
     Feature extractor for bioelement matching.
@@ -888,36 +890,36 @@ class TextGeneration(Processor):
         messages = [system_msg]
 
         while True:
+            with self.features_lock:
+                features = self.latest_features
+            # wait for features to be available
+            if features is None:
+                time.sleep(0.1)
+                continue
+
+            # add a user message to the conversation
+            if self.keep_conversation:
+                messages.append(
+                    {
+                        "role": "user",
+                        "content": (
+                            "Continue with meaningful coherence, using the the following  words as inspiration: "
+                            f"{', '.join(features)}. Do not use these words in your production."
+                        ),
+                    }
+                )
+            else:
+                messages = [
+                    system_msg,
+                    {
+                        "role": "user",
+                        "content": (
+                            f"Generate the text using the following words as inspiration: {', '.join(features)}."
+                        ),
+                    },
+                ]
+
             try:
-                with self.features_lock:
-                    features = self.latest_features
-                # wait for features to be available
-                if features is None:
-                    time.sleep(0.1)
-                    continue
-
-                # add a user message to the conversation
-                if self.keep_conversation:
-                    messages.append(
-                        {
-                            "role": "user",
-                            "content": (
-                                "Continue with meaningful coherence, using the the following  words as inspiration: "
-                                f"{', '.join(features)}. Do not use these words in your production."
-                            ),
-                        }
-                    )
-                else:
-                    messages = [
-                        system_msg,
-                        {
-                            "role": "user",
-                            "content": (
-                                f"Generate the text using the following words as inspiration: {', '.join(features)}."
-                            ),
-                        },
-                    ]
-
                 # make an API call
                 response = openai.ChatCompletion.create(
                     model=self.model,
@@ -925,22 +927,22 @@ class TextGeneration(Processor):
                     temperature=self.temperature,
                     max_tokens=self.max_tokens,
                 )
-                response = response["choices"][0]["message"]
-
-                if self.keep_conversation:
-                    # add the response to the conversation
-                    messages.append(dict(response))
-
-                with self.api_lock:
-                    self.latest_chat_message = response["content"]
-
-                if self.read_text:
-                    # read the new text using text to speech
-                    text2speech(response["content"])
-
             except Exception as e:
                 print(f"OpenAI API call failed: {e}")
                 continue
+
+            response = response["choices"][0]["message"]
+
+            if self.keep_conversation:
+                # add the response to the conversation
+                messages.append(dict(response))
+
+            with self.api_lock:
+                self.latest_chat_message = response["content"]
+
+            if self.read_text:
+                # read the new text using text to speech
+                text2speech(response["content"])
 
             if self.update_frequency is not None:
                 sleep_time = 1 / self.update_frequency
