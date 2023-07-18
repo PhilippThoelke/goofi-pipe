@@ -140,7 +140,7 @@ if __name__ == "__main__":
                 label="poetry",
             ),
             processors.OSCInput(host='127.0.0.1', port=6666),
-            processors.AugmentedPoetry(userInput='/message', names="/file/poetry"),
+            processors.AugmentedPoetry(userInput='/file//message', names="/file/poetry"),
             processors.ImageGeneration(
                "/file/AugmentedPoetry",
                model=processors.ImageGeneration.DALLE,

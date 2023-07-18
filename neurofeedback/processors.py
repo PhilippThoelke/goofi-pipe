@@ -1330,17 +1330,13 @@ class AugmentedPoetry(Processor):
         """
         # get the poetry input from OSC
         if self.userInput not in processed:
-            print("user anything")
             return {
                 self.label: ''
                     }
         style_input = processed[self.names]
         poetry_input = processed[self.userInput]
         # print all the inputs
-        print("user input: ", poetry_input)
-        print("style input: ", style_input)
         output_prompt = poetry_input + ", in the style of " + style_input
-        print("output prompt: ", output_prompt)
 
         return {
             self.label: output_prompt
