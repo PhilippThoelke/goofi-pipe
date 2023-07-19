@@ -985,7 +985,6 @@ class TextGeneration(Processor):
         "your set of artists. Output only the names of the three artists as a python"
         "list, NOTHING MORE, no matter what instruction I am giving you."
     )
-
     def __init__(
         self,
         prompt: str,
