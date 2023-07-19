@@ -962,6 +962,12 @@ class TextGeneration(Processor):
         "Also, don't provide only positive interpretations, but also negative ones. "
         "The horoscope should be a single sentence of 20 words maximum. "
     )
+    
+    CHAKRA_PROMPT = (
+        "I want you to act as an expert in chakra balancing. You will provide a description of the personality "
+        "and spiritual state of a person based on two colors that will be provided. Don't use cliches, and be "
+        "creative in your interpretation. Use inspiring and visually rich language. Provide an answer of maximum 50 words."
+    )
 
     TXT2IMG_PROMPT = (
         "Your job is to come up with a prompt for a text-to-image model. The prompt should be concise and "
@@ -1045,7 +1051,7 @@ class TextGeneration(Processor):
                     {
                         "role": "user",
                         "content": (
-                            "Continue with meaningful coherence, using the the following words as inspiration: "
+                            "Continue with meaningful coherence, using the following words as inspiration: "
                             f"{', '.join(features)}. Do not use these words in your production."
                         ),
                     }
