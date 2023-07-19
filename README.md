@@ -51,17 +51,17 @@ mngr = manager.Manager(
     },
     processors=[
         # global delta power
-        processors.PSD("delta"),
+        processors.PSD(label="delta"),
         # global theta power
-        processors.PSD("theta"),
+        processors.PSD(label="theta"),
         # occipital alpha power (eyes open/closed)
-        processors.PSD("alpha", include_chs=["O1", "Oz", "O2"]),
+        processors.PSD(label="alpha", channels={"eeg": ["O1", "Oz", "O2"]}),
         # parietal beta power (motor activity)
-        processors.PSD("beta", include_chs=["P3", "P4"]),
+        processors.PSD(label="beta", channels={"eeg": ["P3", "P4"]}),
         # global gamma power
-        processors.PSD("gamma"),
+        processors.PSD(label="gamma"),
         # pre-frontal Lempel-Ziv complexity
-        processors.LempelZiv(include_chs=["Fp1", "Fp2"]),
+        processors.LempelZiv(channels={"eeg": ["Fp1", "Fp2"]}),
         # map EEG oscillations to emission spectra
         processors.Bioelements(channels={"eeg": ["C3"]}),
         # extract colors from harmonic ratios of EEG oscillations
