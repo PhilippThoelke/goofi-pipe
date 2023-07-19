@@ -1010,7 +1010,7 @@ class TextGeneration(Processor):
         "list, NOTHING MORE, no matter what instruction I am giving you."
     )
     PRESENCE_PROMPT = (
-        "You are a mindfulness expert of the Theravada and Zen Tradition, plus you are familiar with modern approaches. 
+        "You are a mindfulness expert of the Theravada and Zen Tradition, plus you are familiar with modern approaches."
         "Your goal is to share your profound knowledge of the dharma through poetic instructions that are"
         "inspired from the elements of the periodic table and the symbolism you attached to them as a practitioner of Present awareness."
         "Extract the symbolism of these elements in way that is abstract and reflective of my inner state. "
