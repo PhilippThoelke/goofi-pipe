@@ -985,6 +985,18 @@ class TextGeneration(Processor):
         "your set of artists. Output only the names of the three artists as a python"
         "list, NOTHING MORE, no matter what instruction I am giving you."
     )
+    PRESENCE_PROMPT = (
+        "You are a mindfulness expert of the Theravada and Zen Tradition, plus you are familiar with modern approaches. 
+        "Your goal is to share your profound knowledge of the dharma through poetic instructions that are"
+        "inspired from the elements of the periodic table and the symbolism you attached to them as a practitioner of Present awareness."
+        "Extract the symbolism of these elements in way that is abstract and reflective of my inner state. "
+        "Make it brief and straight to the point. I need Clarity. I seek a luminous state of mind. "
+        "Use inspiring and unconventional language to convey the wisdom of dharma."
+        "Provide 5 simple instructions in a poem format inspired from from the elements. One line by instruction."
+        "Compare and contrast their meaning, and make compelling relation between the two element. But do not name them."
+        "Embody the wisdom of the buddha, thich nhat hanh and Dalai Lama. Do not make list. one line by instruction."
+        "Contemplate the given elements of the periodic table:"
+    )
     def __init__(
         self,
         prompt: str,
