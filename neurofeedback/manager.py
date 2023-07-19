@@ -153,13 +153,7 @@ if __name__ == "__main__":
             #     keep_conversation=True,
             #     label="poetry",
             # ),
-            processors.TextGeneration(
-                processors.TextGeneration.TXT2IMG_PROMPT,
-                "/file/biocolor/ch0_peak0_name",
-                "/file/bioelements/ch0_bioelements",
-                keep_conversation=False,
-                read_text=False,
-            ),
+
             processors.ImageGeneration(
                 "/file/text-generation",
                 model=processors.ImageGeneration.STABLE_DIFFUSION,
