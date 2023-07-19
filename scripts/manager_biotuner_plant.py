@@ -16,32 +16,13 @@ if __name__ == '__main__':
                  processors.LempelZiv(),
                  processors.Ratio("/plant/alpha", "/plant/theta", "alpha/theta"),
                  processors.Biotuner(channels={"plant": ["serial"]}),
-                 processors.Biocolor(channels={"plant": ["serial"]}, extraction_frequency=0.1),
-                 processors.Bioelements(channels={"plant": ["serial"]}, extraction_frequency=0.1),
-                 processors.TextGeneration(
-                processors.TextGeneration.HOROSCOPE_PROMPT,
-                #"/plant/biocolor/ch0_peak0_name",
-                "/plant/bioelements/ch0_bioelements",
-                keep_conversation=False,
-                read_text=False,
-                label="horoscope",
-                update_frequency=0.05
-            ),
-                 processors.TextGeneration(
-                processors.TextGeneration.POETRY_PROMPT,
-                "/plant/biocolor/ch0_peak0_name",
-                "/plant/bioelements/ch0_bioelements",
-                keep_conversation=False,
-                read_text=False,
-                label="poetry",
-                update_frequency=0.05
-            ),
+                 processors.Biocolor(channels={"plant": ["serial"]}),
             ],
             normalization=normalization.StaticBaselineNormal(duration=30),
             data_out=[
                 data_out.OSCStream("10.0.0.255", 5070),
-                data_out.PlotRaw("plant"),
-                #data_out.PlotProcessed(),
+                # data_out.PlotRaw("file"),
+                data_out.PlotProcessed(),
                 
             ],
             frequency=5,
