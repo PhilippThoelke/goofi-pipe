@@ -12,6 +12,7 @@ from typing import Any, Callable, Dict, List, Optional, Tuple, Union
 
 import cv2
 import mne
+import neurokit2 as nk
 import numpy as np
 import openai
 import pandas as pd
@@ -19,7 +20,6 @@ from antropy import lziv_complexity, spectral_entropy
 from PIL import Image
 from pythonosc import dispatcher, osc_server
 from scipy.signal import welch
-import neurokit2 as nk
 
 from neurofeedback.utils import (
     ImageSender,
@@ -742,7 +742,9 @@ class Bioelements(Processor):
             types_list = []
             try:
                 for ch in raw:
-                    res, spectrums, types = bioelements_realtime(ch, self.sfreq, self.air_elements)
+                    res, spectrums, types = bioelements_realtime(
+                        ch, self.sfreq, self.air_elements
+                    )
                     bioelements_list.append(res)
                     spectrum_regions_list.append(spectrums)
                     types_list.append(types)
@@ -787,10 +789,10 @@ class Bioelements(Processor):
 
         if bioelements is None:
             bioelements = [[""]] * info["nchan"]
-            
+
         if spectrum_regions is None:
             spectrum_regions = [[0]] * info["nchan"]
-            
+
         if types is None:
             types = [[0]] * info["nchan"]
 
@@ -804,6 +806,7 @@ class Bioelements(Processor):
             result[f"{self.label}/{ch_prefix}spectrum_regions"] = spectrum_regions[i]
             result[f"{self.label}/{ch_prefix}types"] = types[i]
         return result
+
 
 class Pulse(Processor):
     """
@@ -839,6 +842,7 @@ class Pulse(Processor):
         It continuously grabs the latest raw data, processes it, and updates the latest_hsvs.
         """
         import warnings
+
         warnings.filterwarnings("ignore")
         while True:
             with self.raw_lock:
@@ -864,7 +868,7 @@ class Pulse(Processor):
             if self.extraction_frequency is not None:
                 sleep_time = 1 / self.extraction_frequency
                 time.sleep(sleep_time)
-        
+
     def process(
         self,
         raw: np.ndarray,
@@ -891,11 +895,24 @@ class Pulse(Processor):
         with self.features_lock:
             hrv_df = self.latest_hrv
         if hrv_df is None:
-            hrv_df = pd.DataFrame({"HRV_SDNN": [0], "HRV_RMSSD": [0], "HRV_MeanNN": [0], "HRV_pNN50": [0],
-                                   "HRV_LF": [0], "HRV_HF": [0], "HRV_LFHF": [0],
-                                   "HRV_SD1": [0], "HRV_SD2": [0], "HRV_SD1SD2": [0], "HRV_ApEn":[0], "HRV_SampEn":[0],
-                                   "HRV_DFA_alpha1": [0], })
-            
+            hrv_df = pd.DataFrame(
+                {
+                    "HRV_SDNN": [0],
+                    "HRV_RMSSD": [0],
+                    "HRV_MeanNN": [0],
+                    "HRV_pNN50": [0],
+                    "HRV_LF": [0],
+                    "HRV_HF": [0],
+                    "HRV_LFHF": [0],
+                    "HRV_SD1": [0],
+                    "HRV_SD2": [0],
+                    "HRV_SD1SD2": [0],
+                    "HRV_ApEn": [0],
+                    "HRV_SampEn": [0],
+                    "HRV_DFA_alpha1": [0],
+                }
+            )
+
         result = {}
         result[f"{self.label}/sdnn"] = hrv_df["HRV_SDNN"].values[0]
         result[f"{self.label}/rmssd"] = hrv_df["HRV_RMSSD"].values[0]
@@ -953,7 +970,7 @@ class TextGeneration(Processor):
         "and should be as abstract as possible. Be creative and and use unconventional and surprising "
         "imagery."
     )
-    
+
     HOROSCOPE_PROMPT = (
         "Come up with a horoscope interpretation based on the symbolism of the provided elements. "
         "The sentence should be short and concise, and in the form of a metaphor, that relates "
@@ -1114,7 +1131,7 @@ class TextGeneration(Processor):
             intermediates (Dict[str, Any]): dictionary containing intermediate representations
         """
         # grab the latest features
-        #print(processed)
+        # print(processed)
         features = []
         for ft in self.feature_names:
             if processed[ft] is None:
@@ -1463,3 +1480,19 @@ class AugmentedPoetry(Processor):
         output_prompt = poetry_input + ", in the style of " + style_input
 
         return {self.label: output_prompt}
+
+
+class SignalStd(Processor):
+    def __init__(
+        self, label: str = "signal-std", channels: Dict[str, List[str]] = None
+    ):
+        super().__init__(label, channels, True)
+
+    def process(
+        self,
+        raw: np.ndarray,
+        info: mne.Info,
+        processed: Dict[str, float],
+        intermediates: Dict[str, Any],
+    ) -> Dict[str, float]:
+        return {self.label: raw.std(axis=0).mean()}
