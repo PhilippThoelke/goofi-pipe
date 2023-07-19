@@ -6,7 +6,7 @@ import threading
 import time
 import warnings
 from io import BytesIO
-from os.path import exists
+from os.path import exists, join
 from typing import Any, Callable, Dict, List, Optional, Tuple, Union
 
 import cv2
@@ -26,6 +26,7 @@ from goofi.utils import (
     bioelements_realtime,
     biotuner_realtime,
     compute_conn_matrix_single,
+    get_resources_path,
     rgb2name,
     text2speech,
     viz_scale_colors,
@@ -719,8 +720,9 @@ class Bioelements(Processor):
             target=self.extraction_loop, daemon=True
         )
         # load elements data from csv
-        self.vac_elements = pd.read_csv("embeddings/vacuum_elements.csv")
-        self.air_elements = pd.read_csv("embeddings/air_elements.csv")
+        res = get_resources_path()
+        self.vac_elements = pd.read_csv(join(res, "vacuum_elements.csv"))
+        self.air_elements = pd.read_csv(join(res, "air_elements.csv"))
         self.extraction_thread.start()
 
     def extraction_loop(self):
@@ -1236,8 +1238,9 @@ class ImageGeneration(Processor):
             )
 
             # load textual inversion embeddings for improved image quality
-            self.sd_pipe.load_textual_inversion("embeddings/nfixer.pt")
-            self.sd_pipe.load_textual_inversion("embeddings/nrealfixer.pt")
+            res = get_resources_path()
+            self.sd_pipe.load_textual_inversion(join(res, "nfixer.pt"))
+            self.sd_pipe.load_textual_inversion(join(res, "nrealfixer.pt"))
 
             # move to GPU if available
             if torch.cuda.is_available():

@@ -4,6 +4,7 @@ import socket
 import threading
 from abc import ABC, abstractmethod
 from collections import deque
+from os.path import dirname, join
 from tempfile import NamedTemporaryFile
 from typing import Any, Dict, List, Tuple, Union
 
@@ -452,6 +453,10 @@ def text2speech(txt, lang="en"):
     gTTS(text=txt, lang=lang).write_to_fp(voice := NamedTemporaryFile())
     playsound(voice.name)
     voice.close()
+
+
+def get_resources_path() -> str:
+    return join(dirname(dirname(__file__)), "resources")
 
 
 class ImageSender:
