@@ -1,6 +1,7 @@
 import time
-from typing import Dict, List
+from typing import Dict, List, Union
 
+from neurofeedback.processors import SignalStd
 from neurofeedback.utils import DataIn, DataOut, Normalization, Processor
 
 
@@ -15,6 +16,7 @@ class Manager:
         normalization (Normalization): the normalization strategy to apply to the extracted features
         data_out (List[DataOut]): a list of DataOut channels (e.g. OSCStream, PlotProcessed)
         frequency (int): frequency of the data processing loop (-1 to run as fast as possible)
+        noise_threshold (float or Dict[str,float]): threshold for detecting if a device is in use
     """
 
     def __init__(
@@ -24,11 +26,16 @@ class Manager:
         normalization: Normalization,
         data_out: List[DataOut],
         frequency: int = 10,
+        noise_threshold: Union[Dict[str, float], float] = 4,
     ):
         self.data_in = data_in
         self.processors = processors
         self.normalization = normalization
         self.data_out = data_out
+        self.noise_threshold = noise_threshold
+
+        # compute signal standard deviation to estimate noise level
+        self.std_processor = SignalStd()
 
         # auxiliary attributes
         self.frequency = frequency
@@ -51,6 +58,21 @@ class Manager:
 
         # process raw data (feature extraction)
         processed, intermediates, normalize_mask = {}, {}, {}
+
+        # assess if the device is in use or just producing noise
+        noise_container = {}
+        self.std_processor(self.data_in, noise_container, {})
+        self.normalization.normalize(noise_container)
+        for key in self.data_in.keys():
+            if isinstance(self.noise_threshold, dict):
+                thresh = self.noise_threshold[key]
+            else:
+                thresh = self.noise_threshold
+            processed[f"/{key}/in-use"] = float(
+                noise_container[f"/{key}/signal-std"] < thresh
+            )
+            normalize_mask[f"/{key}/in-use"] = False
+
         for processor in self.processors:
             normalize_mask.update(processor(self.data_in, processed, intermediates))
 
