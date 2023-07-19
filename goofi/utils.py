@@ -397,7 +397,7 @@ def bioelements_realtime(data, Fs, df):
     _, _, _ = biotuning.peaks_extension(
         method="harmonic_fit", harm_function="mult", cons_limit=0.1
     )
-    peaks_ang = [hertz_to_nm(x)*10 for x in biotuning.peaks] # convert to Angstrom
+    peaks_ang = [hertz_to_nm(x) * 10 for x in biotuning.peaks]  # convert to Angstrom
     res = find_matching_spectral_lines(df, peaks_ang, tolerance=0.2)
     elements_count = res["element"].value_counts()
     elements_final = elements_count.index.tolist()
@@ -405,11 +405,11 @@ def bioelements_realtime(data, Fs, df):
     elements_final = elements_final[:3]
 
     # filter the res DataFrame for these three elements
-    res_filtered = res[res['element'].isin(elements_final)]
+    res_filtered = res[res["element"].isin(elements_final)]
 
     # Get unique spectrum regions and types for these elements
-    spectrum_regions = res_filtered['spectrum_region'].unique().tolist()
-    types = res_filtered['type'].unique().tolist()
+    spectrum_regions = res_filtered["spectrum_region"].unique().tolist()
+    types = res_filtered["type"].unique().tolist()
     return elements_final, spectrum_regions, types
 
 
@@ -462,7 +462,7 @@ class ImageSender:
         self.client_socket = None
         self.server_socket = None
         self.start_server()
-        
+
         atexit.register(self.close)
 
     def start_server(self):

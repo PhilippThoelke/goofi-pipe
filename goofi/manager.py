@@ -1,8 +1,8 @@
 import time
 from typing import Dict, List, Union
 
-from neurofeedback.processors import SignalStd
-from neurofeedback.utils import DataIn, DataOut, Normalization, Processor
+from goofi.processors import SignalStd
+from goofi.utils import DataIn, DataOut, Normalization, Processor
 
 
 class Manager:
@@ -127,54 +127,43 @@ class Manager:
 
 
 if __name__ == "__main__":
-    from neurofeedback import data_in, data_out, normalization, processors
+    from goofi import data_in, data_out, manager, normalization, processors
 
-    mngr = Manager(
+    # configure the pipeline through the Manager class
+    mngr = manager.Manager(
         data_in={
-            "file": data_in.EEGRecording.make_eegbci(),
-            "pulse": data_in.SerialStream(sfreq=100, buffer_seconds=60),
+            "eeg": data_in.EEGRecording.make_eegbci()  # stream some pre-recorded EEG from a file
         },
         processors=[
-             processors.PSD(label="delta"),
-             processors.PSD(label="theta"),
-             processors.PSD(label="alpha"),
-             processors.PSD(label="beta"),
-             processors.PSD(label="gamma"),
-             processors.LempelZiv(),
-            # processors.Ratio("/file/alpha", "/file/theta", "alpha/theta"),
-            # processors.Pulse(channels={"pulse": ["serial"]})
-            processors.Bioelements(channels={"file": ["C3"]}),
-            processors.Biocolor(channels={"file": ["C3"]}),
-            # processors.TextGeneration(
-            #     processors.TextGeneration.POETRY_PROMPT,
-            #     "/muse/biocolor/ch0_peak0_name",
-            #     "/muse/bioelements/ch0_bioelements",
-            #     read_text=True,
-            #     keep_conversation=True,
-            #     label="poetry",
-            # ),
+            # global delta power
+            processors.PSD("delta"),
+            # global theta power
+            processors.PSD("theta"),
+            # occipital alpha power (eyes open/closed)
+            processors.PSD("alpha", include_chs=["O1", "Oz", "O2"]),
+            # parietal beta power (motor activity)
+            processors.PSD("beta", include_chs=["P3", "P4"]),
+            # global gamma power
+            processors.PSD("gamma"),
+            # pre-frontal Lempel-Ziv complexity
+            processors.LempelZiv(include_chs=["Fp1", "Fp2"]),
+            # map EEG oscillations to emission spectra
+            processors.Bioelements(channels={"eeg": ["C3"]}),
+            # extract colors from harmonic ratios of EEG oscillations
+            processors.Biocolor(channels={"eeg": ["C3"]}),
+            # ask GPT-3 to write a line of poetry based on EEG features (requires OpenAI API key)
             processors.TextGeneration(
-                processors.TextGeneration.PRESENCE_PROMPT,
-                "/file/biocolor/ch0_peak0_name",
-                "/file/bioelements/ch0_bioelements",
-                keep_conversation=False,
-                read_text=False,
-                label="presence",
+                processors.TextGeneration.POETRY_PROMPT,
+                "/eeg/biocolor/ch0_peak0_name",
+                "/eeg/bioelements/ch0_bioelements",
             ),
-            processors.ImageGeneration(
-                "/file/text-generation",
-                model=processors.ImageGeneration.STABLE_DIFFUSION,
-                inference_steps=10,
-                return_format="b64",
-            ),
-            processors.Biotuner(channels={"file": ["O1", "O2"]}),
         ],
-        normalization=normalization.StaticBaselineNormal(duration=30),
+        normalization=normalization.WelfordsZTransform(),  # apply a running z-transform to the features
         data_out=[
-            data_out.OSCStream("127.0.0.1", 5005),
-            # data_out.PlotRaw("file"),
-            data_out.PlotProcessed(),
+            data_out.OSCStream("127.0.0.1", 5005),  # stream features on localhost
+            data_out.PlotProcessed(),  # visualize the extracted features
         ],
     )
 
+    # start the pipeline
     mngr.run()

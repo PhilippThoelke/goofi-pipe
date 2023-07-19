@@ -11,7 +11,7 @@ from pythonosc import osc_bundle_builder
 from pythonosc.osc_message_builder import OscMessageBuilder
 from pythonosc.udp_client import UDPClient
 
-from neurofeedback.utils import DataIn, DataOut
+from goofi.utils import DataIn, DataOut
 
 
 class PlotRaw(DataOut):

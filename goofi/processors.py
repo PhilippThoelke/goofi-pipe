@@ -1,4 +1,3 @@
-import asyncio
 import base64
 import colorsys
 import operator
@@ -21,7 +20,7 @@ from PIL import Image
 from pythonosc import dispatcher, osc_server
 from scipy.signal import welch
 
-from neurofeedback.utils import (
+from goofi.utils import (
     ImageSender,
     Processor,
     bioelements_realtime,
@@ -979,7 +978,7 @@ class TextGeneration(Processor):
         "Also, don't provide only positive interpretations, but also negative ones. "
         "The horoscope should be a single sentence of 20 words maximum. "
     )
-    
+
     CHAKRA_PROMPT = (
         "I want you to act as an expert in chakra balancing. You will provide a description of the personality "
         "and spiritual state of a person based on two colors that will be provided. Don't use cliches, and be "
@@ -1021,6 +1020,7 @@ class TextGeneration(Processor):
         "Embody the wisdom of the buddha, thich nhat hanh and Dalai Lama. Do not make list. one line by instruction."
         "Contemplate the given elements of the periodic table:"
     )
+
     def __init__(
         self,
         prompt: str,
@@ -1352,6 +1352,7 @@ class ImageGeneration(Processor):
 
             # display the image
             if self.display:
+                img = result
                 if self.return_format == "b64":
                     img = self.decode_image(img)
                 cv2.imshow(self.label, cv2.cvtColor(img, cv2.COLOR_RGB2BGR))

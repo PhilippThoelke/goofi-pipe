@@ -13,7 +13,7 @@ while True:
     try:
         # get input from the terminal
         input_text = input("Enter the text to be sent over OSC: ")
-        
+
         # send the message "/message" with the input as argument
         client.send_message("/message", input_text)
 

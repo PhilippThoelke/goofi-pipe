@@ -10,7 +10,7 @@ from mne.datasets import eegbci
 from mne.io import BaseRaw, concatenate_raws, read_raw
 from mne_realtime import LSLClient, MockLSLStream
 
-from neurofeedback.utils import DataIn
+from goofi.utils import DataIn
 
 mne.set_log_level(False)
 
