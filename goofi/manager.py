@@ -32,7 +32,7 @@ class Manager:
             for name in data_in.keys():
                 assert not name.startswith(" ") and not name.endswith(
                     " "
-                ), "DataIn names cannot start or end with a space"
+                ), f"DataIn names cannot start or end with a space (got '{name}')"
 
         self.data_in = data_in
         self.processors = processors
