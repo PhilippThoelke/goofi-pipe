@@ -116,6 +116,7 @@ Finally, we call the blocking `mngr.run()` method, which starts the processing l
     - **Harmonic Tuning Curves**: Offers a harmonic analysis of the tuning curves.
     - **Harmonic Connectivity Matrix**: Illustrates the harmonic relationships between different channels.
     &nbsp;
+    
     > **Note:** For more details on the `Biotuner`, please visit the [Biotuner toolbox on GitHub](https://github.com/AntoineBellemare/biotuner).
 - `Bioelements`: 
 - `Pulse`: 
