@@ -1,6 +1,7 @@
 import time
 from typing import Dict, List, Union
 
+from goofi.normalization import StaticBaselineNormal
 from goofi.processors import SignalStd
 from goofi.utils import DataIn, DataOut, Normalization, Processor
 
@@ -42,6 +43,7 @@ class Manager:
 
         # compute signal standard deviation to estimate noise level
         self.std_processor = SignalStd()
+        self.std_normalization = StaticBaselineNormal(30)
 
         # auxiliary attributes
         self.frequency = frequency
@@ -68,7 +70,7 @@ class Manager:
         # assess if the device is in use or just producing noise
         noise_container = {}
         self.std_processor(self.data_in, noise_container, {})
-        self.normalization.normalize(noise_container)
+        self.std_normalization.normalize(noise_container)
         for key in self.data_in.keys():
             if isinstance(self.noise_threshold, dict):
                 thresh = self.noise_threshold[key]
