@@ -91,6 +91,15 @@ mngr.run()
 
 Finally, we call the blocking `mngr.run()` method, which starts the processing loop. Processing and output modules only start running once the `Manager`'s internal buffer is filled. The buffer size can be adjusted using the `buffer_seconds` argument in the `Manager`'s constructor, which is set to 5 seconds by default.
 
+## Processors
+
+- `PSD`: Power Spectral Density (PSD) feature extractor.
+- `LempelZiv`: Computes the Lempel-Ziv Complexity, which is a measure of the rate of new pattern emergence along a sequence. This measure is typically used
+with M/EEG signal but can also be used with other type of biosignals.
+- `Biocolor`: Feature extractor which runs a continuous peak extraction loop in a separate thread.
+The extraction is focused on determining the frequency peaks in the signal, organized by pre-specified frequency bands.
+The peaks are then used to compute HSV (Hue, Saturation, Value) color codes, which serve as an intuitive and visual representation of the dominant frequencies in each channel's signal. The resulting HSV codes and their corresponding RGB (Red, Green, Blue) color names for each peak are returned as the output features. This processor hence provides an easy-to-interpret, color-based representation of the main features of the frequency spectrum in EEG data, useful for visualization and intuitive understanding of the signal's frequency characteristics.
+
 TO-DO
 ---
 This is a list of current TO-DOs for continued development of goofi-pipe
