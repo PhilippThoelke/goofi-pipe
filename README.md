@@ -17,12 +17,11 @@
 ### LSL
 Install LSL from the release page : https://github.com/sccn/liblsl/releases
 
-### Goofi-pipe
+### goofi-pipe
 Clone the repository and install the required packages using `pip`:
 ```bash
 git clone git@github.com:PhilippThoelke/goofi-pipe.git
 cd goofi-pipe
-pip install -r requirements.txt
 pip install -e .
 ```
 
