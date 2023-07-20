@@ -14,8 +14,6 @@
 
 
 ## Installation
-### LSL
-Install LSL from the release page : https://github.com/sccn/liblsl/releases
 
 ### goofi-pipe
 Clone the repository and install the required packages using `pip`:
@@ -23,6 +21,13 @@ Clone the repository and install the required packages using `pip`:
 git clone git@github.com:PhilippThoelke/goofi-pipe.git
 cd goofi-pipe
 pip install -e .
+```
+### LSL (optional)
+Install LSL from the release page : https://github.com/sccn/liblsl/releases
+### OpenAI GPT
+Create a file named `openai.key` that contains your API key in the main folder:
+```bash
+echo YOU_API_KEY >> ./openai.key
 ```
 
 ## Device integration
