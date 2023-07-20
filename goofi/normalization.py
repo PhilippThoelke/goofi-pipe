@@ -2,6 +2,7 @@ import time
 from typing import Dict
 
 import numpy as np
+
 from goofi.utils import Normalization
 
 
@@ -169,20 +170,25 @@ class StaticBaselineNormal(Normalization):
 
                 # add current feature to list
                 self.vals[key].append(val)
-            elif self.start_time > 0:
+            elif self.vals is not None and key in self.vals:
+                # compute mean and std
+                if self.means is None:
+                    self.means, self.stds = {}, {}
+                self.means[key] = np.mean(self.vals[key])
+                self.stds[key] = np.std(self.vals[key])
+                del self.vals[key]
+
+            # all features have been recorded
+            if self.vals is not None and len(self.vals) == 0:
                 print("done")
                 self.start_time = -1
-
-                # compute mean and std
-                self.means = {k: np.mean(self.vals[k]) for k in processed.keys()}
-                self.stds = {k: np.std(self.vals[k]) for k in processed.keys()}
                 self.vals = None
 
             # normalize current feature
-            if self.means is None:
-                val = (val - np.mean(self.vals[key])) / (np.std(self.vals[key]) + 1e-8)
-            else:
+            if self.means is not None and key in self.means:
                 val = (val - self.means[key]) / self.stds[key]
+            else:
+                val = (val - np.mean(self.vals[key])) / (np.std(self.vals[key]) + 1e-8)
 
             processed[key] = val
 
