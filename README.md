@@ -14,10 +14,17 @@
 
 
 ## Installation
+### LSL
+Install LSL via `conda` or `mamba` : 
+```bash
+conda install -c conda-forge liblsl
+```
+### Goofi-pipe
 Clone the repository and install the required packages using `pip`:
 ```bash
 git clone git@github.com:PhilippThoelke/goofi-pipe.git
 cd goofi-pipe
+pip install -r requirements.txt
 pip install -e .
 ```
 
