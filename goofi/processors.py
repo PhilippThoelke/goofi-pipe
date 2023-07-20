@@ -1030,7 +1030,7 @@ class TextGeneration(Processor):
         model: str = "gpt-3.5-turbo",
         temperature: float = 1.2,
         max_tokens=128,
-        keep_conversation: bool = True,
+        keep_conversation: bool = False,
         read_text: bool = False,
         label: str = "text-generation",
         update_frequency: float = 0.2,

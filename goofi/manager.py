@@ -164,6 +164,7 @@ if __name__ == "__main__":
                 processors.TextGeneration.POETRY_PROMPT,
                 "/eeg/biocolor/ch0_peak0_name",
                 "/eeg/bioelements/ch0_bioelements",
+                keep_conversation=True,
             ),
         ],
         normalization=normalization.WelfordsZTransform(),  # apply a running z-transform to the features
