@@ -1178,7 +1178,7 @@ class ImageGeneration(Processor):
     Parameters:
         prompt_feature (str): the name of the feature to use as a prompt
         model (int, optional): the model to use, either ImageGeneration.DALLE or ImageGeneration.STABLE_DIFFUSION
-        img_size (int, optional): the size of the generated image, either 256, 512 or 1024 (default: 512)
+        img_size (Tuple[int], optional): the size of the generated image (width, height)
         return_format (str, optional): the format of the returned image, either 'np' for a numpy array or 'b64' for a base64 string
         inference_steps (int, optional): the number of inference steps to use for the StableDiffusion model (default: 25)
         label (str, optional): the name of the feature to store the generated image in
@@ -1194,7 +1194,7 @@ class ImageGeneration(Processor):
         self,
         prompt_feature: str,
         model: int = DALLE,
-        img_size: int = None,
+        img_size: Tuple[int] = None,
         return_format: str = "np",
         inference_steps: int = None,
         label: str = "text2img",
@@ -1203,16 +1203,15 @@ class ImageGeneration(Processor):
         send_addr: Tuple[str, int] = ("127.0.0.1", 8000),
     ):
         super(ImageGeneration, self).__init__(label, None, normalize=False)
-        assert img_size in [None, 256, 512, 1024], "Image size must be 256, 512 or 1024"
         assert return_format in ["np", "b64"], "Return format must be 'np' or 'b64'"
         assert (
             model == ImageGeneration.STABLE_DIFFUSION or inference_steps is None
         ), "The inference_steps argument is only supported for the StableDiffusion model"
-        assert (
-            model == ImageGeneration.DALLE or img_size is None
-        ), "The img_size argument is only supported for the DALL-E model"
 
         if model == ImageGeneration.STABLE_DIFFUSION:
+            if img_size is None:
+                img_size = (768, 768)
+
             try:
                 import torch
                 from diffusers import (
@@ -1249,12 +1248,23 @@ class ImageGeneration(Processor):
                 warnings.warn(
                     "No CUDA device found, image generation will be very slow."
                 )
+        elif model == ImageGeneration.DALLE:
+            if img_size is None:
+                img_size = (512, 512)
+            assert img_size[0] == img_size[1], "Image size must be square"
+            assert img_size[0] in [
+                256,
+                512,
+                1024,
+            ], "DALL-E images must be 256, 512, or 1024 pixels in size"
+        else:
+            raise ValueError(f"Unknown model {model}")
 
         self.img_sender = ImageSender(*send_addr)
 
         self.prompt_feature = prompt_feature
         self.model = model
-        self.img_size = img_size or 512
+        self.img_size = img_size
         self.return_format = return_format
         self.update_frequency = update_frequency
         self.inference_steps = inference_steps or 50
@@ -1284,7 +1294,7 @@ class ImageGeneration(Processor):
             response = openai.Image.create(
                 prompt=prompt,
                 n=1,
-                size=f"{self.img_size}x{self.img_size}",
+                size=f"{self.img_size[0]}x{self.img_size[1]}",
                 response_format="b64_json",
             )
         except Exception as e:
@@ -1304,8 +1314,8 @@ class ImageGeneration(Processor):
             # generate an image using the StableDiffusion model
             image = self.sd_pipe(
                 prompt,
-                width=1024,
-                height=768,
+                width=self.img_size[0],
+                height=self.img_size[1],
                 num_inference_steps=self.inference_steps,
                 output_type="np",
                 negative_prompt="nfixer, nrealfixer",
