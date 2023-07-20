@@ -25,7 +25,7 @@ def receive_image(host="localhost", port=8000):
             try:
                 client_socket.connect((host, port))
                 success = True
-            except:
+            except socket.error:
                 time.sleep(1)
 
         try:
@@ -36,7 +36,7 @@ def receive_image(host="localhost", port=8000):
                     client_socket.detach()
                     break
                 data += part
-        except:
+        except socket.error:
             client_socket.detach()
             continue
 
