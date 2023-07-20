@@ -15,10 +15,8 @@
 
 ## Installation
 ### LSL
-Install LSL via `conda` or `mamba` : 
-```bash
-conda install -c conda-forge liblsl
-```
+Install LSL from the release page : https://github.com/sccn/liblsl/releases
+
 ### Goofi-pipe
 Clone the repository and install the required packages using `pip`:
 ```bash
