@@ -94,8 +94,17 @@ Finally, we call the blocking `mngr.run()` method, which starts the processing l
 ## Processors
 
 - `PSD`: Power Spectral Density (PSD) feature extractor.
+    - **Delta**
+    - **Theta**
+    - **Alpha**
+    - **Beta**
+    - **Gamma**
 - `LempelZiv`: Computes the Lempel-Ziv Complexity, which is a measure of the rate of new pattern emergence along a sequence. This measure is typically used with M/EEG signal but can also be used with other type of biosignals.
 - `Biocolor`: Feature extractor which runs a continuous peak extraction loop in a separate thread. The extraction is focused on determining the frequency peaks in the signal, organized by pre-specified frequency bands. The peaks are then used to compute HSV (Hue, Saturation, Value) color codes, which serve as an intuitive and visual representation of the dominant frequencies in each channel's signal. The resulting HSV codes and their corresponding RGB (Red, Green, Blue) color names for each peak are returned as the output features. This processor hence provides an easy-to-interpret, color-based representation of the main features of the frequency spectrum in EEG data, useful for visualization and intuitive understanding of the signal's frequency characteristics.
+    - **Hue**
+    - **Saturation**
+    - **Value**
+    - **Color name**
 - `Biotuner`: Feature extractor that focuses on harmonic analysis of the signal, which includes extracting frequency peaks, extended peaks, musical tunings and harmonic connectivity. This processor is mostly useful for music generation processes.
     - **Frequency Peaks**: Identifies dominant frequency components in the signal.
     - **Extended Frequency Peaks**: Derives extended peaks based on the harmonic relationship of frequency peaks.
@@ -106,11 +115,14 @@ Finally, we call the blocking `mngr.run()` method, which starts the processing l
     - **Tuning Curves**: Gives a summary of the frequency tuning characteristics over time.
     - **Harmonic Tuning Curves**: Offers a harmonic analysis of the tuning curves.
     - **Harmonic Connectivity Matrix**: Illustrates the harmonic relationships between different channels.
-
     &nbsp;
-    
     > **Note:** For more details on the `Biotuner`, please visit the [Biotuner toolbox on GitHub](https://github.com/AntoineBellemare/biotuner).
-
+- `Bioelements`: 
+- `Pulse`: 
+- `TextGeneration`: 
+- `ImageGeneration`:
+- `AugmentedPoetry`: 
+- `OSCInput`:  
 
 
 TO-DO
