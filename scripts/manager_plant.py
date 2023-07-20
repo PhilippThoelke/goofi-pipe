@@ -1,8 +1,4 @@
-<<<<<<< HEAD
-from neurofeedback import manager, data_in, data_out, normalization, processors
-=======
 from goofi import data_in, data_out, manager, normalization, processors
->>>>>>> a09faeb69c954d38cd684840c74e5aa717e1dfe3
 
 if __name__ == "__main__":
     mngr = manager.Manager(
