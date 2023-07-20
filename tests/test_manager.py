@@ -1,4 +1,4 @@
-from neurofeedback import data_in, data_out, manager, normalization, processors
+from goofi import data_in, data_out, manager, normalization, processors
 
 
 def test_manager():

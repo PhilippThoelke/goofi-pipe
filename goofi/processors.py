@@ -1,4 +1,3 @@
-import asyncio
 import base64
 import colorsys
 import operator
@@ -7,7 +6,7 @@ import threading
 import time
 import warnings
 from io import BytesIO
-from os.path import exists
+from os.path import exists, join
 from typing import Any, Callable, Dict, List, Optional, Tuple, Union
 
 import cv2
@@ -21,12 +20,13 @@ from PIL import Image
 from pythonosc import dispatcher, osc_server
 from scipy.signal import welch
 
-from neurofeedback.utils import (
+from goofi.utils import (
     ImageSender,
     Processor,
     bioelements_realtime,
     biotuner_realtime,
     compute_conn_matrix_single,
+    get_resources_path,
     rgb2name,
     text2speech,
     viz_scale_colors,
@@ -720,8 +720,9 @@ class Bioelements(Processor):
             target=self.extraction_loop, daemon=True
         )
         # load elements data from csv
-        self.vac_elements = pd.read_csv("embeddings/vacuum_elements.csv")
-        self.air_elements = pd.read_csv("embeddings/air_elements.csv")
+        res = get_resources_path()
+        self.vac_elements = pd.read_csv(join(res, "vacuum_elements.csv"))
+        self.air_elements = pd.read_csv(join(res, "air_elements.csv"))
         self.extraction_thread.start()
 
     def extraction_loop(self):
@@ -979,7 +980,7 @@ class TextGeneration(Processor):
         "Also, don't provide only positive interpretations, but also negative ones. "
         "The horoscope should be a single sentence of 20 words maximum. "
     )
-    
+
     CHAKRA_PROMPT = (
         "I want you to act as an expert in chakra balancing. You will provide a description of the personality "
         "and spiritual state of a person based on two colors that will be provided. Don't use cliches, and be "
@@ -1021,6 +1022,7 @@ class TextGeneration(Processor):
         "Embody the wisdom of the buddha, thich nhat hanh and Dalai Lama. Do not make list. one line by instruction."
         "Contemplate the given elements of the periodic table:"
     )
+
     def __init__(
         self,
         prompt: str,
@@ -1236,8 +1238,9 @@ class ImageGeneration(Processor):
             )
 
             # load textual inversion embeddings for improved image quality
-            self.sd_pipe.load_textual_inversion("embeddings/nfixer.pt")
-            self.sd_pipe.load_textual_inversion("embeddings/nrealfixer.pt")
+            res = get_resources_path()
+            self.sd_pipe.load_textual_inversion(join(res, "nfixer.pt"))
+            self.sd_pipe.load_textual_inversion(join(res, "nrealfixer.pt"))
 
             # move to GPU if available
             if torch.cuda.is_available():
@@ -1352,6 +1355,7 @@ class ImageGeneration(Processor):
 
             # display the image
             if self.display:
+                img = result
                 if self.return_format == "b64":
                     img = self.decode_image(img)
                 cv2.imshow(self.label, cv2.cvtColor(img, cv2.COLOR_RGB2BGR))

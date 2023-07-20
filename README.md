@@ -39,28 +39,44 @@ Finally, a list of `DataOut` objects serve to output the data to be used elsewhe
 > Check out the [`data_in`](https://github.com/PhilippThoelke/goofi-pipe/blob/main/goofi/data_in.py), [`processors`](https://github.com/PhilippThoelke/goofi-pipe/blob/main/goofi/processors.py), [`normalization`](https://github.com/PhilippThoelke/goofi-pipe/blob/main/goofi/normalization.py), [`data_out`](https://github.com/PhilippThoelke/goofi-pipe/blob/main/goofi/data_out.py) files for complete lists of implemented features.
 
 ## Usage
-Check out the [`scripts`](https://github.com/PhilippThoelke/goofi-pipe/tree/main/scripts) directory for some example configurations of the pipeline, or have a look at the following example for 
+Check out the [`scripts`](https://github.com/PhilippThoelke/goofi-pipe/tree/main/scripts) directory for some example configurations of the pipeline, or have a look at the following code, extracting a broad range of features from pre-recorded EEG:
 
 ```python
-from goofi import manager, data_in, processors, normalization, data_out
+from goofi import data_in, data_out, manager, normalization, processors
 
 # configure the pipeline through the Manager class
 mngr = manager.Manager(
     data_in={
-        "eeg": data_in.EEGRecording.make_eegbci() # stream some pre-recorded EEG from a file
-    }, 
+        "eeg": data_in.EEGRecording.make_eegbci()  # stream some pre-recorded EEG from a file
+    },
     processors=[
-        processors.PSD("delta"), # global delta power
-        processors.PSD("theta"), # global theta power
-        processors.PSD("alpha", include_chs=["O1", "Oz", "O2"]), # occipital alpha power (eyes open/closed)
-        processors.PSD("beta", include_chs=["P3", "P4"]), # parietal beta power (motor activity)
-        processors.PSD("gamma"), # global gamma power
-        processors.LempelZiv(include_chs=["Fp1", "Fp2"]), # pre-frontal Lempel-Ziv complexity
+        # global delta power
+        processors.PSD(label="delta"),
+        # global theta power
+        processors.PSD(label="theta"),
+        # occipital alpha power (eyes open/closed)
+        processors.PSD(label="alpha", channels={"eeg": ["O1", "Oz", "O2"]}),
+        # parietal beta power (motor activity)
+        processors.PSD(label="beta", channels={"eeg": ["P3", "P4"]}),
+        # global gamma power
+        processors.PSD(label="gamma"),
+        # pre-frontal Lempel-Ziv complexity
+        processors.LempelZiv(channels={"eeg": ["Fp1", "Fp2"]}),
+        # map EEG oscillations to emission spectra
+        processors.Bioelements(channels={"eeg": ["C3"]}),
+        # extract colors from harmonic ratios of EEG oscillations
+        processors.Biocolor(channels={"eeg": ["C3"]}),
+        # ask GPT-3 to write a line of poetry based on EEG features (requires OpenAI API key)
+        processors.TextGeneration(
+            processors.TextGeneration.POETRY_PROMPT,
+            "/eeg/biocolor/ch0_peak0_name",
+            "/eeg/bioelements/ch0_bioelements",
+        ),
     ],
-    normalization=normalization.WelfordsZTransform(), # apply a running z-transform to the features
+    normalization=normalization.WelfordsZTransform(),  # apply a running z-transform to the features
     data_out=[
-        data_out.OSCStream("127.0.0.1", 5005), # stream features on localhost
-        data_out.PlotProcessed() # visualize the extracted features
+        data_out.OSCStream("127.0.0.1", 5005),  # stream features on localhost
+        data_out.PlotProcessed(),  # visualize the extracted features
     ],
 )
 

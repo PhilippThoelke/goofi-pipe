@@ -1,7 +1,7 @@
+# Setup for the DSI24 EEG headset by Wearable Sensing
 > __Warning__
 > This setup is currently only tested on Linux. It likely won't work on Windows, it might on Mac.
 
-# Setup for the DSI24 EEG headset by Wearable Sensing
 ## Installing the API
 Run the `install_dsi.sh` script to automatically download the API from WearableSensing and compile it into an executable. The script will create a directory called `dsi24_lib` in the current working directory, containing the `dsi2lsl` executable and a Python API for accessing device info.
 
@@ -13,6 +13,17 @@ Run the `impedance.py` script to bring up a visualization of electrode impedance
 
 ## Streaming data to LSL
 To stream raw data from the headset to LSL, run `dsi2lsl.sh`, which will utilize the compiled `dsi24_lib/dsi2lsl`. Alternatively, you can simply select `y` when running `connect_dsi.sh` to start streaming data immediately after connecting to a device. Note that depending on the directory hierarchy, you might have to adjust the path to the `dsi2lsl` executable and to the `dsi24_lib` library in `dsi2lsl.sh`.
+
+## Receiving data in goofi-pipe
+After starting the LSL stream you can simply reference it in goofi-pipe's Manager as follows:
+```python
+from goofi import manager, data_in
+
+manager.Manager(
+    data_in={"dsi24": data_in.EEGStream("name-of-LSL-stream")},
+    ...
+)
+```
 
 # TODO
 - make the installation more robust
