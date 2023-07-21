@@ -471,19 +471,13 @@ class ImageSender:
         atexit.register(self.close)
 
     def start_server(self):
-        if self.server_socket is not None:
-            self.server_socket.shutdown(socket.SHUT_RDWR)
-            self.server_socket.close()
-
         self.server_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         self.server_socket.bind((self.host, self.port))
         self.server_socket.listen(5)
 
     def send(self, img):
-        if self.thread is not None and self.thread.is_alive():
-            self.start_server()
-            self.thread.join()
-
+        self.close()
+        self.start_server()
         self.thread = threading.Thread(target=self._send_image, args=(img,))
         self.thread.start()
 
@@ -496,10 +490,16 @@ class ImageSender:
             return
 
     def close(self):
-        if self.thread is not None:
-            self.thread.join()
         if self.client_socket:
             self.client_socket.close()
+            self.client_socket = None
         if self.server_socket:
-            self.server_socket.shutdown(socket.SHUT_RDWR)
+            try:
+                self.server_socket.shutdown(socket.SHUT_RDWR)
+            except OSError:
+                pass
             self.server_socket.close()
+            self.server_socket = None
+        if self.thread is not None and self.thread.is_alive():
+            self.thread.join()
+            self.thread = None

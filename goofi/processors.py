@@ -795,7 +795,7 @@ class Bioelements(Processor):
             spectrum_regions = [[0]] * info["nchan"]
 
         if types is None:
-            types = [[0]] * info["nchan"]
+            types = [[""]] * info["nchan"]
 
         result = {}
 
