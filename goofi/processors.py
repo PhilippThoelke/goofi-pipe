@@ -952,6 +952,7 @@ class TextGeneration(Processor):
         label (str): label under which to save the extracted feature
         channels (Dict[str, List[str]]): channel list for each input stream
         update_frequency (float, optional): the frequency in Hz at which to run the API call loop
+        max_messages (int, optional): the maximum number of messages to keep in the conversation history
     """
 
     POETRY_PROMPT = (
@@ -959,7 +960,7 @@ class TextGeneration(Processor):
         "symbolism related to these words to construct the poetry, without naming any of the words "
         "directly. Use unconventional words and surprising imagery. Build up a coherent poem with "
         "every response, referring back to previous lines and combining them with new symbols. "
-        "Provide a response of 30 words maximum."
+        "Provide a single verse of 30 words maximum per response."
         "DO NOT NAME ANY OF THE PROVIDED WORDS, SO NO COLORS AND NO ELEMENTS."
     )
 
@@ -1076,6 +1077,7 @@ class TextGeneration(Processor):
         read_text: bool = False,
         label: str = "text-generation",
         update_frequency: float = 0.2,
+        max_messages: int = 5,
     ):
         super(TextGeneration, self).__init__(label, None, normalize=False)
         self.prompt = prompt
@@ -1086,6 +1088,7 @@ class TextGeneration(Processor):
         self.keep_conversation = keep_conversation
         self.read_text = read_text
         self.update_frequency = update_frequency
+        self.max_messages = max_messages
         self.latest_chat_message = None
         self.api_lock = threading.Lock()
         self.latest_features = None
@@ -1130,6 +1133,7 @@ class TextGeneration(Processor):
                         ),
                     }
                 )
+                messages = messages[0] + messages[-self.max_messages :]
             else:
                 messages = [
                     system_msg,
