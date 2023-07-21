@@ -21,6 +21,7 @@ from mne.io.base import _get_ch_factors
 
 tts_engine = pyttsx3.init()
 
+
 class DataIn(ABC):
     """
     Abstract data input stream. Derive from this class to implement new input streams.
@@ -449,12 +450,13 @@ def rgb2name(rgb):
     return webcolors.constants.CSS3_HEX_TO_NAMES[closest_color]
 
 
-def text2speech(txt, rate=150, voice=2):
-    voices = engine.getProperty('voices')
-    engine.setProperty('voice', voices[voice].id)
+def text2speech(txt, rate=100, voice=1):
+    print("txt2speech")
+    voices = tts_engine.getProperty("voices")
+    tts_engine.setProperty("voice", voices[voice].id)
     tts_engine.setProperty("rate", rate)
     tts_engine.say(txt)
-    thread = threading.Thread(target=engine.runAndWait)
+    thread = threading.Thread(target=tts_engine.runAndWait)
     thread.start()
 
 

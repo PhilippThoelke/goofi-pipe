@@ -432,7 +432,7 @@ class Biocolor(Processor):
         label: str = "biocolor",
         channels: Dict[str, List[str]] = None,
         n_peaks: int = 1,
-        extraction_frequency: float = 0.5,
+        extraction_frequency: float = 1 / 5,
     ):
         super(Biocolor, self).__init__(label, channels, normalize=False)
         self.biotuner = None
@@ -1000,7 +1000,7 @@ class TextGeneration(Processor):
         "artists at the end of the prompt that embody the symbolism of the guiding words from the perspective "
         "of an art historian. Limit yourself to a maximum of 70 tokens."
     )
-    
+
     TXT2IMG_MACRO_PROMPT = (
         "Your job is to come up with a prompt for a text-to-image model. The prompt should be concise and "
         "describe a microscopic view with few descriptive words. Use creative, abstract and mystical adjectives. "
@@ -1014,7 +1014,7 @@ class TextGeneration(Processor):
         "the idea of a macrophotography image."
         "Limit yourself to a maximum of 70 tokens."
     )
-    
+
     TXT2IMG_ANIMAL_PROMPT = (
         "Your job is to come up with a prompt for a text-to-image model. The prompt should be concise and "
         "describe an invented animal with few descriptive words. Use creative, abstract and mystical adjectives. "
@@ -1028,7 +1028,7 @@ class TextGeneration(Processor):
         "artists at the end of the prompt that embody the symbolism of the guiding words from the perspective "
         "of an art historian. Limit yourself to a maximum of 70 tokens."
     )
-    
+
     TXT2IMG_CODEX_PROMPT = (
         "Your job is to come up with a prompt for a text-to-image model. The prompt should be concise and "
         "describe an the content of a page from the Codex Seraphinianus book "
