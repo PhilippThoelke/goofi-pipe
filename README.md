@@ -35,8 +35,8 @@ pip install -e .
 ```
 ### LSL (optional)
 Install LSL from the release page : https://github.com/sccn/liblsl/releases
-### OpenAI GPT
-Create a file named `openai.key` that contains your API key in the main folder:
+### OpenAI API
+Optionally create a file named `openai.key` that contains your OpenAI API key in the root directory of the repository (not required for many use cases).
 ```bash
 echo YOUR_API_KEY >> ./openai.key
 ```
