@@ -14,6 +14,17 @@
 
 
 ## Installation
+### Python
+`goofi-pipe` currently runs on `python 3.8`.
+To get started, we recommand that you install [Mambaforge](https://github.com/conda-forge/miniforge/releases).
+Then, create a new environment with : 
+```bash
+mamba create -n goofi_env python==3.8
+```
+Finally, activate the environment with the following command before proceeding further.
+```bash
+mamba activate goofi_env
+```
 
 ### goofi-pipe
 Clone the repository and install the required packages using `pip`:
