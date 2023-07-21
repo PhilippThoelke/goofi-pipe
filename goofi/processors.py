@@ -1133,7 +1133,7 @@ class TextGeneration(Processor):
                         ),
                     }
                 )
-                messages = messages[0] + messages[-self.max_messages :]
+                messages = [messages[0]] + messages[-self.max_messages :]
             else:
                 messages = [
                     system_msg,
