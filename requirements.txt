@@ -8,7 +8,6 @@ pyserial
 biotuner @ git+https://github.com/AntoineBellemare/biotuner.git
 webcolors
 openai
-gTTS
-playsound
+pyttsx3
 opencv-python
 pytest

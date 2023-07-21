@@ -10,16 +10,16 @@ from typing import Any, Dict, List, Tuple, Union
 
 import mne
 import numpy as np
+import pyttsx3
 import webcolors
 from biotuner.biocolors import audible2visible, scale2freqs, wavelength_to_rgb
 from biotuner.bioelements import find_matching_spectral_lines, hertz_to_nm
 from biotuner.biotuner_object import compute_biotuner, dyad_similarity, harmonic_tuning
 from biotuner.harmonic_connectivity import harmonic_connectivity
 from biotuner.metrics import tuning_cons_matrix
-from gtts import gTTS
 from mne.io.base import _get_ch_factors
-from playsound import playsound
 
+tts_engine = pyttsx3.init()
 
 class DataIn(ABC):
     """
@@ -449,10 +449,13 @@ def rgb2name(rgb):
     return webcolors.constants.CSS3_HEX_TO_NAMES[closest_color]
 
 
-def text2speech(txt, lang="en"):
-    gTTS(text=txt, lang=lang).write_to_fp(voice := NamedTemporaryFile())
-    playsound(voice.name)
-    voice.close()
+def text2speech(txt, rate=150, voice=2):
+    voices = engine.getProperty('voices')
+    engine.setProperty('voice', voices[voice].id)
+    tts_engine.setProperty("rate", rate)
+    tts_engine.say(txt)
+    thread = threading.Thread(target=engine.runAndWait)
+    thread.start()
 
 
 def get_resources_path() -> str:
