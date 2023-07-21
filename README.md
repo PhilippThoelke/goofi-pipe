@@ -38,7 +38,7 @@ Install LSL from the release page : https://github.com/sccn/liblsl/releases
 ### OpenAI GPT
 Create a file named `openai.key` that contains your API key in the main folder:
 ```bash
-echo YOU_API_KEY >> ./openai.key
+echo YOUR_API_KEY >> ./openai.key
 ```
 
 ## Device integration
