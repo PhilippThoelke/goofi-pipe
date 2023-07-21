@@ -14,6 +14,17 @@
 
 
 ## Installation
+### Python
+`goofi-pipe` currently runs on `python 3.8`.
+To get started, we recommand that you install [Mambaforge](https://github.com/conda-forge/miniforge/releases).
+Then, create a new environment with : 
+```bash
+mamba create -n goofi_env python==3.8
+```
+Finally, activate the environment with the following command before proceeding further.
+```bash
+mamba activate goofi_env
+```
 
 ### goofi-pipe
 Clone the repository and install the required packages using `pip`:
@@ -27,7 +38,7 @@ Install LSL from the release page : https://github.com/sccn/liblsl/releases
 ### OpenAI GPT
 Create a file named `openai.key` that contains your API key in the main folder:
 ```bash
-echo YOU_API_KEY >> ./openai.key
+echo YOUR_API_KEY >> ./openai.key
 ```
 
 ## Device integration
