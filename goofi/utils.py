@@ -450,7 +450,7 @@ def rgb2name(rgb):
     return webcolors.constants.CSS3_HEX_TO_NAMES[closest_color]
 
 
-def text2speech(txt, rate=100, voice=1):
+def text2speech(txt, rate=125, voice=1):
     print("txt2speech")
     voices = tts_engine.getProperty("voices")
     tts_engine.setProperty("voice", voices[voice].id)
