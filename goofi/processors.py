@@ -1000,6 +1000,20 @@ class TextGeneration(Processor):
         "artists at the end of the prompt that embody the symbolism of the guiding words from the perspective "
         "of an art historian. Limit yourself to a maximum of 70 tokens."
     )
+    
+    TXT2IMG_MACRO_PROMPT = (
+        "Your job is to come up with a prompt for a text-to-image model. The prompt should be concise and "
+        "describe a microscopic view with few descriptive words. Use creative, abstract and mystical adjectives. "
+        "Generate only a single prompt, which is more a collection of descriptors than a grammatical sentence. "
+        "I will provide some guiding words to set the content and emotion of the image. Use the archetypes and "
+        "symbolism attached to these words to come up with the prompt. I want the artstyle to be a macrophotography. "
+        "Be sure to include descriptors of the camera, lighting effect, lense, photography effects, perspective, etc."
+        " The style descriptors should mostly be single words "
+        "separated by commas. Be purely descriptive, your response does not have to be a complete sentence. "
+        "Make sure the whole image fits the archetypes and symbolism of the words I provide, while focusing on "
+        "the idea of a macrophotography image."
+        "Limit yourself to a maximum of 70 tokens."
+    )
 
     BRAIN2STYLE_PROMPT = (
         "I want you to provide me with a list of 3 visual artists which styles are matching"

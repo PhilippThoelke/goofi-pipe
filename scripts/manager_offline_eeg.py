@@ -8,7 +8,7 @@ if __name__ == "__main__":
             "file": data_in.EEGRecording.make_eegbci(),
         },
         processors=[
-            processors.PSD(label="delta"),
+            #processors.PSD(label="delta"),
             processors.PSD(label="theta"),
             processors.PSD(label="alpha"),
             processors.PSD(label="beta"),
@@ -17,8 +17,9 @@ if __name__ == "__main__":
             processors.Ratio("/file/alpha", "/file/theta", "alpha/theta"),
             processors.Biotuner(channels={"file": ["O1", "O2"]}),
             processors.Biocolor(channels={"file": ["O1", "O2"]}),
+            #processors.Bioelements(channels={"file": ["O1", "O2"]}),
         ],
-        normalization=normalization.StaticBaselineNormal(duration=30),
+        normalization=normalization.WelfordsZTransform(),
         data_out=[
             data_out.OSCStream("10.0.0.255", 5070),
             # data_out.PlotRaw("file"),
