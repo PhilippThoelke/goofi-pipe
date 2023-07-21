@@ -451,12 +451,14 @@ def rgb2name(rgb):
 
 
 def text2speech(txt, rate=125, voice=1):
-    print("txt2speech")
+    def run_tts(tts_engine):
+        tts_engine.runAndWait()
+
     voices = tts_engine.getProperty("voices")
     tts_engine.setProperty("voice", voices[voice].id)
     tts_engine.setProperty("rate", rate)
     tts_engine.say(txt)
-    thread = threading.Thread(target=tts_engine.runAndWait)
+    thread = threading.Thread(target=run_tts, args=(tts_engine,), daemon=True)
     thread.start()
 
 
