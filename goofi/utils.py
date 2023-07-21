@@ -10,7 +10,6 @@ from typing import Any, Dict, List, Tuple, Union
 
 import mne
 import numpy as np
-import pyttsx3
 import webcolors
 from biotuner.biocolors import audible2visible, scale2freqs, wavelength_to_rgb
 from biotuner.bioelements import find_matching_spectral_lines, hertz_to_nm
@@ -19,7 +18,7 @@ from biotuner.harmonic_connectivity import harmonic_connectivity
 from biotuner.metrics import tuning_cons_matrix
 from mne.io.base import _get_ch_factors
 
-tts_engine = pyttsx3.init()
+tts_engine = None
 
 
 class DataIn(ABC):
@@ -450,9 +449,20 @@ def rgb2name(rgb):
     return webcolors.constants.CSS3_HEX_TO_NAMES[closest_color]
 
 
-def text2speech(txt, rate=125, voice=1):
+def text2speech(txt, rate=125, voice=0):
+    global tts_engine
+
+    if tts_engine is None:
+        import pyttsx3
+
+        tts_engine = pyttsx3.init()
+
     def run_tts(tts_engine):
-        tts_engine.runAndWait()
+        try:
+            tts_engine.runAndWait()
+        except RuntimeError:
+            print("Previous TTS loop has not finished yet.")
+        
 
     voices = tts_engine.getProperty("voices")
     tts_engine.setProperty("voice", voices[voice].id)
