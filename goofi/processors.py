@@ -20,6 +20,7 @@ from PIL import Image
 from pythonosc import dispatcher, osc_server
 from scipy.signal import welch
 
+from goofi.normalization import StaticBaselineMinMax
 from goofi.utils import (
     ImageSender,
     Processor,
@@ -964,7 +965,7 @@ class TextGeneration(Processor):
         "words at maximum. Strictly follow this limit! DO NOT NAME ANY OF THE PROVIDED WORDS. KEEP YOUR "
         "RESPONSES SHORT AND CONCISE."
     )
-    
+
     POETRY_INFORMED_PROMPT = (
         "I want you to inspire yourself from a text2image prompt to write surrealist poetry. Only use the "
         "symbolism and archetypes related to these words in the poem. The idea is to describe poetically "
@@ -1257,6 +1258,7 @@ class ImageGeneration(Processor):
         return_format: str = "np",
         inference_steps: int = None,
         img2img: bool = False,
+        img2img_strength_feature: str = None,
         label: str = "text2img",
         update_frequency: float = 0.3,
         display: bool = False,
@@ -1271,6 +1273,10 @@ class ImageGeneration(Processor):
             assert (
                 model == ImageGeneration.STABLE_DIFFUSION
             ), "Image-to-image mode is only supported for the StableDiffusion model"
+        else:
+            assert (
+                img2img_strength_feature is None
+            ), "img2img_strength_feature is only supported for image-to-image mode"
 
         if model == ImageGeneration.STABLE_DIFFUSION:
             if img_size is None:
@@ -1316,8 +1322,12 @@ class ImageGeneration(Processor):
             if img2img:
                 # create a random image to start img2img with
                 self.last_img = np.random.rand(img_size[1], img_size[0], 3)
+                self.img2img_strength_feature = img2img_strength_feature
+                self.img2img_strength_norm = StaticBaselineMinMax(30, clip=True)
+                self.img2img_strength = 0.8
             else:
                 self.last_img = None
+                self.img2img_strength_feature = None
 
             # move to GPU if available
             if torch.cuda.is_available():
@@ -1349,6 +1359,8 @@ class ImageGeneration(Processor):
         self.display = display
         self.send_addr = send_addr
         self.latest_img = None
+        self.latest_feature = None
+        self.feature_lock = threading.Lock()
         self.api_lock = threading.Lock()
         self.latest_prompt = None
         self.prompt_lock = threading.Lock()
@@ -1400,8 +1412,13 @@ class ImageGeneration(Processor):
                     prompt, width=self.img_size[0], height=self.img_size[1], **kwargs
                 )
             else:
+                print("=========================================")
+                print(self.img2img_strength)
+                print("=========================================")
                 # run StableDiffusion in image-to-image mode
-                res = self.sd_pipe(prompt, self.last_img, **kwargs)
+                res = self.sd_pipe(
+                    prompt, self.last_img, strength=self.img2img_strength, **kwargs
+                )
 
         image = res.images[0]
         if self.last_img is not None:
@@ -1443,6 +1460,16 @@ class ImageGeneration(Processor):
                     time.sleep(0.1)
                     continue
             elif self.model == ImageGeneration.STABLE_DIFFUSION:
+                if self.img2img_strength_feature is not None:
+                    with self.feature_lock:
+                        strength = self.latest_feature
+                    if strength is None:
+                        self.img2img_strength = 0.8
+                    else:
+                        strength_dict = dict(img_strength=strength)
+                        self.img2img_strength_norm.normalize(strength_dict)
+                        self.img2img_strength = strength_dict["img_strength"] / 5 + 0.8
+
                 result = self.generate_stable_diffusion(prompt)
             else:
                 raise ValueError(f"Unknown model {self.model}")
@@ -1487,6 +1514,9 @@ class ImageGeneration(Processor):
         if processed[self.prompt_feature] is not None:
             with self.prompt_lock:
                 self.latest_prompt = processed[self.prompt_feature]
+        if self.img2img_strength_feature is not None:
+            with self.feature_lock:
+                self.latest_feature = processed[self.img2img_strength_feature]
 
         with self.api_lock:
             img = self.latest_img
