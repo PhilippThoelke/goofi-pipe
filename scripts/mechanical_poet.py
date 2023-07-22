@@ -35,7 +35,7 @@ if __name__ == "__main__":
                 img2img=True,
                 img_size=(1280, 720),
                 inference_steps=15,
-                update_frequency=1 / 6,
+                update_frequency=1 / 8,
             ),
         ],
         normalization=normalization.StaticBaselineNormal(30),
