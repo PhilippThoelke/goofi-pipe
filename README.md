@@ -34,9 +34,10 @@ cd goofi-pipe
 pip install -e .
 ```
 ### LSL (optional)
-Install LSL from the release page : https://github.com/sccn/liblsl/releases
-### OpenAI GPT
-Create a file named `openai.key` that contains your API key in the main folder:
+Install LSL from the release page: https://github.com/sccn/liblsl/releases
+LSL is currently required for streaming EEG data.
+### OpenAI API (optional)
+Optionally create a file named `openai.key` that contains your OpenAI API key in the root directory of the repository (not required for many use cases).
 ```bash
 echo YOUR_API_KEY >> ./openai.key
 ```
