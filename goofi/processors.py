@@ -957,11 +957,12 @@ class TextGeneration(Processor):
 
     POETRY_PROMPT = (
         "I want you to inspire yourself from a list of words to write surrealist poetry. Only use the "
-        "symbolism and archetypes related to these words to construct the poetry, without naming any "
-        "of the words directly. Be creative in your imagery. Build up a coherent poem with "
-        "every response, referring back to previous lines and combining them with new symbols. "
-        "Provide a single verse of 30 words maximum per response. "
-        "DO NOT NAME ANY OF THE PROVIDED WORDS, SO NO COLORS AND NO ELEMENTS."
+        "symbolism and archetypes related to these words in the poem, DO NOT NAME THE WORDS DIRECTLY. "
+        "Be creative in your imagery. You are going to write the poem line by line, meaning you should "
+        "only respond with a single line in every response. Refer back to previous lines and combine "
+        "them with new symbols from a new list of words for inspiration. Limit every response to 10 "
+        "words at maximum. Strictly follow this limit! DO NOT NAME ANY OF THE PROVIDED WORDS. KEEP YOUR "
+        "RESPONSES SHORT AND CONCISE."
     )
 
     SYMBOLISM_PROMPT = (
