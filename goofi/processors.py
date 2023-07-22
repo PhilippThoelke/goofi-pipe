@@ -964,6 +964,17 @@ class TextGeneration(Processor):
         "words at maximum. Strictly follow this limit! DO NOT NAME ANY OF THE PROVIDED WORDS. KEEP YOUR "
         "RESPONSES SHORT AND CONCISE."
     )
+    
+    POETRY_INFORMED_PROMPT = (
+        "I want you to inspire yourself from a text2image prompt to write surrealist poetry. Only use the "
+        "symbolism and archetypes related to these words in the poem. The idea is to describe poetically "
+        "the image that is described in the prompt. DO NOT NAME THE WORDS DIRECTLY OR ANY ARTIST OR STYLE NAME. "
+        "Be creative in your imagery. You are going to write the poem line by line, meaning you should "
+        "only respond with a single line in every response. Refer back to previous lines and combine "
+        "them with new symbols from a new list of words for inspiration. Limit every response to 10 "
+        "words at maximum. Strictly follow this limit! DO NOT NAME ANY OF THE PROVIDED WORDS. KEEP YOUR "
+        "RESPONSES SHORT AND CONCISE."
+    )
 
     SYMBOLISM_PROMPT = (
         "Come up with a symbolism, based on a list of words. The symbolism should be an archetype inspired "
