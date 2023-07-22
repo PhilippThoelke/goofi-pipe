@@ -18,8 +18,6 @@ from biotuner.harmonic_connectivity import harmonic_connectivity
 from biotuner.metrics import tuning_cons_matrix
 from mne.io.base import _get_ch_factors
 
-tts_engine = None
-
 
 class DataIn(ABC):
     """
@@ -450,25 +448,16 @@ def rgb2name(rgb):
 
 
 def text2speech(txt, rate=125, voice=0):
-    global tts_engine
-
-    if tts_engine is None:
+    def run_tts(txt):
         import pyttsx3
-
         tts_engine = pyttsx3.init()
+        voices = tts_engine.getProperty("voices")
+        tts_engine.setProperty("voice", voices[voice].id)
+        tts_engine.setProperty("rate", rate)
+        tts_engine.say(txt)
+        tts_engine.runAndWait()
 
-    def run_tts(tts_engine):
-        try:
-            tts_engine.runAndWait()
-        except RuntimeError:
-            print("Previous TTS loop has not finished yet.")
-        
-
-    voices = tts_engine.getProperty("voices")
-    tts_engine.setProperty("voice", voices[voice].id)
-    tts_engine.setProperty("rate", rate)
-    tts_engine.say(txt)
-    thread = threading.Thread(target=run_tts, args=(tts_engine,), daemon=True)
+    thread = threading.Thread(target=run_tts, args=(txt,), daemon=True)
     thread.start()
 
 
