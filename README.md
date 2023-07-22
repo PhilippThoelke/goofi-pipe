@@ -75,12 +75,16 @@ mngr = manager.Manager(
         processors.PSD(label="delta"),
         # global theta power
         processors.PSD(label="theta"),
+        # global alpha power
+        processors.PSD(fmin=8, fmax=12,label="global-alpha", channels={"eeg": ["O1", "Oz", "O2"]}),
         # occipital alpha power (eyes open/closed)
         processors.PSD(label="alpha", channels={"eeg": ["O1", "Oz", "O2"]}),
         # parietal beta power (motor activity)
         processors.PSD(label="beta", channels={"eeg": ["P3", "P4"]}),
         # global gamma power
         processors.PSD(label="gamma"),
+        # theta/alpha ratio
+        processors.Ratio("/eeg/theta", "/eeg/global-alpha", label="theta/alpha"),
         # pre-frontal Lempel-Ziv complexity
         processors.LempelZiv(channels={"eeg": ["Fp1", "Fp2"]}),
         # map EEG oscillations to emission spectra
@@ -92,6 +96,7 @@ mngr = manager.Manager(
             processors.TextGeneration.POETRY_PROMPT,
             "/eeg/biocolor/ch0_peak0_name",
             "/eeg/bioelements/ch0_bioelements",
+            keep_conversation=True,
         ),
     ],
     normalization=normalization.WelfordsZTransform(),  # apply a running z-transform to the features
