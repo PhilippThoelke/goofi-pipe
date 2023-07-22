@@ -76,7 +76,7 @@ mngr = manager.Manager(
         # global theta power
         processors.PSD(label="theta"),
         # global alpha power
-        processors.PSD(fmin=8, fmax=12,label="global-alpha", channels={"eeg": ["O1", "Oz", "O2"]}),
+        processors.PSD(fmin=8, fmax=12, label="global-alpha"),
         # occipital alpha power (eyes open/closed)
         processors.PSD(label="alpha", channels={"eeg": ["O1", "Oz", "O2"]}),
         # parietal beta power (motor activity)
