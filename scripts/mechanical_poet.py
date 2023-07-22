@@ -32,8 +32,9 @@ if __name__ == "__main__":
             processors.ImageGeneration(
                 "/muse/text-generation",
                 model=processors.ImageGeneration.STABLE_DIFFUSION,
+                img2img=True,
                 img_size=(1280, 720),
-                inference_steps=40,
+                inference_steps=15,
                 update_frequency=1 / 6,
             ),
         ],

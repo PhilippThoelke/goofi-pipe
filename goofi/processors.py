@@ -1228,6 +1228,7 @@ class ImageGeneration(Processor):
         img_size (Tuple[int], optional): the size of the generated image (width, height)
         return_format (str, optional): the format of the returned image, either 'np' for a numpy array or 'b64' for a base64 string
         inference_steps (int, optional): the number of inference steps to use for the StableDiffusion model (default: 25)
+        img2img (boool, optional): if True and model is ImageGeneration.STABLE_DIFFUSION, the model will be used in image-to-image mode
         label (str, optional): the name of the feature to store the generated image in
         update_frequency (float, optional): the frequency at which to update the generated image, in Hz
         display (bool, optional): whether to display the generated image (uses cv2)
@@ -1244,6 +1245,7 @@ class ImageGeneration(Processor):
         img_size: Tuple[int] = None,
         return_format: str = "np",
         inference_steps: int = None,
+        img2img: bool = False,
         label: str = "text2img",
         update_frequency: float = 0.3,
         display: bool = False,
@@ -1254,6 +1256,10 @@ class ImageGeneration(Processor):
         assert (
             model == ImageGeneration.STABLE_DIFFUSION or inference_steps is None
         ), "The inference_steps argument is only supported for the StableDiffusion model"
+        if img2img:
+            assert (
+                model == ImageGeneration.STABLE_DIFFUSION
+            ), "Image-to-image mode is only supported for the StableDiffusion model"
 
         if model == ImageGeneration.STABLE_DIFFUSION:
             if img_size is None:
@@ -1263,6 +1269,7 @@ class ImageGeneration(Processor):
                 import torch
                 from diffusers import (
                     DPMSolverMultistepScheduler,
+                    StableDiffusionImg2ImgPipeline,
                     StableDiffusionPipeline,
                 )
             except ImportError:
@@ -1275,10 +1282,17 @@ class ImageGeneration(Processor):
 
             model_id = "stabilityai/stable-diffusion-2-1"
 
-            # Use the DPMSolverMultistepScheduler (DPM-Solver++) scheduler here instead
-            self.sd_pipe = StableDiffusionPipeline.from_pretrained(
-                model_id, torch_dtype=torch.float16
-            )
+            # load StableDiffusion model
+            if img2img:
+                self.sd_pipe = StableDiffusionImg2ImgPipeline.from_pretrained(
+                    model_id, torch_dtype=torch.float16
+                )
+            else:
+                self.sd_pipe = StableDiffusionPipeline.from_pretrained(
+                    model_id, torch_dtype=torch.float16
+                )
+
+            # set up the scheduler
             self.sd_pipe.scheduler = DPMSolverMultistepScheduler.from_config(
                 self.sd_pipe.scheduler.config
             )
@@ -1287,6 +1301,12 @@ class ImageGeneration(Processor):
             res = get_resources_path()
             self.sd_pipe.load_textual_inversion(join(res, "nfixer.pt"))
             self.sd_pipe.load_textual_inversion(join(res, "nrealfixer.pt"))
+
+            if img2img:
+                # create a random image to start img2img with
+                self.last_img = np.random.rand(img_size[1], img_size[0], 3)
+            else:
+                self.last_img = None
 
             # move to GPU if available
             if torch.cuda.is_available():
@@ -1358,15 +1378,24 @@ class ImageGeneration(Processor):
 
     def generate_stable_diffusion(self, prompt: str) -> Union[np.ndarray, str]:
         with self.torch_ref.inference_mode():
-            # generate an image using the StableDiffusion model
-            image = self.sd_pipe(
-                prompt,
-                width=self.img_size[0],
-                height=self.img_size[1],
+            kwargs = dict(
                 num_inference_steps=self.inference_steps,
                 output_type="np",
                 negative_prompt="nfixer, nrealfixer",
-            ).images[0]
+            )
+            if self.last_img is None:
+                # generate an image using StableDiffusion
+                res = self.sd_pipe(
+                    prompt, width=self.img_size[0], height=self.img_size[1], **kwargs
+                )
+            else:
+                # run StableDiffusion in image-to-image mode
+                res = self.sd_pipe(prompt, self.last_img, **kwargs)
+
+        image = res.images[0]
+        if self.last_img is not None:
+            self.last_img = image
+
         image = (image * 255).astype(np.uint8)
 
         if self.return_format == "b64":
