@@ -1000,7 +1000,7 @@ class TextGeneration(Processor):
         "separated by commas. Be purely descriptive, your response does not have to be a complete sentence. "
         "Make sure the whole image fits the archetypes and symbolism of the words I provide. Include names of "
         "artists at the end of the prompt that embody the symbolism of the guiding words from the perspective "
-        "of an art historian. Limit yourself to a maximum of 70 tokens."
+        "of an art historian. BE VERY SHORT AND CONCISE. LIMIT YOURSELF TO A MAXIMUM OF 60 WORDS."
     )
 
     TXT2IMG_MACRO_PROMPT = (
@@ -1013,8 +1013,7 @@ class TextGeneration(Processor):
         " The style descriptors should mostly be single words "
         "separated by commas. Be purely descriptive, your response does not have to be a complete sentence. "
         "Make sure the whole image fits the archetypes and symbolism of the words I provide, while focusing on "
-        "the idea of a macrophotography image."
-        "Limit yourself to a maximum of 70 tokens."
+        "the idea of a macrophotography image. BE VERY SHORT AND CONCISE. LIMIT YOURSELF TO A MAXIMUM OF 60 WORDS."
     )
 
     TXT2IMG_ANIMAL_PROMPT = (
@@ -1028,7 +1027,7 @@ class TextGeneration(Processor):
         "separated by commas. Be purely descriptive, your response does not have to be a complete sentence. "
         "Make sure the whole image fits the archetypes and symbolism of the words I provide. Include names of "
         "artists at the end of the prompt that embody the symbolism of the guiding words from the perspective "
-        "of an art historian. Limit yourself to a maximum of 70 tokens."
+        "of an art historian. BE VERY SHORT AND CONCISE. LIMIT YOURSELF TO A MAXIMUM OF 60 WORDS."
     )
 
     TXT2IMG_CODEX_PROMPT = (
@@ -1042,7 +1041,8 @@ class TextGeneration(Processor):
         "symbolism attached to these words to come up with the prompt.  Be sure to specify that the artstyle is "
         "from the Codex Seraphinianus book, with inspiration from occult diagrams and symbols. "
         "Be purely descriptive, your response does not have to be a complete sentence. "
-        "Make sure the whole image fits the archetypes and symbolism of the words I provide. Limit yourself to a maximum of 70 tokens."
+        "Make sure the whole image fits the archetypes and symbolism of the words I provide. BE VERY SHORT "
+        "AND CONCISE. LIMIT YOURSELF TO A MAXIMUM OF 60 WORDS."
     )
 
     BRAIN2STYLE_PROMPT = (
