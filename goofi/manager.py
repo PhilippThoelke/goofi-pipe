@@ -147,12 +147,16 @@ if __name__ == "__main__":
             processors.PSD(label="delta"),
             # global theta power
             processors.PSD(label="theta"),
+            # global alpha power
+            processors.PSD(fmin=8, fmax=12,label="global-alpha", channels={"eeg": ["O1", "Oz", "O2"]}),
             # occipital alpha power (eyes open/closed)
             processors.PSD(label="alpha", channels={"eeg": ["O1", "Oz", "O2"]}),
             # parietal beta power (motor activity)
             processors.PSD(label="beta", channels={"eeg": ["P3", "P4"]}),
             # global gamma power
             processors.PSD(label="gamma"),
+            # theta/alpha ratio
+            processors.Ratio("/eeg/theta", "/eeg/global-alpha", label="theta/alpha"),
             # pre-frontal Lempel-Ziv complexity
             processors.LempelZiv(channels={"eeg": ["Fp1", "Fp2"]}),
             # map EEG oscillations to emission spectra
