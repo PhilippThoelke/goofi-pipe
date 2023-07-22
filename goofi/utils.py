@@ -450,6 +450,7 @@ def rgb2name(rgb):
 def text2speech(txt, rate=125, voice=0):
     def run_tts(txt):
         import pyttsx3
+
         tts_engine = pyttsx3.init()
         voices = tts_engine.getProperty("voices")
         tts_engine.setProperty("voice", voices[voice].id)
