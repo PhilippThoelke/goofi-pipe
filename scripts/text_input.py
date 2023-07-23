@@ -3,7 +3,7 @@ import time
 
 # specify the IP address and port number for the OSC server
 ip = "127.0.0.1"
-port = 6666
+port = 4976
 
 # create a client instance
 client = SimpleUDPClient(ip, port)
