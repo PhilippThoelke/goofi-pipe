@@ -1412,9 +1412,6 @@ class ImageGeneration(Processor):
                     prompt, width=self.img_size[0], height=self.img_size[1], **kwargs
                 )
             else:
-                print("=========================================")
-                print(self.img2img_strength)
-                print("=========================================")
                 # run StableDiffusion in image-to-image mode
                 res = self.sd_pipe(
                     prompt, self.last_img, strength=self.img2img_strength, **kwargs
