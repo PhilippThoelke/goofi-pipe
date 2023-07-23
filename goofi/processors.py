@@ -1634,8 +1634,6 @@ class AugmentedPoetry(Processor):
         # print all the inputs
         output_prompt = "\n".join(self.user_input) + ", in the style of " + style_input
 
-        print(output_prompt)
-
         return {self.label: output_prompt}
 
 
