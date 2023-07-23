@@ -1058,12 +1058,12 @@ class TextGeneration(Processor):
     )
 
     BRAIN2STYLE_PROMPT = (
-        "I want you to provide me with a list of 3 visual artists which styles are matching"
-        "in term of symbolic and idiosyncrasies with the list of guiding words I will provide."
+        "I want you to provide me with a list of 3 visual artists or art styles which are matching"
+        "in term of symbolic and all the types of associations you can make with the list of guiding words I will provide."
         "Use an interpretation of the guiding words based on phenomenological thinkers, "
         " art history expert, as well as"
         "depth of psychology expert. Be creative and rely on diversity of approaches to derive"
-        "your set of artists. Output only the names of the three artists as a python"
+        "your set of artists or styles. Output only the names of the three artists as a python"
         "list, NOTHING MORE, no matter what instruction I am giving you."
     )
     PRESENCE_PROMPT = (
