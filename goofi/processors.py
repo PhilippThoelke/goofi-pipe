@@ -983,7 +983,7 @@ class TextGeneration(Processor):
         "anatomy, chemistry, physics and mathematics."
         "The idea is to describe scientifically "
         "the image that is described in the prompt. DO NOT NAME THE WORDS DIRECTLY OR ANY ARTIST OR STYLE NAME. "
-        "You can invent scientific knowledge. You are going to write the science description line by line, meaning you should "
+        "You can invent scientific knowledge and use SPECIALIZED TERMS. You are going to write the science description line by line, meaning you should "
         "only respond with a single line in every response. Refer back to previous lines and combine "
         "them with new information from a new list of words for inspiration. Limit every response to 10 "
         "words at maximum. Strictly follow this limit! DO NOT NAME ANY OF THE PROVIDED WORDS. KEEP YOUR "
