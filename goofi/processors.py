@@ -977,6 +977,19 @@ class TextGeneration(Processor):
         "RESPONSES SHORT AND CONCISE."
     )
     
+    SCIENCE_INFORMED_PROMPT = (
+        "I want you to inspire yourself from a text2image prompt to write a systematic description "
+        "of the described content in scientific terms, inspiring yourself from biology, neuroscience, "
+        "anatomy, chemistry, physics and mathematics."
+        "The idea is to describe scientifically "
+        "the image that is described in the prompt. DO NOT NAME THE WORDS DIRECTLY OR ANY ARTIST OR STYLE NAME. "
+        "You can invent scientific knowledge. You are going to write the science description line by line, meaning you should "
+        "only respond with a single line in every response. Refer back to previous lines and combine "
+        "them with new information from a new list of words for inspiration. Limit every response to 10 "
+        "words at maximum. Strictly follow this limit! DO NOT NAME ANY OF THE PROVIDED WORDS. KEEP YOUR "
+        "RESPONSES SHORT AND CONCISE."
+    )
+    
     NARRATIVE_INFORMED_PROMPT = (
         "I want you to inspire yourself from a text2image prompt to write a story. "
         " I want the story to be coherent and original. The idea is to write a story"
@@ -1067,6 +1080,21 @@ class TextGeneration(Processor):
         "Make sure the whole image fits the archetypes and symbolism of the words I provide. BE VERY SHORT "
         "AND CONCISE. LIMIT YOURSELF TO A MAXIMUM OF 60 WORDS."
     )
+    
+    TXT2IMG_SCIENCE_PROMPT = (
+        "Your job is to come up with a prompt for a text-to-image model. The prompt should be concise and "
+        "describe an the content of a page from the Codex Seraphinianus book "
+        " with few descriptive words focused on the anatomy and organic mechanics of imaginary creature. "
+        "Use creative, abstract and mystical adjectives. "
+        " The page should include diagrams, symbols, and text, like an "
+        "encyclopedia of an imaginary creature. "
+        "Generate only a single prompt, which is more a collection of descriptors than a grammatical sentence. "
+        "I will provide some guiding words to set the properties of the page and its context. Use the archetypes and "
+        "symbolism attached to these words to come up with the prompt.  Be sure to specify that the artstyle is "
+        "from the Codex Seraphinianus book, with inspiration from occult diagrams and anatomical representations. "
+        "Be purely descriptive, your response does not have to be a complete sentence. "
+        "Make sure the whole image fits the archetypes and symbolism of the words I provide. BE VERY SHORT "
+        "AND CONCISE. LIMIT YOURSELF TO A MAXIMUM OF 60 WORDS.")
 
     BRAIN2STYLE_PROMPT = (
         "I want you to provide me with a list of 3 visual artists or art styles which are matching"
