@@ -1090,7 +1090,7 @@ class TextGeneration(Processor):
         "Generate only a single prompt, which is more a collection of descriptors than a grammatical sentence. "
         "I will provide some guiding words to set the properties of the page and its context. Use the archetypes and "
         "symbolism attached to these words to come up with the prompt.  Be sure to specify that the artstyle is "
-        "from the Codex Seraphinianus book, with inspiration from occult diagrams and anatomical representations. "
+        "from the Codex Seraphinianus book as well as anatomical drawing, with inspiration from occult diagrams and anatomical representations. "
         "Be purely descriptive, your response does not have to be a complete sentence. "
         "Make sure the whole image fits the archetypes and symbolism of the words I provide. BE VERY SHORT "
         "AND CONCISE. LIMIT YOURSELF TO A MAXIMUM OF 60 WORDS.")
