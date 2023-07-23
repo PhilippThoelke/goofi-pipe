@@ -1585,7 +1585,7 @@ class AugmentedPoetry(Processor):
         self,
         names: str,
         userInput: str,
-        label: str = "AugmentedPoetry",
+        label: str = "augmented-poetry",
         channels: Dict[str, List[str]] = None,
     ):
         super(AugmentedPoetry, self).__init__(label, channels, normalize=False)
