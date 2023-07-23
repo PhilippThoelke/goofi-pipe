@@ -723,7 +723,7 @@ class Bioelements(Processor):
         # load elements data from csv
         res = get_resources_path()
         self.vac_elements = pd.read_csv(join(res, "vacuum_elements.csv"))
-        self.air_elements = pd.read_csv(join(res, "air_elements.csv"))
+        self.air_elements = pd.read_csv(join(res, "air_elements_filtered.csv"))
         self.extraction_thread.start()
 
     def extraction_loop(self):
@@ -996,8 +996,8 @@ class TextGeneration(Processor):
         "that is inspired from the image that is described in the prompt. DO NOT NAME THE WORDS DIRECTLY OR ANY ARTIST OR STYLE NAME. "
         "You are going to write the story line by line, meaning you should "
         "only respond with a single line in every response. Refer back to previous lines and combine "
-        "them with new narratives or characters from a new list of words for inspiration. Limit every response to 20 "
-        "words at maximum. Write in the style of Homer and Edgar Allen Poe. Strictly follow this limit! DO NOT NAME ANY OF THE PROVIDED WORDS. KEEP YOUR "
+        "them with new narratives or characters from a new list of words for inspiration. Limit every response to 10 "
+        "words at maximum. Write in the style of Edgar Allen Poe and Jorge Luis Borges. Strictly follow this limit! DO NOT NAME ANY OF THE PROVIDED WORDS. KEEP YOUR "
         "RESPONSES SHORT AND CONCISE."
     )
 
@@ -1039,6 +1039,21 @@ class TextGeneration(Processor):
         "of an art historian. BE VERY SHORT AND CONCISE. LIMIT YOURSELF TO A MAXIMUM OF 60 WORDS."
     )
 
+    TXT2IMG_PHOTO_PROMPT = (
+        "Your job is to come up with a prompt for a text-to-image model. The prompt should be concise and "
+        "describe a simple scene with few descriptive words. Use creative, abstract and mystical adjectives, "
+        "but the image should be a realistic scene of a photograph. Do not systematically describe nature sceneries."
+        " Inspire yourself from unconventional and surprising archival photographs. "
+        "Generate only a single prompt, which is more a collection of descriptors than a grammatical sentence. "
+        "I will provide some guiding words to set the content and emotion of the image. Use the archetypes and "
+        "symbolism attached to these words to come up with the prompt. Be sure to describe the artstyle "
+        "as photo, photorealistic, 4k. Also describe the camera and lens used. Define "
+        "the perspective using terms from cinematography. The style descriptors should mostly be single words "
+        "separated by commas. Be purely descriptive, your response does not have to be a complete sentence. "
+        "Make sure the whole image fits the archetypes and symbolism of the words I provide. Include names of "
+        "photographers at the end of the prompt. BE VERY SHORT AND CONCISE. LIMIT YOURSELF TO A MAXIMUM OF 60 WORDS."
+    )
+
     TXT2IMG_MACRO_PROMPT = (
         "Your job is to come up with a prompt for a text-to-image model. The prompt should be concise and "
         "describe a microscopic view with few descriptive words. Use creative, abstract and mystical adjectives. "
@@ -1050,6 +1065,18 @@ class TextGeneration(Processor):
         "separated by commas. Be purely descriptive, your response does not have to be a complete sentence. "
         "Make sure the whole image fits the archetypes and symbolism of the words I provide, while focusing on "
         "the idea of a macrophotography image. BE VERY SHORT AND CONCISE. LIMIT YOURSELF TO A MAXIMUM OF 60 WORDS."
+    )
+
+    TXT2IMG_BRAIN_PROMPT = (
+        "Your job is to come up with a prompt for a text-to-image model. The prompt should be concise and "
+        "describe a brain-themed image. Either a photo of a brain, a brain scan (e.g. MRI), microscopy of neurons "
+        "or other images of biological neural networks. Name some brain regions."
+        "Generate only a single prompt, which is more a collection of descriptors than a grammatical sentence. "
+        "I will provide some guiding words to set the style of the image. "
+        "Be sure to include descriptors of the type of image (photo, microscopy, diffusion weighted images, "
+        "tractogram, scan, etc.). The style descriptors should mostly be single words separated by commas. "
+        "Be purely descriptive, your response does not have to be a complete sentence. "
+        "BE VERY SHORT AND CONCISE. LIMIT YOURSELF TO A MAXIMUM OF 60 WORDS."
     )
 
     TXT2IMG_ANIMAL_PROMPT = (
@@ -1124,7 +1151,7 @@ class TextGeneration(Processor):
         "metaphors so your friends can understand the experiences you are having. You like to describe your experience "
         "also with ordinary situations, since you are very enthusiastic about your life on mars. I want you to describe "
         "a couple of words that I will provide. Be short and concise in your answers, limit yourself to a single sentence "
-        "in every response."
+        "in every response. ONLY RESPOND WITH A MAXIMUM OF 50 WORDS!"
     )
 
     def __init__(
