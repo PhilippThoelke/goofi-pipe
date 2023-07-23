@@ -462,22 +462,26 @@ class Biocolor(Processor):
                 continue
 
             hsvs_list = []
-            for ch in raw:
-                self.biotuner.peaks_extraction(
-                    ch,
-                    FREQ_BANDS=self.FREQ_BANDS,
-                    ratios_extension=True,
-                    max_freq=30,
-                    n_peaks=self.n_peaks,
-                    graph=False,
-                    min_harms=2,
-                    verbose=False,
-                )
+            try:
+                for ch in raw:
+                    self.biotuner.peaks_extraction(
+                        ch,
+                        FREQ_BANDS=self.FREQ_BANDS,
+                        ratios_extension=True,
+                        max_freq=30,
+                        n_peaks=self.n_peaks,
+                        graph=False,
+                        min_harms=2,
+                        verbose=False,
+                    )
 
-                scale = [1] + self.biotuner.peaks_ratios
-                hsvs = viz_scale_colors(scale, fund=self.biotuner.peaks[0])[1:]
+                    scale = [1] + self.biotuner.peaks_ratios
+                    hsvs = viz_scale_colors(scale, fund=self.biotuner.peaks[0])[1:]
 
-                hsvs_list.append(hsvs)
+                    hsvs_list.append(hsvs)
+            except:
+                print("biotuner_realtime failed.")
+                continue
 
             with self.hsvs_lock:
                 self.latest_hsvs = hsvs_list
