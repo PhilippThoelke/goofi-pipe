@@ -1567,7 +1567,7 @@ class OSCInput(Processor):
         """
         while not self.msg_queue.empty():
             address, values = self.msg_queue.get()
-            self.features[address] = values
+            self.features[address.lstrip("/")] = values
         return self.features
 
 
@@ -1576,21 +1576,25 @@ class AugmentedPoetry(Processor):
     Assembling poetry input from the user with styles derived from brain signal.
 
     Parameters:
+        style_feature (str): the name of the feature to use as a style
+        user_input (str): the name of the feature to use as a user input
+        n_lines (int): how many lines of poetry are used to generate the prompt
         label (str): label under which to save the extracted feature
-        channels (Dict[str, List[str]]): channel list for each input stream
-        name (str): name of the user input
     """
 
     def __init__(
         self,
-        names: str,
-        userInput: str,
+        style_feature: str,
+        user_input_feature: str,
+        n_lines: int = 3,
         label: str = "augmented-poetry",
-        channels: Dict[str, List[str]] = None,
     ):
-        super(AugmentedPoetry, self).__init__(label, channels, normalize=False)
-        self.names = names
-        self.userInput = userInput
+        super(AugmentedPoetry, self).__init__(label, None, normalize=False)
+        self.style_feature = style_feature
+        self.user_input_feature = user_input_feature
+        self.n_lines = n_lines
+
+        self.user_input = []
 
     def process(
         self,
@@ -1612,12 +1616,25 @@ class AugmentedPoetry(Processor):
             features (Dict[str, float]): the extracted features from this processor
         """
         # get the poetry input from OSC
-        if self.userInput not in processed:
+        if self.user_input_feature not in processed:
+            print("user input not found in processed dict")
             return {self.label: ""}
-        style_input = processed[self.names]
-        poetry_input = processed[self.userInput]
+        # get the style input from OSC
+        if self.style_feature not in processed:
+            print("style feature not found in processed dict")
+            return {self.label: ""}
+
+        style_input = processed[self.style_feature]
+
+        if len(self.user_input) == 0 or processed[self.user_input_feature] != self.user_input[-1]:
+            self.user_input.append(processed[self.user_input_feature])
+            if len(self.user_input) > self.n_lines:
+                self.user_input = self.user_input[-self.n_lines:]
+
         # print all the inputs
-        output_prompt = poetry_input + ", in the style of " + style_input
+        output_prompt = "\n".join(self.user_input) + ", in the style of " + style_input
+
+        print(output_prompt)
 
         return {self.label: output_prompt}
 
