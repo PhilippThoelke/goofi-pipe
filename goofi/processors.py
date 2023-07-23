@@ -580,7 +580,6 @@ class Biotuner(Processor):
             tuning_list, harm_tuning_list = [], []
             try:
                 for ch in raw:
-                    try:
                     (
                         peaks,
                         extended_peaks,
@@ -594,8 +593,8 @@ class Biotuner(Processor):
                     tuning_list.append(tuning)
                     harm_tuning_list.append(harm_tuning)
             except:
-               print("biotuner_realtime failed.")
-               continue
+                print("biotuner_realtime failed.")
+                continue
 
             harm_conn = compute_conn_matrix_single(np.array(raw), self.sfreq)
 
