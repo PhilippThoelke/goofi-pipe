@@ -69,17 +69,20 @@ class Manager:
 
         # assess if the device is in use or just producing noise
         noise_container = {}
-        self.std_processor(self.data_in, noise_container, {})
-        self.std_normalization.normalize(noise_container)
+        if len(self.data_in) > 0:
+            self.std_processor(self.data_in, noise_container, {})
+            self.std_normalization.normalize(noise_container)
+
         for key in self.data_in.keys():
-            if isinstance(self.noise_threshold, dict):
-                thresh = self.noise_threshold[key]
-            else:
-                thresh = self.noise_threshold
-            processed[f"/{key}/in-use"] = float(
-                noise_container[f"/{key}/signal-std"] < thresh
-            )
-            normalize_mask[f"/{key}/in-use"] = False
+            if len(self.data_in) > 0:
+                if isinstance(self.noise_threshold, dict):
+                    thresh = self.noise_threshold[key]
+                else:
+                    thresh = self.noise_threshold
+                processed[f"/{key}/in-use"] = float(
+                    noise_container[f"/{key}/signal-std"] < thresh
+                )
+                normalize_mask[f"/{key}/in-use"] = False
 
         for processor in self.processors:
             normalize_mask.update(processor(self.data_in, processed, intermediates))
