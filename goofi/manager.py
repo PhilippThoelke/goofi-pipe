@@ -140,7 +140,8 @@ if __name__ == "__main__":
     # configure the pipeline through the Manager class
     mngr = manager.Manager(
         data_in={
-            "eeg": data_in.EEGRecording.make_eegbci()  # stream some pre-recorded EEG from a file
+            "eeg": data_in.EEGRecording.make_eegbci(),
+            "": data_in.SerialStream(sfreq=60, buffer_seconds=60)  # stream some pre-recorded EEG from a file
         },
         processors=[
             # global delta power
@@ -161,6 +162,7 @@ if __name__ == "__main__":
             processors.LempelZiv(channels={"eeg": ["Fp1", "Fp2"]}),
             # map EEG oscillations to emission spectra
             processors.Bioelements(channels={"eeg": ["C3"]}),
+            processors.Cardiac(data_type="ecg"),
             # extract colors from harmonic ratios of EEG oscillations
             processors.Biocolor(channels={"eeg": ["C3"]}),
             # ask GPT-3 to write a line of poetry based on EEG features (requires OpenAI API key)
