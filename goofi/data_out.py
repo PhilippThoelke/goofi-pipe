@@ -211,32 +211,41 @@ class OSCStream(DataOut):
             processed (Dict[str, float]): dictionary of extracted, normalized features
             intermediates (Dict[str, Any]): dictionary containing intermediate representations
         """
-        # Initialize an empty bundle
+        # initialize an empty bundle
         bundle = osc_bundle_builder.OscBundleBuilder(osc_bundle_builder.IMMEDIATELY)
 
         for key, val in processed.items():
-            # Create a new message
+            # create a new message
             msg = OscMessageBuilder(self.address_prefix + key)
             if isinstance(val, float):
                 msg.add_arg(val, OscMessageBuilder.ARG_TYPE_FLOAT)
             elif isinstance(val, str):
                 msg.add_arg(val, OscMessageBuilder.ARG_TYPE_STRING)
+            elif isinstance(val, (list, tuple)):
+                val = ", ".join([str(v) for v in val])
+                msg.add_arg(val, OscMessageBuilder.ARG_TYPE_STRING)
             else:
                 msg.add_arg(val)
 
-            # Add the message to the bundle
+            # add the message to the bundle
             bundle.add_content(msg.build())
 
-            # If the bundle size is too large, send it and start a new one
+            # if the bundle size is too large, send it and start a new one
             # TODO: make sure 65507 is the correct limit
             if sum(len(msg.dgram) for msg in bundle._contents) > 1472:
-                self.client.send(bundle.build())
+                try:
+                    # send a partial bundle
+                    self.client.send(bundle.build())
+                except Exception as e:
+                    print(f"OSC send failed: {e}")
+
+                # set up a new bundle for the remaining messages
                 bundle = osc_bundle_builder.OscBundleBuilder(
                     osc_bundle_builder.IMMEDIATELY
                 )
 
         try:
-            # Send the remaining bundle
+            # send the remaining bundle
             self.client.send(bundle.build())
         except Exception as e:
             print(f"OSC send failed: {e}")
