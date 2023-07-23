@@ -462,22 +462,26 @@ class Biocolor(Processor):
                 continue
 
             hsvs_list = []
-            for ch in raw:
-                self.biotuner.peaks_extraction(
-                    ch,
-                    FREQ_BANDS=self.FREQ_BANDS,
-                    ratios_extension=True,
-                    max_freq=30,
-                    n_peaks=self.n_peaks,
-                    graph=False,
-                    min_harms=2,
-                    verbose=False,
-                )
+            try:
+                for ch in raw:
+                    self.biotuner.peaks_extraction(
+                        ch,
+                        FREQ_BANDS=self.FREQ_BANDS,
+                        ratios_extension=True,
+                        max_freq=30,
+                        n_peaks=self.n_peaks,
+                        graph=False,
+                        min_harms=2,
+                        verbose=False,
+                    )
 
-                scale = [1] + self.biotuner.peaks_ratios
-                hsvs = viz_scale_colors(scale, fund=self.biotuner.peaks[0])[1:]
+                    scale = [1] + self.biotuner.peaks_ratios
+                    hsvs = viz_scale_colors(scale, fund=self.biotuner.peaks[0])[1:]
 
-                hsvs_list.append(hsvs)
+                    hsvs_list.append(hsvs)
+            except:
+                print("biotuner_realtime failed.")
+                continue
 
             with self.hsvs_lock:
                 self.latest_hsvs = hsvs_list
@@ -810,9 +814,9 @@ class Bioelements(Processor):
         return result
 
 
-class Pulse(Processor):
+class Cardiac(Processor):
     """
-    Feature extractor for Pulse metrics (HRV).
+    Feature extractor for Cardiac metrics (HRV).
 
     Parameters:
         label (str): label under which to save the extracted feature
@@ -822,12 +826,14 @@ class Pulse(Processor):
 
     def __init__(
         self,
-        label: str = "pulse",
+        label: str = "cardiac",
+        data_type: str = "ppg",
         channels: Dict[str, List[str]] = None,
         extraction_frequency: float = 1 / 5,
     ):
-        super(Pulse, self).__init__(label, channels)
+        super(Cardiac, self).__init__(label, channels)
         self.sfreq = None
+        self.data_type = data_type
         self.latest_raw = None
         self.latest_hrv = None
         self.raw_lock = threading.Lock()
@@ -856,15 +862,19 @@ class Pulse(Processor):
             try:
                 if raw.shape[0] > 1:
                     print("got more than one channel")
-                ppg, info_ppg = nk.ppg_process(raw[0], sampling_rate=self.sfreq)
-                hrv_df = nk.hrv(info_ppg, sampling_rate=self.sfreq)
+                if self.data_type == "ppg":
+                    signal, info = nk.ppg_process(raw[0], sampling_rate=self.sfreq)
+                    hrv_df = nk.hrv(info, sampling_rate=self.sfreq)
+                elif self.data_type == "ecg":
+                    signal, info = nk.ecg_process(raw[0], sampling_rate=self.sfreq)
+                    hrv_df = nk.hrv(info, sampling_rate=self.sfreq)
             except:
                 print("neurokit failed.")
                 continue
 
             with self.features_lock:
-                self.latest_ppg = ppg
-                self.latest_info = info_ppg
+                self.latest_ppg = signal
+                self.latest_info = info
                 self.latest_hrv = hrv_df
 
             if self.extraction_frequency is not None:
@@ -879,7 +889,7 @@ class Pulse(Processor):
         intermediates: Dict[str, np.ndarray],
     ):
         """
-        This function computes the HRV from the pulse signal.
+        This function computes the HRV from cardiac signals.
 
         Parameters:
             raw (np.ndarray): the raw PPG buffer with shape (Channels, Time)
@@ -983,7 +993,7 @@ class TextGeneration(Processor):
         "anatomy, chemistry, physics and mathematics."
         "The idea is to describe scientifically "
         "the image that is described in the prompt. DO NOT NAME THE WORDS DIRECTLY OR ANY ARTIST OR STYLE NAME. "
-        "You can invent scientific knowledge and use SPECIALIZED TERMS. You are going to write the science description line by line, meaning you should "
+        "You can invent scientific knowledge. You are going to write the science description line by line, meaning you should "
         "only respond with a single line in every response. Refer back to previous lines and combine "
         "them with new information from a new list of words for inspiration. Limit every response to 10 "
         "words at maximum. Strictly follow this limit! DO NOT NAME ANY OF THE PROVIDED WORDS. KEEP YOUR "
@@ -1112,12 +1122,13 @@ class TextGeneration(Processor):
         "Your job is to come up with a prompt for a text-to-image model. The prompt should be concise and "
         "describe an the content of a page from the Codex Seraphinianus book "
         " with few descriptive words focused on the anatomy and organic mechanics of imaginary creature. "
-        " The page should include diagrams, symbols, like an "
+        "Use creative, abstract and mystical adjectives. "
+        " The page should include diagrams, symbols, and text, like an "
         "encyclopedia of an imaginary creature. "
         "Generate only a single prompt, which is more a collection of descriptors than a grammatical sentence. "
         "I will provide some guiding words to set the properties of the page and its context. Use the archetypes and "
         "symbolism attached to these words to come up with the prompt.  Be sure to specify that the artstyle is "
-        "from the Codex Seraphinianus book as well as anatomical drawing, with inspiration from occult diagrams and anatomical representations. "
+        "from the Codex Seraphinianus book, with inspiration from occult diagrams and anatomical representations. "
         "Be purely descriptive, your response does not have to be a complete sentence. "
         "Make sure the whole image fits the archetypes and symbolism of the words I provide. BE VERY SHORT "
         "AND CONCISE. LIMIT YOURSELF TO A MAXIMUM OF 60 WORDS.")
