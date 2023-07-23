@@ -235,8 +235,11 @@ class OSCStream(DataOut):
                     osc_bundle_builder.IMMEDIATELY
                 )
 
-        # Send the remaining bundle
-        self.client.send(bundle.build())
+        try:
+            # Send the remaining bundle
+            self.client.send(bundle.build())
+        except Exception as e:
+            print(f"OSC send failed: {e}")
 
 
 class RawToFile(DataOut):
