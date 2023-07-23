@@ -1085,7 +1085,6 @@ class TextGeneration(Processor):
         "Your job is to come up with a prompt for a text-to-image model. The prompt should be concise and "
         "describe an the content of a page from the Codex Seraphinianus book "
         " with few descriptive words focused on the anatomy and organic mechanics of imaginary creature. "
-        "Use creative, abstract and mystical adjectives. "
         " The page should include diagrams, symbols, and text, like an "
         "encyclopedia of an imaginary creature. "
         "Generate only a single prompt, which is more a collection of descriptors than a grammatical sentence. "
