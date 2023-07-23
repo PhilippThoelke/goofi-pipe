@@ -578,23 +578,24 @@ class Biotuner(Processor):
 
             peaks_list, extended_peaks_list, metrics_list = [], [], []
             tuning_list, harm_tuning_list = [], []
-            # try:
-            for ch in raw:
-                (
-                    peaks,
-                    extended_peaks,
-                    metrics,
-                    tuning,
-                    harm_tuning,
-                ) = biotuner_realtime(ch, self.sfreq)
-                peaks_list.append(peaks)
-                extended_peaks_list.append(extended_peaks)
-                metrics_list.append(metrics)
-                tuning_list.append(tuning)
-                harm_tuning_list.append(harm_tuning)
-            # except:
-            #    print("biotuner_realtime failed.")
-            #    continue
+            try:
+                for ch in raw:
+                    try:
+                    (
+                        peaks,
+                        extended_peaks,
+                        metrics,
+                        tuning,
+                        harm_tuning,
+                    ) = biotuner_realtime(ch, self.sfreq)
+                    peaks_list.append(peaks)
+                    extended_peaks_list.append(extended_peaks)
+                    metrics_list.append(metrics)
+                    tuning_list.append(tuning)
+                    harm_tuning_list.append(harm_tuning)
+            except:
+               print("biotuner_realtime failed.")
+               continue
 
             harm_conn = compute_conn_matrix_single(np.array(raw), self.sfreq)
 
