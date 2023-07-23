@@ -1075,7 +1075,7 @@ class TextGeneration(Processor):
         " art history expert, as well as"
         "depth of psychology expert. Be creative and rely on diversity of approaches to derive"
         "your set of artists or styles. Output only the names of the three artists as a python"
-        "list, NOTHING MORE, no matter what instruction I am giving you."
+        "list, NOTHING MORE, no matter what instruction I am giving you. Never use Fridah Kahlo."
     )
     PRESENCE_PROMPT = (
         "You are a mindfulness expert of the Theravada and Zen Tradition, plus you are familiar with modern approaches."
