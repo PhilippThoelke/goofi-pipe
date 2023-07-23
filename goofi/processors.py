@@ -976,6 +976,17 @@ class TextGeneration(Processor):
         "words at maximum. Strictly follow this limit! DO NOT NAME ANY OF THE PROVIDED WORDS. KEEP YOUR "
         "RESPONSES SHORT AND CONCISE."
     )
+    
+    NARRATIVE_INFORMED_PROMPT = (
+        "I want you to inspire yourself from a text2image prompt to write surrealist story. "
+        " I want the story to be coherent, original and surrealist. The idea is to write a story"
+        "that matches the image that is described in the prompt. DO NOT NAME THE WORDS DIRECTLY OR ANY ARTIST OR STYLE NAME. "
+        "Be creative in your imagery. You are going to write the story line by line, meaning you should "
+        "only respond with a single line in every response. Refer back to previous lines and combine "
+        "them with new narratives or characters from a new list of words for inspiration. Limit every response to 20 "
+        "words at maximum. Strictly follow this limit! DO NOT NAME ANY OF THE PROVIDED WORDS. KEEP YOUR "
+        "RESPONSES SHORT AND CONCISE."
+    )
 
     SYMBOLISM_PROMPT = (
         "Come up with a symbolism, based on a list of words. The symbolism should be an archetype inspired "
