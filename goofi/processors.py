@@ -1551,7 +1551,7 @@ class ImageGeneration(Processor):
                     else:
                         strength_dict = dict(img_strength=strength)
                         self.img2img_strength_norm.normalize(strength_dict)
-                        self.img2img_strength = strength_dict["img_strength"] / 5 + 0.8
+                        self.img2img_strength = strength_dict["img_strength"] / 10 + 0.9
 
                 result = self.generate_stable_diffusion(prompt)
             else:
