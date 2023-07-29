@@ -166,6 +166,7 @@ class LempelZiv(Processor):
     Parameters:
         binarize_mode (str): the method to binarize the signal, can be "mean" or "median"
         label (str): label under which to save the extracted feature
+        avg_channels (boolean): if True, compute the average Lempel-Ziv complexity across channels
         channels (Dict[str, List[str]]): channel list for each input stream
     """
 
@@ -173,6 +174,7 @@ class LempelZiv(Processor):
         self,
         binarize_mode: str = "mean",
         label: str = "lempel-ziv",
+        avg_channels: bool = True,
         channels: Dict[str, List[str]] = None,
     ):
         super(LempelZiv, self).__init__(label, channels)
@@ -181,6 +183,7 @@ class LempelZiv(Processor):
             "median",
         ], "binarize_mode should be either mean or median"
         self.binarize_mode = binarize_mode
+        self.avg_channels = avg_channels
 
     def process(
         self,
@@ -208,11 +211,17 @@ class LempelZiv(Processor):
             binarized = raw >= np.median(raw, axis=-1, keepdims=True)
 
         # compute Lempel-Ziv complexity
-        return {
-            self.label: np.mean(
-                [lziv_complexity(ch, normalize=True) for ch in binarized]
-            )
-        }
+        if self.avg_channels:
+            return {
+                self.label: np.mean(
+                    [lziv_complexity(ch, normalize=True) for ch in binarized]
+                )
+            }
+        else:
+            return {
+                f"{self.label}/{ch}": lziv_complexity(binarized[i], normalize=True)
+                for i,ch in enumerate(info["ch_names"])
+            }
 
 
 class SpectralEntropy(Processor):
