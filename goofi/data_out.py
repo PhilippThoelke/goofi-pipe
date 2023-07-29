@@ -61,6 +61,7 @@ class PlotRaw(DataOut):
 
         raw = np.array(data_in[self.data_in_name].buffer).T
         xs = np.arange(-raw.shape[1], 0) / data_in[self.data_in_name].info["sfreq"]
+        raw = raw - np.mean(raw, axis=1, keepdims=True)
         raw = raw * self.scaling + np.arange(raw.shape[0])[:, None]
 
         if (self.fig_size != self.fig.get_size_inches()).any():
