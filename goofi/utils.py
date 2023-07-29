@@ -68,11 +68,12 @@ class DataIn(ABC):
             return -1
 
         # convert the data into micro Volts
+        idxs = mne.pick_types(self.info, eeg=True)
         if self.unit_conversion is None:
             self.unit_conversion = _get_ch_factors(
-                self.info, "uV", np.arange(self.info["nchan"])
+                self.info, "uV", idxs
             )[:, None]
-        new_data *= self.unit_conversion
+        new_data[idxs] *= self.unit_conversion
 
         # make sure we didn't receive more samples than the buffer can hold
         self.n_samples_received = new_data.shape[1]
