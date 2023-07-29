@@ -180,11 +180,14 @@ class EEGStream(DataIn):
     Parameters:
         host (str): the LSL stream's hostname
         port (int): the LSL stream's port (if None, use the LSLClient's default port)
+        pick_eeg (bool): if True, only pick EEG channels
         buffer_seconds (int): the number of seconds to buffer incoming data
     """
 
-    def __init__(self, host: str, port: Optional[int] = None, buffer_seconds: int = 5):
+    def __init__(self, host: str, port: Optional[int] = None, pick_eeg:bool=True, buffer_seconds: int = 5):
         super(EEGStream, self).__init__(buffer_seconds=buffer_seconds)
+        self.pick_eeg = pick_eeg
+        self.pick_idxs = None
 
         # start LSL client
         self.client = LSLClient(host=host, port=port)
@@ -196,6 +199,9 @@ class EEGStream(DataIn):
         """
         Returns the MNE info object corresponding to this EEG stream
         """
+        if self.pick_eeg:
+            self.pick_idxs = mne.pick_types(self.client.get_measurement_info(), eeg=True)
+            return mne.pick_info(self.client.get_measurement_info(), self.pick_idxs)
         return self.client.get_measurement_info()
 
     def receive(self) -> np.ndarray:
@@ -206,6 +212,8 @@ class EEGStream(DataIn):
         data = next(self.data_iterator)
         if data.size == 0:
             return None
+        if self.pick_eeg:
+            data = data[self.pick_idxs]
         return data
 
 
