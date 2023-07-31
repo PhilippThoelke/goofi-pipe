@@ -489,7 +489,7 @@ class Biocolor(Processor):
 
                     hsvs_list.append(hsvs)
             except:
-                print("biotuner_realtime failed.")
+                print("biocolo_realtime failed.")
                 continue
 
             with self.hsvs_lock:
@@ -558,11 +558,16 @@ class Biotuner(Processor):
         label: str = "biotuner",
         channels: Dict[str, List[str]] = None,
         extraction_frequency: float = 1 / 5,
+        n_peaks: int = 5,
+        peaks_function: str = "EMD"
     ):
         super(Biotuner, self).__init__(label, channels, normalize=False)
         self.sfreq = None
+        self.n_peaks = n_peaks
+        self.peaks_function = peaks_function
         self.latest_raw = None
         self.latest_peaks = None
+        self.latest_amps = None
         self.latest_extended_peaks = None
         self.latest_metrics = None
         self.latest_tuning = None
@@ -590,7 +595,7 @@ class Biotuner(Processor):
                 continue
 
             peaks_list, extended_peaks_list, metrics_list = [], [], []
-            tuning_list, harm_tuning_list = [], []
+            tuning_list, harm_tuning_list, amps_list = [], [], []
             try:
                 for ch in raw:
                     (
@@ -599,12 +604,14 @@ class Biotuner(Processor):
                         metrics,
                         tuning,
                         harm_tuning,
-                    ) = biotuner_realtime(ch, self.sfreq)
+                        amps
+                    ) = biotuner_realtime(ch, self.sfreq, n_peaks=self.n_peaks, peaks_function=self.peaks_function)
                     peaks_list.append(peaks)
                     extended_peaks_list.append(extended_peaks)
                     metrics_list.append(metrics)
                     tuning_list.append(tuning)
                     harm_tuning_list.append(harm_tuning)
+                    amps_list.append(amps)
             except:
                 print("biotuner_realtime failed.")
                 continue
@@ -622,6 +629,7 @@ class Biotuner(Processor):
                 self.latest_tuning = tuning_list
                 self.latest_harm_tuning = harm_tuning_list
                 self.latest_harm_conn = harm_conn
+                self.latest_amps = amps_list
 
             if self.extraction_frequency is not None:
                 sleep_time = 1 / self.extraction_frequency
@@ -650,6 +658,7 @@ class Biotuner(Processor):
 
         with self.features_lock:
             peaks = self.latest_peaks
+            amps = self.latest_amps
             ext_peaks = self.latest_extended_peaks
             metrics = self.latest_metrics
             tuning = self.latest_tuning
@@ -658,6 +667,8 @@ class Biotuner(Processor):
 
         if peaks is None:
             peaks = [[0]] * info["nchan"]
+        if amps is None:
+            amps = [[0]] * info["nchan"]
         if ext_peaks is None:
             ext_peaks = [[0]] * info["nchan"]
         if metrics is None:
@@ -694,6 +705,9 @@ class Biotuner(Processor):
             for j in range(len(peaks[i])):
                 result[f"{self.label}/{ch_prefix}peak/{j}"] = peaks[i][j]
                 normalization_mask[f"{self.label}/{ch_prefix}peak/{j}"] = False
+            for j in range(len(amps[i])):
+                result[f"{self.label}/{ch_prefix}amp/{j}"] = amps[i][j]
+                normalization_mask[f"{self.label}/{ch_prefix}amp/{j}"] = False
             for j in range(len(ext_peaks[i])):
                 result[f"{self.label}/{ch_prefix}extended_peak/{j}"] = ext_peaks[i][j]
                 normalization_mask[f"{self.label}/{ch_prefix}extended_peak/{j}"] = False
