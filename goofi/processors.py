@@ -608,8 +608,12 @@ class Biotuner(Processor):
             except:
                 print("biotuner_realtime failed.")
                 continue
-
-            harm_conn = compute_conn_matrix_single(np.array(raw), self.sfreq)
+            
+            try:
+                harm_conn = compute_conn_matrix_single(np.array(raw), self.sfreq)
+            except:
+                print("harmonic connectivity failed")
+                continue
 
             with self.features_lock:
                 self.latest_peaks = peaks_list
@@ -877,6 +881,7 @@ class Cardiac(Processor):
                 elif self.data_type == "ecg":
                     signal, info = nk.ecg_process(raw[0], sampling_rate=self.sfreq)
                     hrv_df = nk.hrv(info, sampling_rate=self.sfreq)
+                    print('HRV_DF', hrv_df)
             except:
                 print("neurokit failed.")
                 continue
