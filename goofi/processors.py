@@ -86,6 +86,10 @@ class PSD(Processor):
         "alpha": (8, 12),
         "beta": (12, 30),
         "gamma": (30, 50),
+        "muscle_low": (50, 100),
+        "muscle_mid": (100, 150),
+        "muscle_high": (150, 200),
+        "muscle_global": (50, 150),
     }
 
     def __init__(
