@@ -514,6 +514,9 @@ class ImageSender:
             self.thread = None
 
 def calculate_heart_rate_and_hrv(ppg_data, sampling_rate):
+    #print('len_data', len(ppg_data))
+    #print('sampling_rate', sampling_rate)
+    #print('ppg_data', ppg_data.shape)
     # Process the raw PPG signal to obtain a cleaned one
     cleaned = nk.ppg_clean(ppg_data, sampling_rate=sampling_rate)
 
@@ -528,10 +531,10 @@ def calculate_heart_rate_and_hrv(ppg_data, sampling_rate):
     print(f"Heart Rate: {heart_rate:.2f} BPM")
     # Check that there are enough R peaks to calculate HRV
     print(f"Number of R peaks: {len(rpeaks['PPG_Peaks'])}")
-    if len(rpeaks['PPG_Peaks']) > 8:  # Adjust this number as needed
+    #if len(rpeaks['PPG_Peaks']) > 8:  # Adjust this number as needed
         # Compute the HRV indices
-        hrv_indices = nk.hrv(rpeaks['PPG_Peaks'], sampling_rate=sampling_rate, show=False)
-    else:
-        hrv_indices = None
+    hrv_indices = nk.hrv(rpeaks['PPG_Peaks'], sampling_rate=sampling_rate, show=False)
+    #else:
+    #    hrv_indices = None
 
     return heart_rate, hrv_indices
