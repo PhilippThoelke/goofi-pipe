@@ -7,6 +7,7 @@ from collections import deque
 from os.path import dirname, join
 from tempfile import NamedTemporaryFile
 from typing import Any, Dict, List, Tuple, Union
+import neurokit2 as nk
 
 import mne
 import numpy as np
@@ -511,3 +512,26 @@ class ImageSender:
         if self.thread is not None and self.thread.is_alive():
             self.thread.join()
             self.thread = None
+
+def calculate_heart_rate_and_hrv(ppg_data, sampling_rate):
+    # Process the raw PPG signal to obtain a cleaned one
+    cleaned = nk.ppg_clean(ppg_data, sampling_rate=sampling_rate)
+
+    # Find the R-peaks in the cleaned PPG signal
+    rpeaks = nk.ppg_findpeaks(cleaned, sampling_rate=sampling_rate)
+
+    # Compute the RRI (R-R interval) in seconds
+    rri = np.diff(rpeaks['PPG_Peaks']) / sampling_rate
+
+    # Convert RRI to Heart Rate
+    heart_rate = 60 / np.mean(rri)  # heart rate is usually expressed in beats per minute
+    print(f"Heart Rate: {heart_rate:.2f} BPM")
+    # Check that there are enough R peaks to calculate HRV
+    print(f"Number of R peaks: {len(rpeaks['PPG_Peaks'])}")
+    if len(rpeaks['PPG_Peaks']) > 8:  # Adjust this number as needed
+        # Compute the HRV indices
+        hrv_indices = nk.hrv(rpeaks['PPG_Peaks'], sampling_rate=sampling_rate, show=False)
+    else:
+        hrv_indices = None
+
+    return heart_rate, hrv_indices

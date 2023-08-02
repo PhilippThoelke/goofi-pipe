@@ -276,6 +276,7 @@ class RawToFile(DataOut):
 
         self.fname = fname
         self.file_type = fname.split(".")[-1].lower()
+        self.data_in_name = data_in_name
 
         # initialize file type specific attributes
         if self.file_type == "csv":
