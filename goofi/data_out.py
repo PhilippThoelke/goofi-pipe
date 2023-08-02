@@ -215,10 +215,13 @@ class OSCStream(DataOut):
         """
         # initialize an empty bundle
         bundle = osc_bundle_builder.OscBundleBuilder(osc_bundle_builder.IMMEDIATELY)
-
+        #print(processed)
         for key, val in processed.items():
             # create a new message
             msg = OscMessageBuilder(self.address_prefix + key)
+            #check instance of val
+            #print(val)
+            #print(type(val))
             if isinstance(val, float):
                 msg.add_arg(val, OscMessageBuilder.ARG_TYPE_FLOAT)
             elif isinstance(val, str):
@@ -226,8 +229,11 @@ class OSCStream(DataOut):
             elif isinstance(val, (list, tuple)):
                 val = ", ".join([str(v) for v in val])
                 msg.add_arg(val, OscMessageBuilder.ARG_TYPE_STRING)
+            #elif isinstance(val, None):
+            #    pass
             else:
-                msg.add_arg(val)
+                #msg.add_arg(val)
+                pass
 
             # add the message to the bundle
             bundle.add_content(msg.build())

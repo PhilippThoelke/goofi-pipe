@@ -77,9 +77,12 @@ class DummyStream(DataIn):
 
 
 class SerialStream(DataIn):
-    def __init__(self, sfreq: int, buffer_seconds: int = 5):
+    def __init__(self, sfreq: int, buffer_seconds: int = 5, auto_select: bool = True,
+                 port: Optional[str] = None):
         super(SerialStream, self).__init__(buffer_seconds=buffer_seconds)
         self.sfreq = sfreq
+        self.auto_select = auto_select
+        self.port = port
         self.serial_buffer = []
         self.buffer_times = []
         self.last_processed_time = None
@@ -88,7 +91,10 @@ class SerialStream(DataIn):
         self.serial_thread.start()
 
     def read_serial(self):
-        ser = serial.Serial(SerialStream.detect_serial_port(), 115200, timeout=1)
+        if self.auto_select:
+            ser = serial.Serial(SerialStream.detect_serial_port(), 115200, timeout=1)
+        else:
+            ser = serial.Serial(self.port, 115200, timeout=1)
         if not ser.isOpen():
             ser.open()
 
@@ -164,11 +170,11 @@ class SerialStream(DataIn):
         self.last_processed_time = new_times[-1]
         return new_data[None]
 
-    def detect_serial_port():
+    def detect_serial_port(name='Arduino'):
         ports = serial.tools.list_ports.comports()
         print(ports)
         for port in ports:
-            if "Arduino" in port.description or "Serial" in port.description:
+            if name in port.description or "Serial" in port.description:
                 return port.device
         return None
 
