@@ -8,7 +8,7 @@ import warnings
 from io import BytesIO
 from os.path import exists, join
 from typing import Any, Callable, Dict, List, Optional, Tuple, Union
-
+from biotuner.harmonic_connectivity import harmonic_connectivity
 import cv2
 import mne
 import neurokit2 as nk
@@ -1769,3 +1769,164 @@ class SignalStd(Processor):
         intermediates: Dict[str, Any],
     ) -> Dict[str, float]:
         return {self.label: raw.std(axis=0).mean()}
+
+class RawDataAdder(Processor):
+    """
+    This processor takes raw data from specified input labels and adds them to the intermediates.
+    
+    Parameters:
+        labels (List[str]): List of input label names to check and add to intermediates.
+        channels (Dict[str, List[str]]): Channel list for each input stream.
+    """
+    
+    def __init__(self, label: str, channels: Dict[str, List[str]] = None):
+        super(RawDataAdder, self).__init__(label, channels)
+        self.label = label
+    
+    def process(
+        self,
+        raw: np.ndarray,
+        info: mne.Info,
+        processed: Dict[str, float],
+        intermediates: Dict[str, Any],
+    ):
+        """
+        This function checks for the existence of each label in the intermediates 
+        dictionary and adds the raw data if it exists.
+        
+        Parameters:
+            raw (np.ndarray): The raw EEG buffer with shape (Channels, Time).
+            info (mne.Info): Info object containing e.g. channel names, sampling frequency, etc.
+            processed (Dict[str, float]): Dictionary collecting extracted features.
+            intermediates (Dict[str, Any]): Dictionary containing intermediate representations.
+        """
+        if self.label not in intermediates:
+            intermediates[self.label] = raw
+            intermediates[f"{self.label}_sfreq"] = info["sfreq"]
+        return {}
+
+from scipy.signal import coherence, resample
+from scipy.signal import coherence, resample
+import threading
+
+class MultiModalCoupling(Processor):
+    """
+    This processor computes various coupling metrics (like spectral coherence) between two raw signals 
+    from specified input labels present in the intermediates.
+    
+    Parameters:
+        labels (List[str]): List of two input label names to read from intermediates.
+        channels (Dict[str, List[str]]): Channel list for each input stream.
+    """
+    
+    def __init__(self, label: str, labels_read: List[str], channels: Dict[str, List[str]] = None,
+                 normalize: bool = False, peaks_function: str = "EMD", precision: float = 0.1,
+                 metric: str = "wPLI_multiband", freq_range: Tuple[int, int] = (1, 50)):
+        assert len(labels_read) == 2, "There should be exactly two labels for coupling computation."
+        super(MultiModalCoupling, self).__init__(label, channels, normalize=normalize)
+        self.labels_read = labels_read
+        self.label = label
+        self.latest_coherence = None
+        self.latest_conn = None
+        self.coupling_lock = threading.Lock()
+        self.latest_peaks1 = None
+        self.latest_peaks2 = None
+        self.latest_metric = None
+        self.peaks_function = peaks_function
+        self.precision = precision
+        self.metric = metric
+        self.freq_range = freq_range
+    
+    def process(
+        self,
+        raw: np.ndarray,
+        info: mne.Info,
+        processed: Dict[str, float],
+        intermediates: Dict[str, Any],
+    ):
+        """
+        This function checks for the existence of each label in the intermediates 
+        dictionary, reads the raw data, matches the sampling frequency, and computes the spectral coherence.
+        
+        Parameters:
+            raw (np.ndarray): The raw EEG buffer with shape (Channels, Time).
+            info (mne.Info): Info object containing e.g. channel names, sampling frequency, etc.
+            processed (Dict[str, float]): Dictionary collecting extracted features.
+            intermediates (Dict[str, Any]): Dictionary containing intermediate representations.
+        """
+        
+        signals = []
+        sfreqs = []
+        # Fetch signals and their respective sampling frequencies
+        for l in self.labels_read:
+            if l in intermediates and f"{l}_sfreq" in intermediates:
+                signals.append(intermediates[l][0])  # Only taking the first channel
+                sfreqs.append(intermediates[f"{l}_sfreq"])
+            else:
+                raise ValueError(f"No data found for label '{l}' in intermediates.")
+        #print('First signal length: ', len(signals[0]))
+        #print('Second signal length: ', len(signals[1]))
+        #print(intermediates)
+
+        # Match the sampling frequencies by downsampling the signal with the higher sampling frequency.
+        if len(signals[0]) > len(signals[1]):
+            signals[0] = resample(signals[0], len(signals[1]))
+        elif len(signals[0]) < len(signals[1]):
+            signals[1] = resample(signals[1], len(signals[0]))
+
+        try:
+            f, Cxy = coherence(signals[0], signals[1], fs=info["sfreq"])
+            
+            signals_ = np.array([signals[0], signals[1]])
+            lowest_sfreq = np.min(sfreqs)
+            hc = harmonic_connectivity(
+                    sf=lowest_sfreq,
+                    data=signals_,
+                    peaks_function=self.peaks_function,
+                    precision=self.precision,
+                    n_harm=10,
+                    harm_function="mult",
+                    min_freq=self.freq_range[0],
+                    max_freq=self.freq_range[1],
+                    n_peaks=5)
+
+            conn = hc.compute_harm_connectivity(metric=self.metric,
+                    delta_lim=50,
+                    save=False,
+                    savename="_",
+                    graph=False,
+                    FREQ_BANDS=None)
+            df = hc.compute_IMF_correlation(nIMFs=4, freq_range=self.freq_range, precision=self.precision)
+            # Filtering the dataframe for elec1=0 and elec2=1 and then sorting by 'pearson' column to get top 5 pairs
+            top_pairs = df[(df['elec1'] == 0) & (df['elec2'] == 1)].sort_values(by='harmsim', ascending=False).head(3)
+            # Extract the desired columns into lists of lists
+            metrics = top_pairs['harmsim'].values.tolist()
+            peaks = top_pairs[['peak_freq1', 'peak_freq2']].values.tolist()
+            peaks1 = [p[0] for p in peaks]
+            peaks2 = [p[1] for p in peaks]
+            with self.coupling_lock:
+                self.latest_coherence = np.mean(Cxy)
+                self.latest_conn = np.round(np.array(conn)[0][1], 1)
+                self.latest_peaks1 = peaks1
+                self.latest_peaks2 = peaks2
+                self.latest_metric = metrics
+        except:
+            print('Error in computing MultiModalCoupling.')
+
+        # Saving the average coherence to the instance variable.
+        
+        
+        # Build the result dictionary
+        result = {}
+        print('Latest Conn', self.latest_conn)
+        if self.latest_coherence is not None:
+            ch_prefix = f"ch0_"  # As an example, using channel 0 prefix, can be modified accordingly
+            result[f"{self.label}/{ch_prefix}spectral_coherence"] = self.latest_coherence
+            result[f"{self.label}/{ch_prefix}harmonic_connectivity"] = self.latest_conn
+            for i in range(len(metrics)):
+                result[f"{self.label}/peak1_{i}_val"] = peaks1[i]
+                result[f"{self.label}/peak2_{i}_val"] = peaks2[i]
+                result[f"{self.label}/IMF_conn{i}"] = metrics[i]
+        
+        return result
+
