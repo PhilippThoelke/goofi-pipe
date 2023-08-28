@@ -348,17 +348,17 @@ def viz_scale_colors(scale: List[float], fund: float) -> List[Tuple[int, int, in
     return hsv_all
 
 
-def biotuner_realtime(data, Fs, n_peaks=5, peaks_function="EMD"):
+def biotuner_realtime(data, Fs, n_peaks=5, peaks_function="EMD", min_freq=1, max_freq=65):
     bt_plant = compute_biotuner(peaks_function=peaks_function, sf=Fs)
     bt_plant.peaks_extraction(
         np.array(data),
         graph=False,
-        min_freq=1,
-        max_freq=65,
+        min_freq=min_freq,
+        max_freq=max_freq,
         precision=0.1,
         nIMFs=5,
         n_peaks=n_peaks,
-        smooth_fft=4,
+        smooth_fft=2,
     )
     bt_plant.peaks_extension(method="harmonic_fit")
     bt_plant.compute_peaks_metrics(n_harm=3, delta_lim=250)

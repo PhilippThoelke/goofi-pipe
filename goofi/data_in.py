@@ -9,7 +9,7 @@ import serial.tools.list_ports
 from mne.datasets import eegbci
 from mne.io import BaseRaw, concatenate_raws, read_raw
 from mne_realtime import LSLClient, MockLSLStream
-
+import sounddevice as sd
 from goofi.utils import DataIn
 
 mne.set_log_level(False)
@@ -25,14 +25,14 @@ class DummyStream(DataIn):
         sfreq (int): sampling frequency
         buffer_seconds (int): number of seconds to buffer
     """
-
-    def __init__(self, data="normal", n_channels=5, sfreq=100, buffer_seconds=5):
+    def __init__(self, data="normal", n_channels=5, sfreq=100, buffer_seconds=5, frequency=1):
         super().__init__(buffer_seconds)
-        assert data in ["normal", "zeros", "arange", "exp"]
+        assert data in ["normal", "zeros", "arange", "exp", "osc"]
 
         self.data = data
         self.n_channels = n_channels
         self.sfreq = sfreq
+        self.frequency = frequency  # New: specific frequency for 'osc' data
         self.last_receive = time.time() - buffer_seconds
 
         # fill the buffer so we don't need to wait for the first receive
@@ -40,17 +40,15 @@ class DummyStream(DataIn):
 
     @property
     def info(self) -> mne.Info:
-        """
-        Returns an MNE info for this dummy stream
-        """
         return mne.create_info(
             [f"ch{i}" for i in range(self.n_channels)], self.sfreq, "eeg"
         )
 
+    def update(self):
+        # Dummy update function to comply with the original design.
+        pass
+
     def receive(self) -> np.ndarray:
-        """
-        Returns a random NumPy array with shape (Channels, Time).
-        """
         n_samples = int((time.time() - self.last_receive) * self.sfreq)
         self.last_receive = time.time()
 
@@ -72,9 +70,13 @@ class DummyStream(DataIn):
                 .reshape(n_samples, self.n_channels)
                 .T
             )
-        # scale the data to microvolts
-        return dat.astype(np.float32) * 1e-6
+        elif self.data == "osc":
+            # New: generate an oscillating sine wave with a specified frequency
+            t = np.linspace(0, n_samples / self.sfreq, n_samples)
+            dat = np.sin(2 * np.pi * self.frequency * t)
+            dat = np.tile(dat, (self.n_channels, 1))
 
+        return dat.astype(np.float32) * 1e-6
 
 class SerialStream(DataIn):
     def __init__(self, sfreq: int, buffer_seconds: int = 5, auto_select: bool = True,
@@ -265,3 +267,85 @@ class EEGRecording(EEGStream):
         raw = concatenate_raws([read_raw(p) for p in eegbci.load_data(subjects, runs)])
         eegbci.standardize(raw)
         return EEGRecording(raw)
+
+
+#sd.default.device = 'Microphone Array (Realtek Audio)'
+sd.default.samplerate = 44100
+import sounddevice as sd
+import numpy as np
+import mne
+from scipy.signal import resample
+
+class AudioStream(DataIn):
+    def __init__(self, channels=1, sfreq=44100, buffer_seconds=5, device=None):
+        super().__init__(buffer_seconds)
+        self.channels = channels
+        self.sfreq = sfreq
+        self.device = device
+        self.target_sfreq = 1000  # New target sampling rate
+        try:
+            self.stream = sd.InputStream(
+                samplerate=self.sfreq,
+                channels=self.channels,
+                device=self.device
+            )
+            self.stream.start()
+        except Exception as e:
+            print(f"Error initializing audio stream: {e}")
+            self.stream = None
+
+    def downsample(self, samples: np.ndarray) -> np.ndarray:
+        """Downsample the audio signal."""
+        num_samples = int(samples.shape[1] * (self.target_sfreq / self.sfreq))
+        return resample(samples, num_samples, axis=1)
+
+    @property
+    def info(self) -> mne.Info:
+        ch_types = ['eeg']
+        ch_names = ['audio']
+        return mne.create_info(ch_names, self.target_sfreq, ch_types)
+
+    def receive(self) -> np.ndarray:
+        if not self.stream:
+            print("Audio stream is not available.")
+            return None
+
+        samples, overflowed = self.stream.read(int(self.sfreq * self.buffer_seconds))
+        if overflowed:
+            print("Warning: Audio buffer overflowed!")
+
+        downsampled_samples = self.downsample(samples.T)
+        return downsampled_samples
+
+    @staticmethod
+    def list_audio_devices():
+        print(sd.query_devices(kind='input'))
+
+    def __del__(self):
+        if hasattr(self, 'stream') and self.stream:
+            self.stream.stop()
+            self.stream.close()
+
+
+# list_audio_devices()
+#print('-------------------------------------------')
+#print(sd.query_devices(kind='input'))
+#print('-------------------------------------------')
+
+# Create an instance of the audio stream
+#audio_stream = AudioStream(channels=1, sfreq=44100, buffer_seconds=5)
+
+# Get new samples
+#samples = audio_stream.receive()
+
+# Your samples are now downsampled to 20kHz.
+
+
+# #device_info = sd.query_devices(5, 'input')
+# #print(device_info['default_samplerate'])
+
+# # Create an instance of the audio stream
+# audio_stream = AudioStream(channels=2, sfreq=44100, buffer_seconds=5)
+
+# # Get new samples
+# samples = audio_stream.receive()

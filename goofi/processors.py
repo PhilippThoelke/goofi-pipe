@@ -563,12 +563,16 @@ class Biotuner(Processor):
         channels: Dict[str, List[str]] = None,
         extraction_frequency: float = 1 / 5,
         n_peaks: int = 5,
-        peaks_function: str = "EMD"
+        peaks_function: str = "EMD",
+        freq_range: tuple = (1, 65),
+        harmonic_connectivity: bool = False,
     ):
         super(Biotuner, self).__init__(label, channels, normalize=False)
         self.sfreq = None
         self.n_peaks = n_peaks
         self.peaks_function = peaks_function
+        self.freq_range = freq_range
+        self.harmonic_connectivity = harmonic_connectivity
         self.latest_raw = None
         self.latest_peaks = None
         self.latest_amps = None
@@ -600,6 +604,7 @@ class Biotuner(Processor):
 
             peaks_list, extended_peaks_list, metrics_list = [], [], []
             tuning_list, harm_tuning_list, amps_list = [], [], []
+            harm_conn = [[0] * len(raw)] * len(raw)
             try:
                 for ch in raw:
                     (
@@ -609,7 +614,8 @@ class Biotuner(Processor):
                         tuning,
                         harm_tuning,
                         amps
-                    ) = biotuner_realtime(ch, self.sfreq, n_peaks=self.n_peaks, peaks_function=self.peaks_function)
+                    ) = biotuner_realtime(ch, self.sfreq, n_peaks=self.n_peaks, peaks_function=self.peaks_function,
+                                            min_freq=self.freq_range[0], max_freq=self.freq_range[1])
                     peaks_list.append(peaks)
                     extended_peaks_list.append(extended_peaks)
                     metrics_list.append(metrics)
@@ -620,11 +626,12 @@ class Biotuner(Processor):
                 print("biotuner_realtime failed.")
                 continue
             
-            try:
-                harm_conn = compute_conn_matrix_single(np.array(raw), self.sfreq)
-            except:
-                print("harmonic connectivity failed")
-                continue
+            if harmonic_connectivity is True:
+                try:
+                    harm_conn = compute_conn_matrix_single(np.array(raw), self.sfreq)
+                except:
+                    print("harmonic connectivity failed")
+                    continue
 
             with self.features_lock:
                 self.latest_peaks = peaks_list
@@ -890,19 +897,20 @@ class Cardiac(Processor):
             if raw is None:
                 time.sleep(0.05)
                 continue
-            try:
-                if raw.shape[0] > 1:
-                    print("got more than one channel")
-                if self.data_type == "ppg":
-                    signal, info = nk.ppg_process(raw[0], sampling_rate=self.sfreq)
-                    hrv_df = nk.hrv(info, sampling_rate=self.sfreq)
-                elif self.data_type == "ecg":
-                    signal, info = nk.ecg_process(raw[0], sampling_rate=self.sfreq)
-                    hrv_df = nk.hrv(info, sampling_rate=self.sfreq)
-                    print('HRV_DF', hrv_df)
-            except:
-                print("neurokit failed.")
-                continue
+            #try:
+            if raw.shape[0] > 1:
+                print("got more than one channel")
+            if self.data_type == "ppg":
+                signal, info = nk.ppg_process(raw[0], sampling_rate=self.sfreq)
+                hrv_df = nk.hrv(info, sampling_rate=self.sfreq)
+            elif self.data_type == "ecg":
+                signal, info = nk.ecg_process(raw[0], sampling_rate=self.sfreq)
+                hrv_df = nk.hrv(info, sampling_rate=self.sfreq)
+                print('HRV_DF', hrv_df)
+            #except:
+            #    # print the traceback
+            #    print("neurokit failed.")
+            #    continue
 
             with self.features_lock:
                 self.latest_ppg = signal
@@ -1821,7 +1829,8 @@ class MultiModalCoupling(Processor):
     
     def __init__(self, label: str, labels_read: List[str], channels: Dict[str, List[str]] = None,
                  normalize: bool = False, peaks_function: str = "EMD", precision: float = 0.1,
-                 metric: str = "wPLI_multiband", freq_range: Tuple[int, int] = (1, 50)):
+                 metric: str = "wPLI_multiband", freq_range: Tuple[int, int] = (1, 50),
+                 IMF=False):
         assert len(labels_read) == 2, "There should be exactly two labels for coupling computation."
         super(MultiModalCoupling, self).__init__(label, channels, normalize=normalize)
         self.labels_read = labels_read
@@ -1836,6 +1845,7 @@ class MultiModalCoupling(Processor):
         self.precision = precision
         self.metric = metric
         self.freq_range = freq_range
+        self.IMF = IMF
     
     def process(
         self,
@@ -1896,20 +1906,22 @@ class MultiModalCoupling(Processor):
                     savename="_",
                     graph=False,
                     FREQ_BANDS=None)
-            df = hc.compute_IMF_correlation(nIMFs=4, freq_range=self.freq_range, precision=self.precision)
-            # Filtering the dataframe for elec1=0 and elec2=1 and then sorting by 'pearson' column to get top 5 pairs
-            top_pairs = df[(df['elec1'] == 0) & (df['elec2'] == 1)].sort_values(by='harmsim', ascending=False).head(3)
-            # Extract the desired columns into lists of lists
-            metrics = top_pairs['harmsim'].values.tolist()
-            peaks = top_pairs[['peak_freq1', 'peak_freq2']].values.tolist()
-            peaks1 = [p[0] for p in peaks]
-            peaks2 = [p[1] for p in peaks]
+            if self.IMF is True:
+                df = hc.compute_IMF_correlation(nIMFs=4, freq_range=self.freq_range, precision=self.precision)
+                # Filtering the dataframe for elec1=0 and elec2=1 and then sorting by 'pearson' column to get top 5 pairs
+                top_pairs = df[(df['elec1'] == 0) & (df['elec2'] == 1)].sort_values(by='harmsim', ascending=False).head(3)
+                # Extract the desired columns into lists of lists
+                metrics = top_pairs['harmsim'].values.tolist()
+                peaks = top_pairs[['peak_freq1', 'peak_freq2']].values.tolist()
+                peaks1 = [p[0] for p in peaks]
+                peaks2 = [p[1] for p in peaks]
             with self.coupling_lock:
                 self.latest_coherence = np.mean(Cxy)
                 self.latest_conn = np.round(np.array(conn)[0][1], 1)
-                self.latest_peaks1 = peaks1
-                self.latest_peaks2 = peaks2
-                self.latest_metric = metrics
+                if self.IMF is True:
+                    self.latest_peaks1 = peaks1
+                    self.latest_peaks2 = peaks2
+                    self.latest_metric = metrics
         except:
             print('Error in computing MultiModalCoupling.')
 
@@ -1923,10 +1935,11 @@ class MultiModalCoupling(Processor):
             ch_prefix = f"ch0_"  # As an example, using channel 0 prefix, can be modified accordingly
             result[f"{self.label}/{ch_prefix}spectral_coherence"] = self.latest_coherence
             result[f"{self.label}/{ch_prefix}harmonic_connectivity"] = self.latest_conn
-            for i in range(len(metrics)):
-                result[f"{self.label}/peak1_{i}_val"] = peaks1[i]
-                result[f"{self.label}/peak2_{i}_val"] = peaks2[i]
-                result[f"{self.label}/IMF_conn{i}"] = metrics[i]
+            if self.IMF is True:
+                for i in range(len(metrics)):
+                    result[f"{self.label}/peak1_{i}_val"] = peaks1[i]
+                    result[f"{self.label}/peak2_{i}_val"] = peaks2[i]
+                    result[f"{self.label}/IMF_conn{i}"] = metrics[i]
         
         return result
 
