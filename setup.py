@@ -5,7 +5,7 @@ with open("requirements.txt") as f:
 
 setup(
     name="goofi-pipe",
-    version="0.0.1",
+    version="1.0.0",
     packages=find_packages("goofi"),
     install_requires=dependencies,
 )
