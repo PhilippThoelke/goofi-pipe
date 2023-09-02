@@ -5,6 +5,10 @@
 ## Installing the API
 Run the `install_dsi.sh` script to automatically download the API from WearableSensing and compile it into an executable. The script will create a directory called `dsi24_lib` in the current working directory, containing the `dsi2lsl` executable and a Python API for accessing device info.
 
+```bash
+sudo LD_LIBRARY_PATH=$LD_LIBRARY_PATH:dsi24_lib ~/mambaforge/envs/nf/bin/python impedance.py
+```
+
 ## Connecting to a device
 Run the `connect_dsi.sh` script to search for available DSI24 devices via bluetooth and connect on an available rfcomm port. After a successful connection, the script will ask to directly start streaming data to LSL. Select `n` if you want to check electrode impedance before starting the stream.
 
