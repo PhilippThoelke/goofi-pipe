@@ -71,7 +71,6 @@ def viz_loop():
             info,
             contours=False,
             image_interp="nearest",
-            show_names=True,
             sensors=False,
             names=names,
             cmap=cmap,
