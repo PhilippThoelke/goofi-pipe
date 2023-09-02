@@ -30,7 +30,7 @@ sed -i '199 c\  info = lsl_create_streaminfo((char*)streamName,"EEG",numberOfCha
 gcc -DDSI_PLATFORM=-Linux-x86_64 -o "dsi2lsl" dsi2lsl.c DSI_API_Loader.c -ldl -L /home/philipp/mambaforge/envs/nf/lib/ -llsl
 
 # clean up directory
-rm dsi2lsl.c DSI_API_Loader.c DSI.h lsl_c.h
+rm dsi2lsl.c DSI_API_Loader.c lsl_c.h
 
 # return to original directors
 cd ..
