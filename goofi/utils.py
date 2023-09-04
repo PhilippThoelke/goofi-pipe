@@ -348,7 +348,9 @@ def viz_scale_colors(scale: List[float], fund: float) -> List[Tuple[int, int, in
     return hsv_all
 
 
-def biotuner_realtime(data, Fs, n_peaks=5, peaks_function="EMD", min_freq=1, max_freq=65):
+def biotuner_realtime(
+    data, Fs, n_peaks=5, peaks_function="EMD", min_freq=1, max_freq=65
+):
     bt_plant = compute_biotuner(peaks_function=peaks_function, sf=Fs)
     bt_plant.peaks_extraction(
         np.array(data),
@@ -375,7 +377,7 @@ def biotuner_realtime(data, Fs, n_peaks=5, peaks_function="EMD", min_freq=1, max
 
     if not isinstance(metrics["subharm_tension"][0], float):
         metrics["subharm_tension"] = -1
-    #print(metrics)
+    # print(metrics)
     metrics["harmsim"] = metrics["harmsim"] / 100
     # rescale tenney height from between 4 to 9 to between 0 and 1
     metrics["tenney"] = (metrics["tenney"] - 4) / 5
@@ -513,10 +515,11 @@ class ImageSender:
             self.thread.join()
             self.thread = None
 
+
 def calculate_heart_rate_and_hrv(ppg_data, sampling_rate):
-    #print('len_data', len(ppg_data))
-    #print('sampling_rate', sampling_rate)
-    #print('ppg_data', ppg_data.shape)
+    # print('len_data', len(ppg_data))
+    # print('sampling_rate', sampling_rate)
+    # print('ppg_data', ppg_data.shape)
     # Process the raw PPG signal to obtain a cleaned one
     cleaned = nk.ppg_clean(ppg_data, sampling_rate=sampling_rate)
 
@@ -524,17 +527,19 @@ def calculate_heart_rate_and_hrv(ppg_data, sampling_rate):
     rpeaks = nk.ppg_findpeaks(cleaned, sampling_rate=sampling_rate)
 
     # Compute the RRI (R-R interval) in seconds
-    rri = np.diff(rpeaks['PPG_Peaks']) / sampling_rate
+    rri = np.diff(rpeaks["PPG_Peaks"]) / sampling_rate
 
     # Convert RRI to Heart Rate
-    heart_rate = 60 / np.mean(rri)  # heart rate is usually expressed in beats per minute
+    heart_rate = 60 / np.mean(
+        rri
+    )  # heart rate is usually expressed in beats per minute
     print(f"Heart Rate: {heart_rate:.2f} BPM")
     # Check that there are enough R peaks to calculate HRV
     print(f"Number of R peaks: {len(rpeaks['PPG_Peaks'])}")
-    #if len(rpeaks['PPG_Peaks']) > 8:  # Adjust this number as needed
-        # Compute the HRV indices
-    hrv_indices = nk.hrv(rpeaks['PPG_Peaks'], sampling_rate=sampling_rate, show=False)
-    #else:
+    # if len(rpeaks['PPG_Peaks']) > 8:  # Adjust this number as needed
+    # Compute the HRV indices
+    hrv_indices = nk.hrv(rpeaks["PPG_Peaks"], sampling_rate=sampling_rate, show=False)
+    # else:
     #    hrv_indices = None
 
     return heart_rate, hrv_indices

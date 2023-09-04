@@ -6,10 +6,11 @@ import mne
 import numpy as np
 import serial
 import serial.tools.list_ports
+import sounddevice as sd
 from mne.datasets import eegbci
 from mne.io import BaseRaw, concatenate_raws, read_raw
 from mne_realtime import LSLClient, MockLSLStream
-import sounddevice as sd
+
 from goofi.utils import DataIn
 
 mne.set_log_level(False)
@@ -25,7 +26,10 @@ class DummyStream(DataIn):
         sfreq (int): sampling frequency
         buffer_seconds (int): number of seconds to buffer
     """
-    def __init__(self, data="normal", n_channels=5, sfreq=100, buffer_seconds=5, frequency=1):
+
+    def __init__(
+        self, data="normal", n_channels=5, sfreq=100, buffer_seconds=5, frequency=1
+    ):
         super().__init__(buffer_seconds)
         assert data in ["normal", "zeros", "arange", "exp", "osc"]
 
@@ -78,9 +82,15 @@ class DummyStream(DataIn):
 
         return dat.astype(np.float32) * 1e-6
 
+
 class SerialStream(DataIn):
-    def __init__(self, sfreq: int, buffer_seconds: int = 5, auto_select: bool = True,
-                 port: Optional[str] = None):
+    def __init__(
+        self,
+        sfreq: int,
+        buffer_seconds: int = 5,
+        auto_select: bool = True,
+        port: Optional[str] = None,
+    ):
         super(SerialStream, self).__init__(buffer_seconds=buffer_seconds)
         self.sfreq = sfreq
         self.auto_select = auto_select
@@ -172,7 +182,7 @@ class SerialStream(DataIn):
         self.last_processed_time = new_times[-1]
         return new_data[None]
 
-    def detect_serial_port(name='Arduino'):
+    def detect_serial_port(name="Arduino"):
         ports = serial.tools.list_ports.comports()
         print(ports)
         for port in ports:
@@ -192,7 +202,13 @@ class EEGStream(DataIn):
         buffer_seconds (int): the number of seconds to buffer incoming data
     """
 
-    def __init__(self, host: str, port: Optional[int] = None, pick_eeg:bool=True, buffer_seconds: int = 5):
+    def __init__(
+        self,
+        host: str,
+        port: Optional[int] = None,
+        pick_eeg: bool = True,
+        buffer_seconds: int = 5,
+    ):
         super(EEGStream, self).__init__(buffer_seconds=buffer_seconds)
         self.pick_eeg = pick_eeg
         self.pick_idxs = None
@@ -208,7 +224,18 @@ class EEGStream(DataIn):
         Returns the MNE info object corresponding to this EEG stream
         """
         if self.pick_eeg:
-            self.pick_idxs = mne.pick_types(self.client.get_measurement_info(), eeg=True)
+            # exclude the aux channels
+            self.pick_idxs = mne.pick_channels(
+                self.client.get_measurement_info()["ch_names"],
+                include=[],
+                exclude=["X1", "X2", "X3", "TRG", "A1", "A2"],
+            )
+            # only pick EEG channels
+            self.pick_idxs = [
+                idx
+                for idx in self.pick_idxs
+                if idx in mne.pick_types(self.client.get_measurement_info(), eeg=True)
+            ]
             return mne.pick_info(self.client.get_measurement_info(), self.pick_idxs)
         return self.client.get_measurement_info()
 
@@ -222,6 +249,8 @@ class EEGStream(DataIn):
             return None
         if self.pick_eeg:
             data = data[self.pick_idxs]
+            # re-reference to the average of all EEG channels
+            # data = data - np.mean(data, axis=0, keepdims=True)
         return data
 
 
@@ -269,12 +298,13 @@ class EEGRecording(EEGStream):
         return EEGRecording(raw)
 
 
-#sd.default.device = 'Microphone Array (Realtek Audio)'
+# sd.default.device = 'Microphone Array (Realtek Audio)'
 sd.default.samplerate = 44100
-import sounddevice as sd
-import numpy as np
 import mne
+import numpy as np
+import sounddevice as sd
 from scipy.signal import resample
+
 
 class AudioStream(DataIn):
     def __init__(self, channels=1, sfreq=44100, buffer_seconds=5, device=None):
@@ -285,9 +315,7 @@ class AudioStream(DataIn):
         self.target_sfreq = 1000  # New target sampling rate
         try:
             self.stream = sd.InputStream(
-                samplerate=self.sfreq,
-                channels=self.channels,
-                device=self.device
+                samplerate=self.sfreq, channels=self.channels, device=self.device
             )
             self.stream.start()
         except Exception as e:
@@ -301,8 +329,8 @@ class AudioStream(DataIn):
 
     @property
     def info(self) -> mne.Info:
-        ch_types = ['eeg']
-        ch_names = ['audio']
+        ch_types = ["eeg"]
+        ch_names = ["audio"]
         return mne.create_info(ch_names, self.target_sfreq, ch_types)
 
     def receive(self) -> np.ndarray:
@@ -319,24 +347,24 @@ class AudioStream(DataIn):
 
     @staticmethod
     def list_audio_devices():
-        print(sd.query_devices(kind='input'))
+        print(sd.query_devices(kind="input"))
 
     def __del__(self):
-        if hasattr(self, 'stream') and self.stream:
+        if hasattr(self, "stream") and self.stream:
             self.stream.stop()
             self.stream.close()
 
 
 # list_audio_devices()
-#print('-------------------------------------------')
-#print(sd.query_devices(kind='input'))
-#print('-------------------------------------------')
+# print('-------------------------------------------')
+# print(sd.query_devices(kind='input'))
+# print('-------------------------------------------')
 
 # Create an instance of the audio stream
-#audio_stream = AudioStream(channels=1, sfreq=44100, buffer_seconds=5)
+# audio_stream = AudioStream(channels=1, sfreq=44100, buffer_seconds=5)
 
 # Get new samples
-#samples = audio_stream.receive()
+# samples = audio_stream.receive()
 
 # Your samples are now downsampled to 20kHz.
 

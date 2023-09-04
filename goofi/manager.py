@@ -140,48 +140,21 @@ class Manager:
 if __name__ == "__main__":
     from goofi import data_in, data_out, manager, normalization, processors
 
-    # configure the pipeline through the Manager class
     mngr = manager.Manager(
         data_in={
-            "eeg": data_in.EEGRecording.make_eegbci(),
-            "": data_in.SerialStream(sfreq=60, buffer_seconds=60)  # stream some pre-recorded EEG from a file
+            "eeg": data_in.EEGStream("DSI", buffer_seconds=3),
+            # "eeg": data_in.EEGRecording.make_eegbci(),
         },
         processors=[
-            # global delta power
-            processors.PSD(label="delta"),
-            # global theta power
-            processors.PSD(label="theta"),
-            # global alpha power
-            processors.PSD(fmin=8, fmax=12, label="global-alpha"),
-            # occipital alpha power (eyes open/closed)
-            processors.PSD(label="alpha", channels={"eeg": ["O1", "Oz", "O2"]}),
-            # parietal beta power (motor activity)
-            processors.PSD(label="beta", channels={"eeg": ["P3", "P4"]}),
-            # global gamma power
-            processors.PSD(label="gamma"),
-            # theta/alpha ratio
-            processors.Ratio("/eeg/theta", "/eeg/global-alpha", label="theta/alpha"),
-            # pre-frontal Lempel-Ziv complexity
-            processors.LempelZiv(channels={"eeg": ["Fp1", "Fp2"]}),
-            # map EEG oscillations to emission spectra
-            processors.Bioelements(channels={"eeg": ["C3"]}),
-            processors.Cardiac(data_type="ecg"),
-            # extract colors from harmonic ratios of EEG oscillations
-            processors.Biocolor(channels={"eeg": ["C3"]}),
-            # ask GPT-3 to write a line of poetry based on EEG features (requires OpenAI API key)
-            processors.TextGeneration(
-                processors.TextGeneration.POETRY_PROMPT,
-                "/eeg/biocolor/ch0_peak0_name",
-                "/eeg/bioelements/ch0_bioelements",
-                keep_conversation=True,
-            ),
+            # processors.LempelZiv(channels={"eeg": ["F1", "F2","Fp1","Fp2","O1","O2","P3","P4","Fz","Pz"]}),
+            processors.LempelZiv(),
+            # processors.LempelZiv(label="lempel-ziv/frontal", channels={"eeg": ["Fp1", "Fp2", "F3", "F4"]}),
+            # processors.LempelZiv(label="lempel-ziv/parioccipital", channels={"eeg": ["O1", "O2", "P3", "P4"]}),
+            # processors.PSD(label="theta", channels={"eeg": ["C3", "C4"]}),
+            # processors.PSD(label="beta", channels={"eeg": ["C3", "C4"]}),
+            # processors.Ratio("/eeg/theta", "/eeg/beta", label="theta/beta"),
         ],
-        normalization=normalization.WelfordsZTransform(),  # apply a running z-transform to the features
-        data_out=[
-            data_out.OSCStream("127.0.0.1", 5005),  # stream features on localhost
-            data_out.PlotProcessed(),  # visualize the extracted features
-        ],
+        normalization=normalization.StaticBaselineNormal(30),
+        data_out=[data_out.PlotProcessed()],
     )
-
-    # start the pipeline
     mngr.run()
