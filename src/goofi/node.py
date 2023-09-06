@@ -130,39 +130,55 @@ class Data:
     data: Any
     meta: Dict[str, Any]
 
+    def _check_string(self):
+        """General string checks."""
+        if not isinstance(self.data, str):
+            raise ValueError(f"Expected string, got {type(self.data)}")
+
+    def _check_array(self):
+        """General array checks."""
+        if not isinstance(self.data, np.ndarray):
+            raise ValueError(f"Expected numpy array, got {type(self.data)}")
+
+        if self.dtype == DataType.FLOAT_1D:
+            # data should be a 1D array
+            if self.data.ndim != 1:
+                raise ValueError(f"Expected 1D array, got {self.data.ndim}D array")
+        elif self.dtype == DataType.FLOAT_2D:
+            # data should be a 2D array
+            if self.data.ndim != 2:
+                raise ValueError(f"Expected 2D array, got {self.data.ndim}D array")
+        elif self.dtype == DataType.FLOAT_3D:
+            # data should be a 3D array
+            if self.data.ndim != 3:
+                raise ValueError(f"Expected 3D array, got {self.data.ndim}D array")
+        else:
+            raise NotImplementedError(f"Unknown array data type {self.dtype}")
+
     def check_data(self):
         """
         Check that the data type is valid. The data field must be of the correct type for the data type.
         """
-        if self.dtype is None or not isinstance(self.dtype, DataType):
-            raise ValueError(f"Expected DataType, got {type(self.dtype)}")
+        # general checks
+        if self.dtype is None:
+            raise ValueError("Expected data type, got None")
         if self.data is None:
             raise ValueError("Expected data object, got None")
         if self.meta is None or not isinstance(self.meta, dict):
             raise ValueError(f"Expected metadata dict, got {type(self.meta)}")
 
+        # dtype-specific checks
         if self.dtype == DataType.STRING:
-            # make sure it's a string
-            if not isinstance(self.data, str):
-                raise ValueError(f"Expected string, got {type(self.data)}")
-        elif isinstance(self.data, np.ndarray):
-            # all other types are numpy arrays, so make sure it's a numpy array
-            if self.dtype == DataType.FLOAT_1D:
-                # data should be a 1D array
-                if self.data.ndim != 1:
-                    raise ValueError(f"Expected 1D array, got {self.data.ndim}D array")
-            elif self.dtype == DataType.FLOAT_2D:
-                # data should be a 2D array
-                if self.data.ndim != 2:
-                    raise ValueError(f"Expected 2D array, got {self.data.ndim}D array")
-            elif self.dtype == DataType.FLOAT_3D:
-                # data should be a 3D array
-                if self.data.ndim != 3:
-                    raise ValueError(f"Expected 3D array, got {self.data.ndim}D array")
-            else:
-                raise ValueError(f"Unknown data type {self.dtype}")
+            self._check_string()
+        elif self.dtype in [DataType.FLOAT_1D, DataType.FLOAT_2D, DataType.FLOAT_3D]:
+            self._check_array()
+        elif isinstance(self.dtype, DataType):
+            raise RuntimeError(
+                f"Data type {self.dtype} is defined but not handled in check_data. "
+                "Please report this in an issue: https://github.com/PhilippThoelke/goofi-pipe/issues."
+            )
         else:
-            raise ValueError(f"Expected numpy array, got {type(self.data)}")
+            raise ValueError(f"Expected DataType, got {type(self.dtype)}")
 
         # TODO: add better metadata checks
 
