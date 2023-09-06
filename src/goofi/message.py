@@ -59,7 +59,7 @@ class Message:
             raise ValueError("Expected origin id, got None")
         if not isinstance(self.content, dict):
             raise ValueError(f"Expected dict, got {type(self.content)}")
-        
+
         # currently, all messages must contain a slot_name field
         if "slot_name" not in self.content or not isinstance(self.content["slot_name"], str):
             raise ValueError("Message content must contain slot_name with type str")
