@@ -3,7 +3,8 @@ from multiprocessing import Pipe
 
 import pytest
 
-from goofi.node import Data, DataType, InputSlot, Node, OutputSlot
+from goofi.data import Data, DataType
+from goofi.node import InputSlot, Node, OutputSlot
 
 from .utils import DummyNode, create_dummy_node
 
@@ -125,31 +126,6 @@ def test_register_slot_dtypes(is_input, dtype):
     else:
         # try to register an output slot with the given dtype
         n.register_output("slot1", dtype)
-
-
-@pytest.mark.parametrize("dtype", DataType.__members__.values())
-def test_dtype(dtype):
-    # all dtype checks should pass
-    Data(dtype, dtype.empty(), {}).check_data()
-
-    # data is None, should raise ValueError
-    with pytest.raises(ValueError):
-        Data(dtype, None, {}).check_data()
-
-    # metadata is None, should raise ValueError
-    with pytest.raises(ValueError):
-        Data(dtype, dtype.empty(), None).check_data()
-
-    # dtype is None, should raise ValueError
-    with pytest.raises(ValueError):
-        Data(None, dtype.empty(), {}).check_data()
-
-    # make sure all other dtypes raise a ValueError
-    for other_dtype in DataType.__members__.values():
-        if other_dtype == dtype:
-            continue
-        with pytest.raises(ValueError):
-            Data(dtype, other_dtype.empty(), {}).check_data()
 
 
 @pytest.mark.parametrize("dtype", DataType.__members__.values())
