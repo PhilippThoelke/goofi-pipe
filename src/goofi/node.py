@@ -60,19 +60,19 @@ class Message:
         """
         if not isinstance(self.content, dict):
             raise ValueError(f"Expected dict, got {type(self.content)}")
-        if not "slot_name" in self.content or not isinstance(self.content["slot_name"], str):
+        if "slot_name" not in self.content or not isinstance(self.content["slot_name"], str):
             raise ValueError("Message content must contain slot_name with type str")
 
         if self.type == MessageType.ADD_OUTPUT_PIPE:
-            if not "connection_id" in self.content or not isinstance(self.content["connection_id"], str):
+            if "connection_id" not in self.content or not isinstance(self.content["connection_id"], str):
                 raise ValueError("Message content must contain connection_id with type str")
-            if not "node_connection" in self.content or not isinstance(self.content["node_connection"], Connection):
+            if "node_connection" not in self.content or not isinstance(self.content["node_connection"], Connection):
                 raise ValueError("Message content must contain node_connection with type Connection")
         elif self.type == MessageType.REMOVE_OUTPUT_PIPE:
-            if not "connection_id" in self.content or not isinstance(self.content["connection_id"], str):
+            if "connection_id" not in self.content or not isinstance(self.content["connection_id"], str):
                 raise ValueError("Message content must contain connection_id with type str")
         elif self.type == MessageType.DATA:
-            if not "data" in self.content or not isinstance(self.content["data"], Data):
+            if "data" not in self.content or not isinstance(self.content["data"], Data):
                 raise ValueError("Message content must contain data with type Data")
 
 
