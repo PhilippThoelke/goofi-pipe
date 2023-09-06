@@ -29,6 +29,19 @@ class InputSlot:
 
 @dataclass
 class OutputSlot:
+    """
+    An output slot is used to send data to an input slot. It contains the data type (`dtype`) and a dictionary
+    of connections (`connections`). The data type is used to check that the data sent out from the output slot
+    is of the correct type. The connections dictionary maps names of target input slots to the connection
+    objects that are used to send data to other nodes.
+
+    ### Parameters
+    `dtype` : DataType
+        The data type of the output slot.
+    `connections` : Dict[str, Connection]
+        The dictionary of connections. Defaults to an empty dictionary.
+    """
+
     dtype: DataType
     connections: Dict[str, Connection] = field(default_factory=dict)
 
