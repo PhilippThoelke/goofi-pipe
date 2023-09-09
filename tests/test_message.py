@@ -6,8 +6,8 @@ from goofi.data import Data, DataType
 from goofi.message import Message, MessageType
 
 EXAMPLE_CONTENT = {
-    MessageType.ADD_OUTPUT_PIPE: {"slot_name": "test", "connection_id": "123", "node_connection": Pipe()[0]},
-    MessageType.REMOVE_OUTPUT_PIPE: {"slot_name": "test", "connection_id": "123"},
+    MessageType.ADD_OUTPUT_PIPE: {"slot_name": "test", "node_connection": Pipe()[0]},
+    MessageType.REMOVE_OUTPUT_PIPE: {"slot_name": "test"},
     MessageType.DATA: {"slot_name": "test", "data": Data(DataType.STRING, "", {})},
 }
 
@@ -19,7 +19,7 @@ def test_create_message(type):
         raise NotImplementedError(f"Missing test for {type}.")
 
     # all type checks should pass
-    Message(type, "12345", EXAMPLE_CONTENT[type])
+    Message(type, EXAMPLE_CONTENT[type])
 
 
 @pytest.mark.parametrize("type", MessageType.__members__.values())
@@ -35,7 +35,7 @@ def test_message_content(type):
 
         # should raise ValueError
         with pytest.raises(ValueError):
-            Message(type, "12345", content)
+            Message(type, content)
 
 
 @pytest.mark.parametrize("type", MessageType.__members__.values())
@@ -46,10 +46,7 @@ def test_message_errors(type):
 
     # type is None
     with pytest.raises(ValueError):
-        Message(None, "12345", EXAMPLE_CONTENT[type])
-    # origin_id is None
-    with pytest.raises(ValueError):
-        Message(type, None, EXAMPLE_CONTENT[type])
+        Message(None, EXAMPLE_CONTENT[type])
     # content is None
     with pytest.raises(ValueError):
-        Message(type, "12345", None)
+        Message(type, None)

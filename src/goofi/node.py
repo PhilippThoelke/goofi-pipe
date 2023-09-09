@@ -171,7 +171,7 @@ class Node(ABC):
 
                 # send the data to all connected nodes
                 for conn in self.output_slots[name].connections:
-                    conn.send(Message(MessageType.DATA, self.identifier, data))
+                    conn.send(Message(MessageType.DATA, data))
 
     @require_init
     def _register_slot(self, name: str, dtype: DataType, is_input: bool):
@@ -228,11 +228,6 @@ class Node(ABC):
     @require_init
     def output_slots(self) -> Dict[str, OutputSlot]:
         return self._output_slots
-
-    @property
-    @require_init
-    def identifier(self) -> str:
-        return str(os.getpid())
 
     @abstractmethod
     def process(self):  # TODO: define process method signature

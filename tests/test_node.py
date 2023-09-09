@@ -62,8 +62,6 @@ def test_missing_super_call():
     with pytest.raises(RuntimeError):
         n.name
     with pytest.raises(RuntimeError):
-        n.identifier
-    with pytest.raises(RuntimeError):
         n.input_slots
     with pytest.raises(RuntimeError):
         n.output_slots
