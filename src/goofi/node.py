@@ -1,9 +1,9 @@
-import os
+import time
 from abc import ABC, abstractmethod
 from dataclasses import dataclass, field
 from multiprocessing.connection import Connection
 from threading import Event, Thread
-from typing import Callable, Dict, Optional
+from typing import Callable, Dict, List, Optional, Tuple
 
 from goofi.data import Data, DataType
 from goofi.message import Message, MessageType
@@ -21,29 +21,32 @@ class InputSlot:
         The data type of the input slot.
     `data` : Optional[Data]
         The data object of the input slot. Defaults to None.
+    `trigger_update` : bool
+        If True, the node will automatically trigger processing when the data object is updated.
     """
 
     dtype: DataType
     data: Optional[Data] = None
+    trigger_update: bool = True
 
 
 @dataclass
 class OutputSlot:
     """
-    An output slot is used to send data to an input slot. It contains the data type (`dtype`) and a dictionary
-    of connections (`connections`). The data type is used to check that the data sent out from the output slot
-    is of the correct type. The connections dictionary maps names of target input slots to the connection
+    An output slot is used to send data to an input slot. It contains the data type (`dtype`) and a list of
+    connections (`connections`). The data type is used to check that the data sent out from the output slot
+    is of the correct type. The connections list maps names of target input slots to the connection
     objects that are used to send data to other nodes.
 
     ### Parameters
     `dtype` : DataType
         The data type of the output slot.
-    `connections` : Dict[str, Connection]
-        The dictionary of connections. Defaults to an empty dictionary.
+    `connections` : List[Tuple[str, Connection]]
+        A list of tuples containing the name of the target input slot and the connection object of the target.
     """
 
     dtype: DataType
-    connections: Dict[str, Connection] = field(default_factory=dict)
+    connections: List[Tuple[str, Connection]] = field(default_factory=list)
 
 
 def require_init(func: Callable) -> Callable:
@@ -63,7 +66,7 @@ def require_init(func: Callable) -> Callable:
 
     def wrapper(self, *args, **kwargs):
         # check if the base class is initialized
-        if not hasattr(self, "_base_initialized"):
+        if not hasattr(self, "_alive"):
             raise RuntimeError("Make sure to call super().__init__() in your node's __init__ method.")
         return func(self, *args, **kwargs)
 
@@ -80,16 +83,18 @@ class Node(ABC):
     ### Parameters
     `connection` : Connection
         The input connection to the node. This is used to receive messages from the manager, or other nodes.
+    `autotrigger` : bool
+        If True, the node will automatically trigger processing regardless of whether or not it received data.
     """
 
-    def __init__(self, connection: Connection) -> None:
+    def __init__(self, connection: Connection, autotrigger: bool = False) -> None:
         if not isinstance(connection, Connection):
             raise TypeError(f"Expected Connection, got {type(connection)}.")
+        self._alive = True
 
-        # base class is initialized
-        self._base_initialized = True
-
+        # store arguments
         self.connection = connection
+        self.autotrigger = autotrigger
 
         # initialize input and output slots
         self._input_slots = dict()
@@ -97,7 +102,8 @@ class Node(ABC):
 
         # initialize node flags
         self.process_flag = Event()
-        self._alive = True
+        if self.autotrigger:
+            self.process_flag.set()
 
         # initialize message handling thread
         self.messaging_thread = Thread(target=self.messaging_loop)
@@ -131,6 +137,14 @@ class Node(ABC):
                 self.connection.send(Message(MessageType.PONG, {}))
             elif msg.type == MessageType.TERMINATE:
                 self._alive = False
+            elif msg.type == MessageType.ADD_OUTPUT_PIPE:
+                slot = self.output_slots[msg.content["slot_name_out"]]
+                slot.connections.append((msg.content["slot_name_in"], msg.content["node_connection"]))
+            elif msg.type == MessageType.DATA:
+                slot = self.input_slots[msg.content["slot_name"]]
+                slot.data = msg.content["data"]
+                if slot.trigger_update:
+                    self.process_flag.set()
             else:
                 # TODO: handle the incoming message
                 raise NotImplementedError(f"Message type {msg.type} not implemented.")
@@ -140,10 +154,19 @@ class Node(ABC):
         This method runs in a separate thread and handles the processing of input data and sending of
         output data to other nodes.
         """
+        last_update = 0
         while self.alive:
             # wait for a trigger
             self.process_flag.wait()
-            self.process_flag.clear()
+            # clear the trigger if autotrigger is False
+            if not self.autotrigger:
+                self.process_flag.clear()
+
+            # limit the update rate to 30 Hz
+            if time.time() - last_update < 1 / 30:
+                sleep_time = 1 / 30 - (time.time() - last_update)
+                time.sleep(sleep_time)
+            last_update = time.time()
 
             # gather input data
             input_data = {name: slot.data for name, slot in self.input_slots.items()}
@@ -151,28 +174,38 @@ class Node(ABC):
             # process data
             output_data = self.process(**input_data)
 
+            # if process returns None, skip sending output data
+            if output_data is None:
+                # TODO: make sure this is the correct behavior
+                continue
+
             # check that the process method returned a dict
             if not isinstance(output_data, dict):
                 raise TypeError(f"The process method didn't return a dict. Got {type(output_data)}.")
 
             # check that the output data contains the correct fields
-            if set(output_data.keys()) != set(self.output_slots.keys()):
-                missing_fields = set(self.output_slots.keys()) - set(output_data.keys())
-                extra_fields = set(output_data.keys()) - set(self.output_slots.keys())
-                raise ValueError(
-                    "Mismatch between expected and received output fields. "
-                    f"Missing fields: {missing_fields}. Extra fields: {extra_fields}"
-                )
+            if missing := set(self.output_slots.keys()) - set(output_data.keys()):
+                raise ValueError(f"Missing output fields: {missing}")
+
+            # TODO: handle extra fields in output data
+            # extra_fields = list(set(output_data.keys()) - set(self.output_slots.keys()))
 
             # send output data
-            for name, data in output_data.items():
+            for name in self.output_slots.keys():
+                data = output_data[name]
+
                 # make sure the data is of the correct type
                 if self.output_slots[name].dtype != data.dtype:
                     raise RuntimeError(f"Data type mismatch for output slot {name}")
 
                 # send the data to all connected nodes
-                for conn in self.output_slots[name].connections:
-                    conn.send(Message(MessageType.DATA, data))
+                for target_slot, conn in self.output_slots[name].connections:
+                    msg = Message(MessageType.DATA, {"data": data, "slot_name": target_slot})
+                    try:
+                        conn.send(msg)
+                    except BrokenPipeError:
+                        # TODO: broken pipe indicates that the target node is dead, handle this
+                        raise
 
     @require_init
     def _register_slot(self, name: str, dtype: DataType, is_input: bool):
@@ -231,5 +264,5 @@ class Node(ABC):
         return self._output_slots
 
     @abstractmethod
-    def process(self):  # TODO: define process method signature
+    def process(self, **kwargs) -> Dict[str, Data]:
         pass

@@ -27,10 +27,10 @@ def test_create_node():
 
 
 def test_dead_pipe():
-    conn, n = create_dummy_node()
+    ref, n = create_dummy_node()
 
     # close the connection
-    conn.close()
+    ref.connection.close()
     time.sleep(0.05)
 
     # the node should stop its messaging thread and exit
@@ -124,12 +124,13 @@ def test_input_slot(dtype):
 @pytest.mark.parametrize("dtype", DataType.__members__.values())
 def test_output_slot(dtype):
     slot = OutputSlot(dtype)
-    assert isinstance(slot.connections, dict), "OutputSlot connections should be a dict."
+    assert isinstance(slot.connections, list), "OutputSlot connections should be a list."
     assert len(slot.connections) == 0, "OutputSlot connections should be empty."
 
 
 def test_ping_pong():
-    conn, _ = create_dummy_node()
+    ref, _ = create_dummy_node()
+    conn = ref.connection
     conn.send(Message(MessageType.PING, {}))
     time.sleep(0.01)
     assert conn.poll(), "Node should respond to ping message."
@@ -137,8 +138,8 @@ def test_ping_pong():
 
 
 def test_terminate():
-    conn, n = create_dummy_node()
-    conn.send(Message(MessageType.TERMINATE, {}))
+    ref, n = create_dummy_node()
+    ref.connection.send(Message(MessageType.TERMINATE, {}))
     time.sleep(0.01)
     assert not n.alive, "Node should be dead after receiving terminate message."
 

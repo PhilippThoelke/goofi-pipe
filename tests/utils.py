@@ -2,6 +2,7 @@ from multiprocessing import Pipe
 from multiprocessing.connection import Connection
 from typing import Tuple
 
+from goofi.manager import NodeRef
 from goofi.node import Node
 
 
@@ -48,4 +49,4 @@ class BrokenProcessingNode(Node):
 
 def create_dummy_node(call_super: bool = True) -> Tuple[Connection, DummyNode]:
     manager_pipe, node_pipe = Pipe()
-    return manager_pipe, DummyNode(node_pipe, call_super)
+    return NodeRef(manager_pipe), DummyNode(node_pipe, call_super)
