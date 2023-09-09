@@ -1,6 +1,6 @@
 import importlib
 from dataclasses import dataclass
-from multiprocessing import Pipe
+from multiprocessing import Pipe, Process
 from multiprocessing.connection import Connection
 
 from goofi.message import Message, MessageType
@@ -57,7 +57,7 @@ class Manager:
         node = getattr(mod, node_cls)
         conn1, conn2 = Pipe()
         ref = NodeRef(conn1)
-        node(conn2)
+        Process(target=node, args=(conn2,), daemon=True).start()
         return self.nodes.add_node(node_cls.lower(), ref)
 
     def connect(self, node1: str, node2: str, slot1: str, slot2: str) -> None:
