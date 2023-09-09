@@ -74,3 +74,26 @@ class Manager:
                 {"slot_name_out": slot1, "slot_name_in": slot2, "node_connection": node2.connection},
             )
         )
+
+
+def main():
+    import time
+
+    manager = Manager()
+    manager.add_node("generators.Constant")
+    manager.add_node("generators.Sine")
+    manager.add_node("Add")
+
+    manager.connect("constant0", "add0", "out", "a")
+    manager.connect("sine0", "add0", "out", "b")
+
+    my_conn, node_conn = Pipe()
+    manager.nodes["add0"].connection.send(
+        Message(MessageType.ADD_OUTPUT_PIPE, {"slot_name_out": "out", "slot_name_in": "in", "node_connection": my_conn})
+    )
+
+    last = time.time()
+    while True:
+        msg = node_conn.recv()
+        print(f"{1/(time.time()-last):.2f}: {msg.content['data'].data[0]}")
+        last = time.time()
