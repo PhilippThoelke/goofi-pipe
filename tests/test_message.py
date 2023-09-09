@@ -9,6 +9,9 @@ EXAMPLE_CONTENT = {
     MessageType.ADD_OUTPUT_PIPE: {"slot_name": "test", "node_connection": Pipe()[0]},
     MessageType.REMOVE_OUTPUT_PIPE: {"slot_name": "test"},
     MessageType.DATA: {"slot_name": "test", "data": Data(DataType.STRING, "", {})},
+    MessageType.PING: {},
+    MessageType.PONG: {},
+    MessageType.TERMINATE: {},
 }
 
 

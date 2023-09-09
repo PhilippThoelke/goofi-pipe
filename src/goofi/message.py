@@ -18,11 +18,17 @@ class MessageType(Enum):
     - `DATA`: Sent by one node to another and contains data sent from an output slot to an input slot.
         - `slot_name` (str): The name of the target input slot.
         - `data` (Data): The data object. See the `Data` class for more information.
+    - `PING`: Probe message to check if a process is alive.
+    - `PONG`: Response to a ping message.
+    - `TERMINATE`: Sent by the manager to a node to terminate the node.
     """
 
     ADD_OUTPUT_PIPE = 1
     REMOVE_OUTPUT_PIPE = 2
     DATA = 3
+    PING = 4
+    PONG = 5
+    TERMINATE = 6
 
 
 @dataclass
@@ -42,6 +48,20 @@ class Message:
     type: MessageType
     content: Dict[str, Any]
 
+    def require_fields(self, **fields: Dict[str, Any]) -> None:
+        """
+        Check that the message content contains the required fields.
+
+        ### Parameters
+        `fields` : Dict[str, Any]
+            A dictionary of required fields and their types.
+        """
+        for field, field_type in fields.items():
+            if field not in self.content:
+                raise ValueError(f"Message content must contain field {field}")
+            if not isinstance(self.content[field], field_type):
+                raise ValueError(f"Message content field {field} must be of type {field_type}")
+
     def __post_init__(self):
         """
         Check that the message content is valid. The content field must be a dict, and it must contain the correct
@@ -53,16 +73,10 @@ class Message:
         if not isinstance(self.content, dict):
             raise ValueError(f"Expected dict, got {type(self.content)}")
 
-        # currently, all messages must contain a slot_name field
-        if "slot_name" not in self.content or not isinstance(self.content["slot_name"], str):
-            raise ValueError("Message content must contain slot_name with type str")
-
         # check the content for the specific message type
         if self.type == MessageType.ADD_OUTPUT_PIPE:
-            if "node_connection" not in self.content or not isinstance(self.content["node_connection"], Connection):
-                raise ValueError("Message content must contain node_connection with type Connection")
+            self.require_fields(slot_name=str, node_connection=Connection)
         elif self.type == MessageType.REMOVE_OUTPUT_PIPE:
-            pass
+            self.require_fields(slot_name=str)
         elif self.type == MessageType.DATA:
-            if "data" not in self.content or not isinstance(self.content["data"], Data):
-                raise ValueError("Message content must contain data with type Data")
+            self.require_fields(slot_name=str, data=Data)

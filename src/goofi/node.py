@@ -70,11 +70,6 @@ def require_init(func: Callable) -> Callable:
     return wrapper
 
 
-@dataclass
-class NodeRef:
-    connection: Connection
-
-
 class Node(ABC):
     """
     The base class for all nodes. A node is a processing unit that can receive data from other nodes, process the
@@ -100,14 +95,15 @@ class Node(ABC):
         self._input_slots = dict()
         self._output_slots = dict()
 
-        # initialize node update flag
+        # initialize node flags
         self.process_flag = Event()
+        self._alive = True
 
         # initialize message handling thread
         self.messaging_thread = Thread(target=self.messaging_loop)
         self.messaging_thread.start()
 
-        # initialize node update thread
+        # initialize data processing thread
         self.processing_thread = Thread(target=self.processing_loop, daemon=True)
         self.processing_thread.start()
 
@@ -115,25 +111,36 @@ class Node(ABC):
         """
         This method runs in a separate thread and handles incoming messages from the manager, or other nodes.
         """
-        while True:
+        while self.alive:
             try:
                 msg = self.connection.recv()
-            except EOFError:
-                # the connection was closed
-                # TODO: handle this properly
-                break
+            except (EOFError, ConnectionResetError):
+                # the connection was closed, consider the node dead
+                self._alive = False
+                continue
+
+            # potentially restart the processing thread
+            if not self.processing_thread.is_alive():
+                self.processing_thread = Thread(target=self.processing_loop, daemon=True)
+                self.processing_thread.start()
 
             if not isinstance(msg, Message):
                 raise TypeError(f"Expected Message, got {type(msg)}")
 
-            # TODO: handle the incoming message
+            if msg.type == MessageType.PING:
+                self.connection.send(Message(MessageType.PONG, {}))
+            elif msg.type == MessageType.TERMINATE:
+                self._alive = False
+            else:
+                # TODO: handle the incoming message
+                raise NotImplementedError(f"Message type {msg.type} not implemented.")
 
     def processing_loop(self):
         """
         This method runs in a separate thread and handles the processing of input data and sending of
         output data to other nodes.
         """
-        while True:
+        while self.alive:
             # wait for a trigger
             self.process_flag.wait()
             self.process_flag.clear()
@@ -141,19 +148,15 @@ class Node(ABC):
             # gather input data
             input_data = {name: slot.data for name, slot in self.input_slots.items()}
 
-            try:
-                # process data
-                output_data = self.process(**input_data)
-            except Exception as e:
-                # the process method raised an exception
-                raise RuntimeError("Error while processing data: " + str(e)) from e
+            # process data
+            output_data = self.process(**input_data)
 
+            # check that the process method returned a dict
             if not isinstance(output_data, dict):
-                # process didn't return a dict
                 raise TypeError(f"The process method didn't return a dict. Got {type(output_data)}.")
 
+            # check that the output data contains the correct fields
             if set(output_data.keys()) != set(self.output_slots.keys()):
-                # process returned a dict with the wrong keys
                 missing_fields = set(self.output_slots.keys()) - set(output_data.keys())
                 extra_fields = set(output_data.keys()) - set(self.output_slots.keys())
                 raise ValueError(
@@ -211,6 +214,11 @@ class Node(ABC):
             The data type of the output slot.
         """
         self._register_slot(name, dtype, False)
+
+    @property
+    @require_init
+    def alive(self) -> bool:
+        return self._alive
 
     @property
     @require_init

@@ -1,12 +1,13 @@
 import time
-from multiprocessing import Pipe
+from multiprocessing import Pipe, Process
 
 import pytest
 
-from goofi.data import Data, DataType
+from goofi.data import DataType
+from goofi.message import Message, MessageType
 from goofi.node import InputSlot, Node, OutputSlot
 
-from .utils import DummyNode, create_dummy_node
+from .utils import BrokenProcessingNode, DummyNode, create_dummy_node
 
 
 def test_abstract_node():
@@ -19,10 +20,10 @@ def test_create_node():
     _, n = create_dummy_node()
 
     # some basic checks
-    assert n.messaging_thread.is_alive(), "Node messaging thread is not alive."
-    assert n.processing_thread.is_alive(), "Node processing thread is not alive."
     assert len(n.input_slots) == 0, "Node input slots are not empty."
     assert len(n.output_slots) == 0, "Node output slots are not empty."
+    assert n.messaging_thread.is_alive(), "Node messaging thread is not alive."
+    assert n.processing_thread.is_alive(), "Node processing thread is not alive."
 
 
 def test_dead_pipe():
@@ -125,3 +126,56 @@ def test_output_slot(dtype):
     slot = OutputSlot(dtype)
     assert isinstance(slot.connections, dict), "OutputSlot connections should be a dict."
     assert len(slot.connections) == 0, "OutputSlot connections should be empty."
+
+
+def test_ping_pong():
+    conn, _ = create_dummy_node()
+    conn.send(Message(MessageType.PING, {}))
+    time.sleep(0.01)
+    assert conn.poll(), "Node should respond to ping message."
+    assert conn.recv().type == MessageType.PONG, "Node should respond to ping message with pong message."
+
+
+def test_terminate():
+    conn, n = create_dummy_node()
+    conn.send(Message(MessageType.TERMINATE, {}))
+    time.sleep(0.01)
+    assert not n.alive, "Node should be dead after receiving terminate message."
+
+
+def test_multiproc():
+    conn1, conn2 = Pipe()
+    proc = Process(target=DummyNode, args=(conn2,), daemon=True)
+    proc.start()
+
+    time.sleep(0.01)
+    # make sure the node is not dead
+    assert proc.is_alive(), "Process should be alive."
+
+    # send a terminate message
+    conn1.send(Message(MessageType.TERMINATE, {}))
+    time.sleep(0.01)
+    # make sure the node is dead
+    assert not proc.is_alive(), "Process should be dead."
+
+
+@pytest.mark.filterwarnings("ignore::pytest.PytestUnhandledThreadExceptionWarning")
+def test_broken_processing():
+    conn1, conn2 = Pipe()
+    n = BrokenProcessingNode(conn2)
+
+    # manually trigger processing once
+    n.process_flag.set()
+    time.sleep(0.01)
+
+    # the processing thread should be dead
+    assert not n.processing_thread.is_alive(), "Processing thread should be dead."
+
+    # the node and messaging thread should be alive
+    assert n.alive, "Node should be alive."
+    assert n.messaging_thread.is_alive(), "Messaging thread should be alive."
+
+    # sending a message should restart the processing thread
+    conn1.send(Message(MessageType.PING, {}))
+    time.sleep(0.01)
+    assert n.processing_thread.is_alive(), "Processing thread should be alive."
