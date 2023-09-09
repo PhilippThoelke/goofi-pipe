@@ -70,6 +70,11 @@ def require_init(func: Callable) -> Callable:
     return wrapper
 
 
+@dataclass
+class NodeRef:
+    connection: Connection
+
+
 class Node(ABC):
     """
     The base class for all nodes. A node is a processing unit that can receive data from other nodes, process the
@@ -78,25 +83,18 @@ class Node(ABC):
     slots.
 
     ### Parameters
-    `name` : str
-        The name of the node, which should be unique in the session.
-    `input_conn` : Connection
+    `connection` : Connection
         The input connection to the node. This is used to receive messages from the manager, or other nodes.
     """
 
-    def __init__(self, name: str, input_conn: Connection) -> None:
-        if not isinstance(name, str):
-            raise TypeError(f"Expected str, got {type(name)}.")
-        if not name:
-            raise ValueError("Name cannot be empty.")
-        if not isinstance(input_conn, Connection):
-            raise TypeError(f"Expected Connection, got {type(input_conn)}.")
+    def __init__(self, connection: Connection) -> None:
+        if not isinstance(connection, Connection):
+            raise TypeError(f"Expected Connection, got {type(connection)}.")
 
         # base class is initialized
         self._base_initialized = True
 
-        self._name = name
-        self.input_conn = input_conn
+        self.connection = connection
 
         # initialize input and output slots
         self._input_slots = dict()
@@ -119,7 +117,7 @@ class Node(ABC):
         """
         while True:
             try:
-                msg = self.input_conn.recv()
+                msg = self.connection.recv()
             except EOFError:
                 # the connection was closed
                 # TODO: handle this properly
@@ -213,11 +211,6 @@ class Node(ABC):
             The data type of the output slot.
         """
         self._register_slot(name, dtype, False)
-
-    @property
-    @require_init
-    def name(self) -> str:
-        return self._name
 
     @property
     @require_init

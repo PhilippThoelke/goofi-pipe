@@ -12,14 +12,13 @@ from .utils import DummyNode, create_dummy_node
 def test_abstract_node():
     # instantiating an abstract node should raise a TypeError
     with pytest.raises(TypeError):
-        Node("test", Pipe()[0])
+        Node(Pipe()[0])
 
 
 def test_create_node():
-    _, n = create_dummy_node("test")
+    _, n = create_dummy_node()
 
     # some basic checks
-    assert n.name == "test", "Node name is not set correctly."
     assert n.messaging_thread.is_alive(), "Node messaging thread is not alive."
     assert n.processing_thread.is_alive(), "Node processing thread is not alive."
     assert len(n.input_slots) == 0, "Node input slots are not empty."
@@ -27,7 +26,7 @@ def test_create_node():
 
 
 def test_dead_pipe():
-    conn, n = create_dummy_node("test")
+    conn, n = create_dummy_node()
 
     # close the connection
     conn.close()
@@ -38,29 +37,18 @@ def test_dead_pipe():
 
 
 def test_create_node_errors():
-    # name is empty
-    with pytest.raises(ValueError):
-        DummyNode("", Pipe()[0])
-    # name is None
+    # connection is None
     with pytest.raises(TypeError):
-        DummyNode(None, Pipe()[0])
-    # name is not str
+        DummyNode(None)
+    # connection is not Connection
     with pytest.raises(TypeError):
-        DummyNode(1, Pipe()[0])
-    # input_conn is None
-    with pytest.raises(TypeError):
-        DummyNode("test", None)
-    # input_conn is not Connection
-    with pytest.raises(TypeError):
-        DummyNode("test", 1)
+        DummyNode(1)
 
 
 def test_missing_super_call():
-    _, n = create_dummy_node("test", call_super=False)
+    _, n = create_dummy_node(call_super=False)
 
     # check all properties and methods that should raise a RuntimeError if super() is not called
-    with pytest.raises(RuntimeError):
-        n.name
     with pytest.raises(RuntimeError):
         n.input_slots
     with pytest.raises(RuntimeError):
@@ -73,7 +61,7 @@ def test_missing_super_call():
 
 @pytest.mark.parametrize("is_input", [True, False])
 def test_register_slot(is_input):
-    _, n = create_dummy_node("test")
+    _, n = create_dummy_node()
 
     fn = n.register_input if is_input else n.register_output
     slot_dict = n.input_slots if is_input else n.output_slots
@@ -116,7 +104,7 @@ def test_register_slot(is_input):
 @pytest.mark.parametrize("is_input", [True, False])
 @pytest.mark.parametrize("dtype", DataType.__members__.values())
 def test_register_slot_dtypes(is_input, dtype):
-    _, n = create_dummy_node("test")
+    _, n = create_dummy_node()
 
     if is_input:
         # try to register an input slot with the given dtype
