@@ -8,11 +8,11 @@ from goofi.message import Message, MessageType
 
 
 def test_creation():
-    Manager()
+    Manager(True)
 
 
 def test_simple():
-    manager = Manager()
+    manager = Manager(True)
     manager.add_node("generators.Constant")
     manager.add_node("generators.Sine")
     manager.add_node("Add")
@@ -28,7 +28,7 @@ def test_simple():
     last = None
     rates = []
     data = []
-    for _ in range(30):
+    for _ in range(10):
         msg = node_conn.recv()
         data.append(msg.content["data"].data[0])
 

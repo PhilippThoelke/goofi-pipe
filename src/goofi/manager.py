@@ -1,14 +1,10 @@
+import argparse
 import importlib
-from dataclasses import dataclass
 from multiprocessing import Pipe, Process
-from multiprocessing.connection import Connection
 
+from goofi.gui import Window
 from goofi.message import Message, MessageType
-
-
-@dataclass
-class NodeRef:
-    connection: Connection
+from goofi.node import NodeRef
 
 
 class NodeContainer:
@@ -43,22 +39,48 @@ class NodeContainer:
     def __len__(self) -> int:
         return len(self._nodes)
 
+    def __iter__(self):
+        return iter(self._nodes.keys())
+
     def __contains__(self, name: str) -> bool:
         return name in self._nodes
 
 
 class Manager:
-    def __init__(self) -> None:
+    def __init__(self, headless: bool) -> None:
+        self._headless = headless
+        self._running = True
         self.nodes = NodeContainer()
 
+        if not self.headless:
+            Window(self.terminate)
+
     def add_node(self, node_path: str) -> None:
+        """
+        Adds a node to the container.
+
+        ### Parameters
+        `node_path` : str
+            The path to the node class, e.g. `generators.Constant`.
+        """
+
         node_cls = node_path.split(".")[-1]
         mod = importlib.import_module(f"goofi.nodes.{node_path.lower()}")
         node = getattr(mod, node_cls)
+
+        # create a communication pipe for the node
         conn1, conn2 = Pipe()
+        # create a reference to the node
         ref = NodeRef(conn1)
+        # instantiate the node in a separate process
         Process(target=node, args=(conn2,), daemon=True).start()
-        return self.nodes.add_node(node_cls.lower(), ref)
+        # add the node reference to the container
+        name = self.nodes.add_node(node_cls.lower(), ref)
+
+        # add the node to the gui
+        if not self.headless:
+            Window().add_node(name, ref)
+        return name
 
     def connect(self, node1: str, node2: str, slot1: str, slot2: str) -> None:
         if node1 not in self.nodes:
@@ -75,11 +97,29 @@ class Manager:
             )
         )
 
+    def terminate(self) -> None:
+        self._running = False
+        for node in self.nodes:
+            self.nodes[node].connection.send(Message(MessageType.TERMINATE, {}))
+            self.nodes[node].connection.close()
+
+    @property
+    def running(self) -> bool:
+        return self._running
+
+    @property
+    def headless(self) -> bool:
+        return self._headless
+
 
 def main():
+    parser = argparse.ArgumentParser(description="goofi-pipe")
+    parser.add_argument("--headless", action="store_true", help="run in headless mode")
+    args = parser.parse_args()
+
     import time
 
-    manager = Manager()
+    manager = Manager(headless=args.headless)
     manager.add_node("generators.Constant")
     manager.add_node("generators.Sine")
     manager.add_node("Add")
@@ -93,7 +133,11 @@ def main():
     )
 
     last = time.time()
-    while True:
+    while manager.running:
         msg = node_conn.recv()
         print(f"{1/(time.time()-last):.2f}: {msg.content['data'].data[0]}")
         last = time.time()
+
+
+if __name__ == "__main__":
+    main()

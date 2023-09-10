@@ -19,9 +19,9 @@ class MessageType(Enum):
     - `DATA`: Sent by one node to another and contains data sent from an output slot to an input slot.
         - `slot_name` (str): The name of the target input slot.
         - `data` (Data): The data object. See the `Data` class for more information.
-    - `PING`: Probe message to check if a process is alive.
+    - `PING`: Empty probe to check if a process is alive.
     - `PONG`: Response to a ping message.
-    - `TERMINATE`: Sent by the manager to a node to terminate the node.
+    - `TERMINATE`: Empty message to indicate that a node should terminate.
     """
 
     ADD_OUTPUT_PIPE = 1

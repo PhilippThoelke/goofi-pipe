@@ -73,6 +73,13 @@ def require_init(func: Callable) -> Callable:
     return wrapper
 
 
+@dataclass
+class NodeRef:
+    connection: Connection
+    input_slots: Dict[str, DataType] = field(default_factory=dict)
+    output_slots: Dict[str, DataType] = field(default_factory=dict)
+
+
 class Node(ABC):
     """
     The base class for all nodes. A node is a processing unit that can receive data from other nodes, process the
