@@ -4,7 +4,7 @@ from multiprocessing import Pipe, Process
 
 from goofi.gui import Window
 from goofi.message import Message, MessageType
-from goofi.node import NodeRef
+from goofi.node_helpers import NodeRef
 
 
 class NodeContainer:

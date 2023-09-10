@@ -17,7 +17,7 @@ def test_abstract_node():
 
 
 def test_create_node():
-    _, n = create_dummy_node()
+    ref, n = create_dummy_node()
 
     # some basic checks
     assert len(n.input_slots) == 0, "Node input slots are not empty."
@@ -25,12 +25,16 @@ def test_create_node():
     assert n.messaging_thread.is_alive(), "Node messaging thread is not alive."
     assert n.processing_thread.is_alive(), "Node processing thread is not alive."
 
+    # clean up dangling threads
+    ref.terminate()
+
 
 def test_dead_pipe():
-    ref, n = create_dummy_node()
+    conn, node_pipe = Pipe()
+    n = DummyNode(node_pipe)
 
     # close the connection
-    ref.connection.close()
+    conn.close()
     time.sleep(0.05)
 
     # the node should stop its messaging thread and exit
@@ -47,7 +51,7 @@ def test_create_node_errors():
 
 
 def test_missing_super_call():
-    _, n = create_dummy_node(call_super=False)
+    ref, n = create_dummy_node(call_super=False)
 
     # check all properties and methods that should raise a RuntimeError if super() is not called
     with pytest.raises(RuntimeError):
@@ -59,10 +63,13 @@ def test_missing_super_call():
     with pytest.raises(RuntimeError):
         n.register_output("test", DataType.STRING)
 
+    # clean up dangling threads
+    ref.terminate()
+
 
 @pytest.mark.parametrize("is_input", [True, False])
 def test_register_slot(is_input):
-    _, n = create_dummy_node()
+    ref, n = create_dummy_node()
 
     fn = n.register_input if is_input else n.register_output
     slot_dict = n.input_slots if is_input else n.output_slots
@@ -101,11 +108,14 @@ def test_register_slot(is_input):
 
     assert len(slot_dict) == 1, "Slots should still have one entry."
 
+    # clean up dangling threads
+    ref.terminate()
+
 
 @pytest.mark.parametrize("is_input", [True, False])
 @pytest.mark.parametrize("dtype", DataType.__members__.values())
 def test_register_slot_dtypes(is_input, dtype):
-    _, n = create_dummy_node()
+    ref, n = create_dummy_node()
 
     if is_input:
         # try to register an input slot with the given dtype
@@ -113,6 +123,9 @@ def test_register_slot_dtypes(is_input, dtype):
     else:
         # try to register an output slot with the given dtype
         n.register_output("slot1", dtype)
+
+    # clean up dangling threads
+    ref.terminate()
 
 
 @pytest.mark.parametrize("dtype", DataType.__members__.values())
@@ -129,17 +142,33 @@ def test_output_slot(dtype):
 
 
 def test_ping_pong():
+    messages = []
+
+    def callback(msg: Message):
+        messages.append(msg)
+
     ref, _ = create_dummy_node()
-    conn = ref.connection
-    conn.send(Message(MessageType.PING, {}))
+    ref.register_callback("test", callback)
+
+    ref.connection.send(Message(MessageType.PING, {}))
     time.sleep(0.01)
-    assert conn.poll(), "Node should respond to ping message."
-    assert conn.recv().type == MessageType.PONG, "Node should respond to ping message with pong message."
+    assert len(messages) == 1, "Node should have received one message."
+    assert messages[0].type == MessageType.PONG, "Node should have received a pong message."
+
+    # clean up dangling threads
+    ref.terminate()
 
 
 def test_terminate():
     ref, n = create_dummy_node()
     ref.connection.send(Message(MessageType.TERMINATE, {}))
+    time.sleep(0.01)
+    assert not n.alive, "Node should be dead after receiving terminate message."
+
+
+def test_terminate_func():
+    ref, n = create_dummy_node()
+    ref.terminate()
     time.sleep(0.01)
     assert not n.alive, "Node should be dead after receiving terminate message."
 
@@ -180,3 +209,26 @@ def test_broken_processing():
     conn1.send(Message(MessageType.PING, {}))
     time.sleep(0.01)
     assert n.processing_thread.is_alive(), "Processing thread should be alive."
+
+
+def test_node_params_request():
+    messages = []
+
+    def callback(msg: Message):
+        messages.append(msg)
+
+    ref, _ = create_dummy_node()
+    ref.register_callback("test", callback)
+
+    ref.connection.send(Message(MessageType.NODE_PARAMS_REQUEST, {}))
+    time.sleep(0.01)
+    assert len(messages) == 1, "Node should have received one message."
+    assert messages[0].type == MessageType.NODE_PARAMS, "Node should have received a node params message."
+
+    # the dummy node has no params, no input slots and no output slots
+    assert messages[0].content["params"] == dict(), "params should be empty for DummyNode."
+    assert messages[0].content["input_slots"] == dict(), "input_slots should be empty for DummyNode."
+    assert messages[0].content["output_slots"] == dict(), "output_slots should be empty for DummyNode."
+
+    # clean up dangling threads
+    ref.terminate()

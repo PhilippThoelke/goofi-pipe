@@ -1,52 +1,12 @@
 import time
 from abc import ABC, abstractmethod
-from dataclasses import dataclass, field
 from multiprocessing.connection import Connection
 from threading import Event, Thread
-from typing import Callable, Dict, List, Optional, Tuple
+from typing import Callable, Dict
 
 from goofi.data import Data, DataType
 from goofi.message import Message, MessageType
-
-
-@dataclass
-class InputSlot:
-    """
-    An input slot is used to receive data from an output slot. It contains the data type (`dtype`) and a data
-    object (`data`). The data object is updated when data is received from an output slot. The data type is used
-    to check that the data received from the output slot is of the correct type.
-
-    ### Parameters
-    `dtype` : DataType
-        The data type of the input slot.
-    `data` : Optional[Data]
-        The data object of the input slot. Defaults to None.
-    `trigger_update` : bool
-        If True, the node will automatically trigger processing when the data object is updated.
-    """
-
-    dtype: DataType
-    data: Optional[Data] = None
-    trigger_update: bool = True
-
-
-@dataclass
-class OutputSlot:
-    """
-    An output slot is used to send data to an input slot. It contains the data type (`dtype`) and a list of
-    connections (`connections`). The data type is used to check that the data sent out from the output slot
-    is of the correct type. The connections list maps names of target input slots to the connection
-    objects that are used to send data to other nodes.
-
-    ### Parameters
-    `dtype` : DataType
-        The data type of the output slot.
-    `connections` : List[Tuple[str, Connection]]
-        A list of tuples containing the name of the target input slot and the connection object of the target.
-    """
-
-    dtype: DataType
-    connections: List[Tuple[str, Connection]] = field(default_factory=list)
+from goofi.node_helpers import InputSlot, OutputSlot
 
 
 def require_init(func: Callable) -> Callable:
@@ -71,13 +31,6 @@ def require_init(func: Callable) -> Callable:
         return func(self, *args, **kwargs)
 
     return wrapper
-
-
-@dataclass
-class NodeRef:
-    connection: Connection
-    input_slots: Dict[str, DataType] = field(default_factory=dict)
-    output_slots: Dict[str, DataType] = field(default_factory=dict)
 
 
 class Node(ABC):
@@ -152,6 +105,17 @@ class Node(ABC):
                 slot.data = msg.content["data"]
                 if slot.trigger_update:
                     self.process_flag.set()
+            elif msg.type == MessageType.NODE_PARAMS_REQUEST:
+                self.connection.send(
+                    Message(
+                        MessageType.NODE_PARAMS,
+                        {
+                            "params": dict(),
+                            "input_slots": {name: slot.dtype for name, slot in self.input_slots.items()},
+                            "output_slots": {name: slot.dtype for name, slot in self.output_slots.items()},
+                        },
+                    )
+                )
             else:
                 # TODO: handle the incoming message
                 raise NotImplementedError(f"Message type {msg.type} not implemented.")

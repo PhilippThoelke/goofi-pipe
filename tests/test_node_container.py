@@ -1,3 +1,5 @@
+from multiprocessing import Pipe
+
 import pytest
 
 from goofi.manager import NodeContainer, NodeRef
@@ -21,7 +23,7 @@ def test_contains():
     cont = NodeContainer()
     assert "test" not in cont, "Empty container shouldn't contain anything"
 
-    cont.add_node("test", NodeRef(None))
+    cont.add_node("test", NodeRef(Pipe()[0]))
     assert "test0" in cont, "Added node but container doesn't contain it"
 
 
@@ -29,12 +31,12 @@ def test_add_node():
     cont = NodeContainer()
 
     # adding a node should increase the length of the container
-    cont.add_node("test", NodeRef(None))
+    cont.add_node("test", NodeRef(Pipe()[0]))
     assert len(cont) == 1, "Added node but length didn't increase"
     assert "test0" in cont, "Wrong name when adding node"
 
     # when adding a node with the same name, the name should be changed
-    cont.add_node("test", NodeRef(None))
+    cont.add_node("test", NodeRef(Pipe()[0]))
     assert len(cont) == 2, "Added node but length didn't increase"
 
     # make sure the name was changed
@@ -42,9 +44,9 @@ def test_add_node():
 
     # check failure cases
     with pytest.raises(ValueError):
-        cont.add_node(None, NodeRef(None))
+        cont.add_node(None, NodeRef(Pipe()[0]))
     with pytest.raises(ValueError):
-        cont.add_node(1, NodeRef(None))
+        cont.add_node(1, NodeRef(Pipe()[0]))
     with pytest.raises(ValueError):
         cont.add_node("test", None)
 

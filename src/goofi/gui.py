@@ -4,7 +4,7 @@ from typing import Callable
 
 import dearpygui.dearpygui as dpg
 
-from goofi.node import NodeRef
+from goofi.node_helpers import NodeRef
 
 
 class Window:

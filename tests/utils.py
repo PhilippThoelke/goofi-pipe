@@ -47,6 +47,6 @@ class BrokenProcessingNode(Node):
         return {}
 
 
-def create_dummy_node(call_super: bool = True) -> Tuple[Connection, DummyNode]:
+def create_dummy_node(call_super: bool = True) -> Tuple[NodeRef, DummyNode]:
     manager_pipe, node_pipe = Pipe()
     return NodeRef(manager_pipe), DummyNode(node_pipe, call_super)

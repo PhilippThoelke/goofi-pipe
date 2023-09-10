@@ -12,6 +12,8 @@ EXAMPLE_CONTENT = {
     MessageType.PING: {},
     MessageType.PONG: {},
     MessageType.TERMINATE: {},
+    MessageType.NODE_PARAMS: {"params": dict(), "input_slots": dict(), "output_slots": dict()},
+    MessageType.NODE_PARAMS_REQUEST: {},
 }
 
 
