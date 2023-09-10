@@ -211,7 +211,7 @@ def test_broken_processing():
     assert n.processing_thread.is_alive(), "Processing thread should be alive."
 
 
-def test_node_params_request():
+def test_node_params_request_empty():
     messages = []
 
     def callback(msg: Message):
@@ -229,6 +229,57 @@ def test_node_params_request():
     assert messages[0].content["params"] == dict(), "params should be empty for DummyNode."
     assert messages[0].content["input_slots"] == dict(), "input_slots should be empty for DummyNode."
     assert messages[0].content["output_slots"] == dict(), "output_slots should be empty for DummyNode."
+
+    # clean up dangling threads
+    ref.terminate()
+
+
+def test_node_params_request_multiple():
+    messages = []
+
+    def callback(msg: Message):
+        messages.append(msg)
+
+    in_slots = {"in1": DataType.STRING, "in2": DataType.FLOAT_1D}
+    out_slots = {"out1": DataType.FLOAT_1D, "out2": DataType.FLOAT_2D}
+
+    ref, _ = create_dummy_node(input_slots=in_slots, output_slots=out_slots)
+    ref.register_callback("test", callback)
+
+    ref.connection.send(Message(MessageType.NODE_PARAMS_REQUEST, {}))
+    time.sleep(0.01)
+    assert len(messages) == 1, "Node should have received one message."
+    assert messages[0].type == MessageType.NODE_PARAMS, "Node should have received a node params message."
+
+    # the dummy node has no params, no input slots and no output slots
+    assert messages[0].content["params"] == dict(), "params should be empty for DummyNode."
+    assert messages[0].content["input_slots"] == in_slots, "input_slots should be empty for DummyNode."
+    assert messages[0].content["output_slots"] == out_slots, "output_slots should be empty for DummyNode."
+
+    # clean up dangling threads
+    ref.terminate()
+
+
+@pytest.mark.parametrize("dtype1", DataType.__members__.values())
+@pytest.mark.parametrize("dtype2", DataType.__members__.values())
+def test_node_params_request_dtypes(dtype1, dtype2):
+    messages = []
+
+    def callback(msg: Message):
+        messages.append(msg)
+
+    ref, _ = create_dummy_node(input_slots={"in": dtype1}, output_slots={"out": dtype2})
+    ref.register_callback("test", callback)
+
+    ref.connection.send(Message(MessageType.NODE_PARAMS_REQUEST, {}))
+    time.sleep(0.01)
+    assert len(messages) == 1, "Node should have received one message."
+    assert messages[0].type == MessageType.NODE_PARAMS, "Node should have received a node params message."
+
+    # the dummy node has no params, no input slots and no output slots
+    assert messages[0].content["params"] == dict(), "params should be empty for DummyNode."
+    assert messages[0].content["input_slots"] == {"in": dtype1}, "input_slots should have one item."
+    assert messages[0].content["output_slots"] == {"out": dtype2}, "output_slots should have one item."
 
     # clean up dangling threads
     ref.terminate()

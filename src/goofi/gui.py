@@ -22,11 +22,11 @@ class Window:
 
     _instance = None
 
-    def __new__(cls, close_callback: Callable = None):
+    def __new__(cls, manager=None):
         if cls._instance is None:
             # instantiate the window thread
             cls._instance = super(Window, cls).__new__(cls)
-            threading.Thread(target=cls._instance._initialize, args=(close_callback,), daemon=True).start()
+            threading.Thread(target=cls._instance._initialize, args=(manager,), daemon=True).start()
         return cls._instance
 
     def add_node(self, name: str, node: NodeRef) -> None:
@@ -46,7 +46,13 @@ class Window:
             user_data=node,
         )
 
-    def _initialize(self, close_callback: Callable):
+    def link_callback(self, sender, data):
+        print(sender, data)
+
+    def delink_callback(self, sender, data):
+        print(sender, data)
+
+    def _initialize(self, manager):
         dpg.create_context()
 
         self.window = dpg.add_window(
@@ -59,7 +65,9 @@ class Window:
             no_close=True,
             no_collapse=True,
         )
-        self.node_editor = dpg.add_node_editor(parent=self.window)
+        self.node_editor = dpg.add_node_editor(
+            parent=self.window, callback=self.link_callback, delink_callback=self.delink_callback
+        )
 
         dpg.set_viewport_resize_callback(self.resize_callback)
 
@@ -69,17 +77,10 @@ class Window:
         dpg.start_dearpygui()
         dpg.destroy_context()
 
-        close_callback()
+        manager.terminate()
 
     def close(self):
         dpg.stop_dearpygui()
 
     def resize_callback(self, sender, data):
         dpg.configure_item(self.window, width=data[0], height=data[1])
-
-
-if __name__ == "__main__":
-    window = Window()
-
-    while True:
-        pass

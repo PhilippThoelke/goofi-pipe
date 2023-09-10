@@ -1,7 +1,8 @@
 from multiprocessing import Pipe
 from multiprocessing.connection import Connection
-from typing import Tuple
+from typing import Dict, Tuple
 
+from goofi.data import DataType
 from goofi.manager import NodeRef
 from goofi.node import Node
 
@@ -15,11 +16,26 @@ class DummyNode(Node):
         The input connection to the node. This is used to receive messages from the manager, or other nodes.
     `call_super` : bool
         Whether or not to call the super class constructor (for testing only).
+    `input_slots` : Dict[str, DataType]
+        The input slots of the node.
+    `output_slots` : Dict[str, DataType]
+        The output slots of the node.
     """
 
-    def __init__(self, input_pipe: Connection, call_super: bool = True) -> None:
+    def __init__(
+        self,
+        input_pipe: Connection,
+        call_super: bool = True,
+        input_slots: Dict[str, DataType] = dict(),
+        output_slots: Dict[str, DataType] = dict(),
+    ) -> None:
         if call_super:
             super().__init__(input_pipe)
+
+            for name, dtype in input_slots.items():
+                self.register_input(name, dtype)
+            for name, dtype in output_slots.items():
+                self.register_output(name, dtype)
 
     def process(self):
         return {}
@@ -47,6 +63,6 @@ class BrokenProcessingNode(Node):
         return {}
 
 
-def create_dummy_node(call_super: bool = True) -> Tuple[NodeRef, DummyNode]:
+def create_dummy_node(*args, **kwargs) -> Tuple[NodeRef, DummyNode]:
     manager_pipe, node_pipe = Pipe()
-    return NodeRef(manager_pipe), DummyNode(node_pipe, call_super)
+    return NodeRef(manager_pipe), DummyNode(node_pipe, *args, **kwargs)

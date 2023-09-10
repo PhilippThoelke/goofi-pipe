@@ -86,6 +86,7 @@ class NodeRef:
             self.connection.send(Message(MessageType.TERMINATE, {}))
         except BrokenPipeError:
             pass
+        self.connection.close()
 
     def _messaging_loop(self) -> None:
         """This method runs in a separate thread and handles incoming messages the node."""

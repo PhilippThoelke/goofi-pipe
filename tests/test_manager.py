@@ -8,11 +8,11 @@ from goofi.message import Message, MessageType
 
 
 def test_creation():
-    Manager(True)
+    Manager()
 
 
 def test_simple():
-    manager = Manager(True)
+    manager = Manager()
     manager.add_node("generators.Constant")
     manager.add_node("generators.Sine")
     manager.add_node("Add")

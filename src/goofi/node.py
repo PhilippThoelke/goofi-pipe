@@ -106,6 +106,7 @@ class Node(ABC):
                 if slot.trigger_update:
                     self.process_flag.set()
             elif msg.type == MessageType.NODE_PARAMS_REQUEST:
+                print(self.input_slots, self.output_slots)
                 self.connection.send(
                     Message(
                         MessageType.NODE_PARAMS,

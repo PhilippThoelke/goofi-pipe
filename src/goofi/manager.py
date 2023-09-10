@@ -1,6 +1,7 @@
 import argparse
 import importlib
 from multiprocessing import Pipe, Process
+from typing import Dict
 
 from goofi.gui import Window
 from goofi.message import Message, MessageType
@@ -9,7 +10,7 @@ from goofi.node_helpers import NodeRef
 
 class NodeContainer:
     def __init__(self) -> None:
-        self._nodes = {}
+        self._nodes: Dict[str, NodeRef] = {}
 
     def add_node(self, name: str, node: NodeRef) -> str:
         """Adds a node to the container with a unique name."""
@@ -27,8 +28,7 @@ class NodeContainer:
     def remove_node(self, name: str) -> None:
         """Terminates the node and removes it from the container."""
         if name in self._nodes:
-            self._nodes[name].connection.send(Message(MessageType.TERMINATE, {}))
-            self._nodes[name].connection.close()
+            self._nodes[name].terminate()
             del self._nodes[name]
             return True
         raise KeyError(f"Node {name} not in container")
@@ -47,13 +47,13 @@ class NodeContainer:
 
 
 class Manager:
-    def __init__(self, headless: bool) -> None:
+    def __init__(self, headless: bool = True) -> None:
         self._headless = headless
         self._running = True
         self.nodes = NodeContainer()
 
         if not self.headless:
-            Window(self.terminate)
+            Window(self)
 
     def add_node(self, node_path: str) -> None:
         """
@@ -134,6 +134,8 @@ def main():
 
     last = time.time()
     while manager.running:
+        if not node_conn.poll(0.05):
+            continue
         msg = node_conn.recv()
         print(f"{1/(time.time()-last):.2f}: {msg.content['data'].data[0]}")
         last = time.time()
