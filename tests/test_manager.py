@@ -1,3 +1,4 @@
+import platform
 import time
 from multiprocessing import Pipe
 
@@ -12,6 +13,9 @@ def test_creation():
 
 
 def test_simple():
+    if platform.system() == "Windows":
+        pytest.skip("Multiprocessing is very slow on Windows.")
+
     manager = Manager()
     manager.add_node("generators.Constant")
     manager.add_node("generators.Sine")
@@ -29,6 +33,8 @@ def test_simple():
     rates = []
     data = []
     for _ in range(10):
+        if not node_conn.poll(0.01):
+            raise TimeoutError("Timeout while waiting for data.")
         msg = node_conn.recv()
         data.append(msg.content["data"].data[0])
 

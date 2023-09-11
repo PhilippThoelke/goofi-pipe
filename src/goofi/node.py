@@ -1,8 +1,8 @@
 import time
 from abc import ABC, abstractmethod
-from multiprocessing.connection import Connection
+from multiprocessing.connection import Connection, PipeConnection
 from threading import Event, Thread
-from typing import Callable, Dict
+from typing import Callable, Dict, Union
 
 from goofi.data import Data, DataType
 from goofi.message import Message, MessageType
@@ -41,14 +41,14 @@ class Node(ABC):
     slots.
 
     ### Parameters
-    `connection` : Connection
+    `connection` : Union[Connection, PipeConnection]
         The input connection to the node. This is used to receive messages from the manager, or other nodes.
     `autotrigger` : bool
         If True, the node will automatically trigger processing regardless of whether or not it received data.
     """
 
-    def __init__(self, connection: Connection, autotrigger: bool = False) -> None:
-        if not isinstance(connection, Connection):
+    def __init__(self, connection: Union[Connection, PipeConnection], autotrigger: bool = False) -> None:
+        if not isinstance(connection, (Connection, PipeConnection)):
             raise TypeError(f"Expected Connection, got {type(connection)}.")
         self._alive = True
 

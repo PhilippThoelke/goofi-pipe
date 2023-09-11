@@ -179,13 +179,13 @@ def test_multiproc():
     proc = Process(target=DummyNode, args=(conn2,), daemon=True)
     proc.start()
 
-    time.sleep(0.01)
+    time.sleep(0.1)  # TODO: 0.1 is quite long but required on Windows, Linux works with 0.01
     # make sure the node is not dead
     assert proc.is_alive(), "Process should be alive."
 
     # send a terminate message
     conn1.send(Message(MessageType.TERMINATE, {}))
-    time.sleep(0.01)
+    time.sleep(0.1)  # TODO: 0.1 is quite long but required on Windows, Linux works with 0.01
     # make sure the node is dead
     assert not proc.is_alive(), "Process should be dead."
 

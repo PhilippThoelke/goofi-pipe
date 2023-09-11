@@ -1,6 +1,6 @@
 import time
-from multiprocessing.connection import Connection
-from typing import Dict
+from multiprocessing.connection import Connection, PipeConnection
+from typing import Dict, Union
 
 import numpy as np
 
@@ -9,7 +9,7 @@ from goofi.node import Node
 
 
 class Sine(Node):
-    def __init__(self, connection: Connection) -> None:
+    def __init__(self, connection: Union[Connection, PipeConnection]) -> None:
         super().__init__(connection, autotrigger=True)
         self.register_output("out", DataType.FLOAT_1D)
 
