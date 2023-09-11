@@ -66,14 +66,14 @@ class Node(ABC):
             self.process_flag.set()
 
         # initialize message handling thread
-        self.messaging_thread = Thread(target=self.messaging_loop)
+        self.messaging_thread = Thread(target=self._messaging_loop)
         self.messaging_thread.start()
 
         # initialize data processing thread
-        self.processing_thread = Thread(target=self.processing_loop, daemon=True)
+        self.processing_thread = Thread(target=self._processing_loop, daemon=True)
         self.processing_thread.start()
 
-    def messaging_loop(self):
+    def _messaging_loop(self):
         """
         This method runs in a separate thread and handles incoming messages from the manager, or other nodes.
         """
@@ -83,11 +83,12 @@ class Node(ABC):
             except (EOFError, ConnectionResetError):
                 # the connection was closed, consider the node dead
                 self._alive = False
+                self.connection.close()
                 continue
 
             # potentially restart the processing thread
             if not self.processing_thread.is_alive():
-                self.processing_thread = Thread(target=self.processing_loop, daemon=True)
+                self.processing_thread = Thread(target=self._processing_loop, daemon=True)
                 self.processing_thread.start()
 
             if not isinstance(msg, Message):
@@ -106,7 +107,6 @@ class Node(ABC):
                 if slot.trigger_update:
                     self.process_flag.set()
             elif msg.type == MessageType.NODE_PARAMS_REQUEST:
-                print(self.input_slots, self.output_slots)
                 self.connection.send(
                     Message(
                         MessageType.NODE_PARAMS,
@@ -121,7 +121,7 @@ class Node(ABC):
                 # TODO: handle the incoming message
                 raise NotImplementedError(f"Message type {msg.type} not implemented.")
 
-    def processing_loop(self):
+    def _processing_loop(self):
         """
         This method runs in a separate thread and handles the processing of input data and sending of
         output data to other nodes.

@@ -49,39 +49,44 @@ class OutputSlot:
 
 @dataclass
 class NodeRef:
+    """
+    A reference to a node, implementing the node's counterpart in the manager. The reference contains the
+    connection object to the node, and the input and output slots of the node. NodeRef instances should
+    be created along with a node.
+
+    NodeRef instances will handle the following message types with default behavior, which can be overridden
+    by registering a message handler function with the `set_message_handler()` method:
+
+    - `PING`: Responds with a `PONG` message.
+    - `TERMINATE`: Terminates the node by closing the connection to it.
+    - `NODE_PARAMS_REQUEST`: Raises `ValueError`. NodeRef instances should not receive this message type.
+
+    ### Parameters
+    `connection` : Connection
+        The connection object to the node.
+    """
+
     connection: Connection
+
     input_slots: Dict[str, DataType] = field(default_factory=dict)
     output_slots: Dict[str, DataType] = field(default_factory=dict)
+    callbacks: Dict[MessageType, Callable] = field(default_factory=dict)
 
-    callbacks: Dict[object, Callable] = field(default_factory=dict)
-
-    def register_callback(self, obj: object, callback: Callable) -> None:
+    def set_message_handler(self, msg_type: MessageType, callback: Optional[Callable]) -> None:
         """
-        Registers a callback function that is called when the node receives data.
+        Registers a message handler function that is called when the node sends this type of message
+        to the manager.
 
         ### Parameters
-        `obj` : object
-            The object that the callback function belongs to.
-        `callback` : Callable
-            The callback function.
+        `msg_type` : MessageType
+            The type of message to register the handler for.
+        `callback` : Optional[Callable]
+            Callback function: `callback(node: NodeRef, msg: Message) -> None`
         """
-        if not callable(callback):
-            raise TypeError(f"Expected callable, got {type(callback)}")
-        self.callbacks[obj] = callback
-
-    def unregister_callback(self, obj: object) -> None:
-        """
-        Unregisters a callback function.
-
-        ### Parameters
-        `obj` : object
-            The object that the callback function belongs to. The callback takes a single argument,
-            the message.
-        """
-        del self.callbacks[obj]
+        self.callbacks[msg_type] = callback
 
     def terminate(self) -> None:
-        """Terminates the node (both reference and actual node)."""
+        """Terminates the node by closing the connection to it."""
         try:
             self.connection.send(Message(MessageType.TERMINATE, {}))
         except BrokenPipeError:
@@ -101,17 +106,23 @@ class NodeRef:
             if not isinstance(msg, Message):
                 raise TypeError(f"Expected Message, got {type(msg)}")
 
-            for callback in self.callbacks.values():
-                callback(msg)
+            # if the message type has a registered callback, call it and skip built-in message handling
+            if msg.type in self.callbacks:
+                self.callbacks[msg.type](self, msg)
+                continue
 
+            # built-in message handling
             if msg.type == MessageType.PING:
                 self.connection.send(Message(MessageType.PONG, {}))
             elif msg.type == MessageType.TERMINATE:
                 self._alive = False
+                self.connection.close()
+            elif msg.type == MessageType.NODE_PARAMS_REQUEST:
+                raise ValueError("Nodes should not send NODE_PARAMS_REQUEST messages.")
 
     def __post_init__(self):
         if self.connection is None:
-            raise ValueError("Expected Connection, got None")
+            raise ValueError("Expected Connection, got None.")
 
         self._alive = True
         self._messaging_thread = Thread(target=self._messaging_loop, daemon=True)

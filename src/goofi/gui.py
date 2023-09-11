@@ -1,6 +1,5 @@
 import threading
 import time
-from typing import Callable
 
 import dearpygui.dearpygui as dpg
 

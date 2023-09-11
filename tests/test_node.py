@@ -6,6 +6,7 @@ import pytest
 from goofi.data import DataType
 from goofi.message import Message, MessageType
 from goofi.node import InputSlot, Node, OutputSlot
+from goofi.node_helpers import NodeRef
 
 from .utils import BrokenProcessingNode, DummyNode, create_dummy_node
 
@@ -144,11 +145,11 @@ def test_output_slot(dtype):
 def test_ping_pong():
     messages = []
 
-    def callback(msg: Message):
+    def callback(_: NodeRef, msg: Message):
         messages.append(msg)
 
     ref, _ = create_dummy_node()
-    ref.register_callback("test", callback)
+    ref.set_message_handler(MessageType.PONG, callback)
 
     ref.connection.send(Message(MessageType.PING, {}))
     time.sleep(0.01)
@@ -214,11 +215,11 @@ def test_broken_processing():
 def test_node_params_request_empty():
     messages = []
 
-    def callback(msg: Message):
+    def callback(_: NodeRef, msg: Message):
         messages.append(msg)
 
     ref, _ = create_dummy_node()
-    ref.register_callback("test", callback)
+    ref.set_message_handler(MessageType.NODE_PARAMS, callback)
 
     ref.connection.send(Message(MessageType.NODE_PARAMS_REQUEST, {}))
     time.sleep(0.01)
@@ -237,14 +238,14 @@ def test_node_params_request_empty():
 def test_node_params_request_multiple():
     messages = []
 
-    def callback(msg: Message):
+    def callback(_: NodeRef, msg: Message):
         messages.append(msg)
 
     in_slots = {"in1": DataType.STRING, "in2": DataType.FLOAT_1D}
     out_slots = {"out1": DataType.FLOAT_1D, "out2": DataType.FLOAT_2D}
 
     ref, _ = create_dummy_node(input_slots=in_slots, output_slots=out_slots)
-    ref.register_callback("test", callback)
+    ref.set_message_handler(MessageType.NODE_PARAMS, callback)
 
     ref.connection.send(Message(MessageType.NODE_PARAMS_REQUEST, {}))
     time.sleep(0.01)
@@ -265,11 +266,11 @@ def test_node_params_request_multiple():
 def test_node_params_request_dtypes(dtype1, dtype2):
     messages = []
 
-    def callback(msg: Message):
+    def callback(_: NodeRef, msg: Message):
         messages.append(msg)
 
     ref, _ = create_dummy_node(input_slots={"in": dtype1}, output_slots={"out": dtype2})
-    ref.register_callback("test", callback)
+    ref.set_message_handler(MessageType.NODE_PARAMS, callback)
 
     ref.connection.send(Message(MessageType.NODE_PARAMS_REQUEST, {}))
     time.sleep(0.01)
