@@ -1,5 +1,5 @@
-from multiprocessing.connection import Connection, PipeConnection
-from typing import Dict, Union
+from goofi.connection import Connection
+from typing import Dict
 
 import numpy as np
 
@@ -8,7 +8,7 @@ from goofi.node import Node
 
 
 class Constant(Node):
-    def __init__(self, connection: Union[Connection, PipeConnection]) -> None:
+    def __init__(self, connection: Connection) -> None:
         super().__init__(connection, autotrigger=True)
         self.register_output("out", DataType.FLOAT_1D)
 

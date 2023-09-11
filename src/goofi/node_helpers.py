@@ -1,5 +1,5 @@
 from dataclasses import dataclass, field
-from multiprocessing.connection import Connection
+from goofi.connection import Connection
 from threading import Thread
 from typing import Callable, Dict, List, Optional, Tuple
 

@@ -1,12 +1,11 @@
-from multiprocessing.connection import Connection, PipeConnection
-from typing import Union
+from goofi.connection import Connection
 
 from goofi.data import Data, DataType
 from goofi.node import Node
 
 
 class Add(Node):
-    def __init__(self, connection: Union[Connection, PipeConnection]) -> None:
+    def __init__(self, connection: Connection) -> None:
         super().__init__(connection)
 
         self.register_input("a", DataType.FLOAT_1D)

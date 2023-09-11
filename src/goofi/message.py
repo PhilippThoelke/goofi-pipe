@@ -1,6 +1,6 @@
 from dataclasses import dataclass
 from enum import Enum
-from multiprocessing.connection import Connection, PipeConnection
+from goofi.connection import Connection
 from typing import Any, Dict
 
 from goofi.data import Data
@@ -83,7 +83,7 @@ class Message:
 
         # check the content for the specific message type
         if self.type == MessageType.ADD_OUTPUT_PIPE:
-            self.require_fields(slot_name_out=str, slot_name_in=str, node_connection=(Connection, PipeConnection))
+            self.require_fields(slot_name_out=str, slot_name_in=str, node_connection=Connection)
         elif self.type == MessageType.REMOVE_OUTPUT_PIPE:
             self.require_fields(slot_name=str)
         elif self.type == MessageType.DATA:

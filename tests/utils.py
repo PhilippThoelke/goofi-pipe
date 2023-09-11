@@ -1,5 +1,5 @@
 from multiprocessing import Pipe
-from multiprocessing.connection import Connection
+from goofi.connection import Connection
 from typing import Dict, Tuple
 
 from goofi.data import DataType
