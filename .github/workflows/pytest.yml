@@ -22,7 +22,7 @@ jobs:
     - name: Install dependencies
       run: |
         pip install wheel setuptools pip --upgrade
-        pip install pytest flake8
+        pip install flake8 pytest pytest-xdist-forked
         pip install .
 
     - name: Lint with flake8
@@ -34,4 +34,4 @@ jobs:
 
     - name: Running pytest
       run: |
-        pytest tests/ -s -v
+        pytest tests/ -s -v --boxed
