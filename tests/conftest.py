@@ -1,4 +1,3 @@
-import ctypes
 import threading
 import time
 from multiprocessing import active_children
