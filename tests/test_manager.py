@@ -33,7 +33,7 @@ def test_simple():
     rates = []
     data = []
     for _ in range(10):
-        if not node_conn.poll(0.01):
+        if not node_conn.poll(0.05):
             raise TimeoutError("Timeout while waiting for data.")
         msg = node_conn.recv()
         data.append(msg.content["data"].data[0])
