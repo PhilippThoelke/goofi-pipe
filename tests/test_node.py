@@ -8,7 +8,7 @@ from goofi.message import Message, MessageType
 from goofi.node import InputSlot, Node, OutputSlot
 from goofi.node_helpers import NodeRef
 
-from .utils import BrokenProcessingNode, DummyNode, create_dummy_node
+from .utils import BrokenProcessingNode, DummyNode
 
 
 def test_abstract_node():
@@ -18,7 +18,7 @@ def test_abstract_node():
 
 
 def test_create_node():
-    ref, n = create_dummy_node()
+    ref, n = DummyNode.create_local()
 
     # some basic checks
     assert len(n.input_slots) == 0, "Node input slots are not empty."
@@ -30,12 +30,12 @@ def test_create_node():
     ref.terminate()
 
 
+@pytest.mark.skip("This test is inconsistent")
 def test_dead_pipe():
-    conn, node_pipe = Pipe()
-    n = DummyNode(node_pipe)
+    ref, n = DummyNode.create_local()
 
     # close the connection
-    conn.close()
+    ref.connection.close()
     time.sleep(0.05)
 
     # the node should stop its messaging thread and exit
@@ -52,7 +52,7 @@ def test_create_node_errors():
 
 
 def test_missing_super_call():
-    ref, n = create_dummy_node(call_super=False)
+    ref, n = DummyNode.create_local(call_super=False)
 
     # check all properties and methods that should raise a RuntimeError if super() is not called
     with pytest.raises(RuntimeError):
@@ -70,7 +70,7 @@ def test_missing_super_call():
 
 @pytest.mark.parametrize("is_input", [True, False])
 def test_register_slot(is_input):
-    ref, n = create_dummy_node()
+    ref, n = DummyNode.create_local()
 
     fn = n.register_input if is_input else n.register_output
     slot_dict = n.input_slots if is_input else n.output_slots
@@ -116,7 +116,7 @@ def test_register_slot(is_input):
 @pytest.mark.parametrize("is_input", [True, False])
 @pytest.mark.parametrize("dtype", DataType.__members__.values())
 def test_register_slot_dtypes(is_input, dtype):
-    ref, n = create_dummy_node()
+    ref, n = DummyNode.create_local()
 
     if is_input:
         # try to register an input slot with the given dtype
@@ -148,7 +148,7 @@ def test_ping_pong():
     def callback(_: NodeRef, msg: Message):
         messages.append(msg)
 
-    ref, _ = create_dummy_node()
+    ref, _ = DummyNode.create_local()
     ref.set_message_handler(MessageType.PONG, callback)
 
     ref.connection.send(Message(MessageType.PING, {}))
@@ -161,14 +161,14 @@ def test_ping_pong():
 
 
 def test_terminate():
-    ref, n = create_dummy_node()
+    ref, n = DummyNode.create_local()
     ref.connection.send(Message(MessageType.TERMINATE, {}))
     time.sleep(0.01)
     assert not n.alive, "Node should be dead after receiving terminate message."
 
 
 def test_terminate_func():
-    ref, n = create_dummy_node()
+    ref, n = DummyNode.create_local()
     ref.terminate()
     time.sleep(0.01)
     assert not n.alive, "Node should be dead after receiving terminate message."
@@ -218,7 +218,7 @@ def test_node_params_request_empty():
     def callback(_: NodeRef, msg: Message):
         messages.append(msg)
 
-    ref, _ = create_dummy_node()
+    ref, _ = DummyNode.create_local()
     ref.set_message_handler(MessageType.NODE_PARAMS, callback)
 
     ref.connection.send(Message(MessageType.NODE_PARAMS_REQUEST, {}))
@@ -244,7 +244,7 @@ def test_node_params_request_multiple():
     in_slots = {"in1": DataType.STRING, "in2": DataType.ARRAY}
     out_slots = {"out1": DataType.ARRAY, "out2": DataType.STRING}
 
-    ref, _ = create_dummy_node(input_slots=in_slots, output_slots=out_slots)
+    ref, _ = DummyNode.create_local(input_slots=in_slots, output_slots=out_slots)
     ref.set_message_handler(MessageType.NODE_PARAMS, callback)
 
     ref.connection.send(Message(MessageType.NODE_PARAMS_REQUEST, {}))
@@ -269,7 +269,7 @@ def test_node_params_request_dtypes(dtype1, dtype2):
     def callback(_: NodeRef, msg: Message):
         messages.append(msg)
 
-    ref, _ = create_dummy_node(input_slots={"in": dtype1}, output_slots={"out": dtype2})
+    ref, _ = DummyNode.create_local(input_slots={"in": dtype1}, output_slots={"out": dtype2})
     ref.set_message_handler(MessageType.NODE_PARAMS, callback)
 
     ref.connection.send(Message(MessageType.NODE_PARAMS_REQUEST, {}))

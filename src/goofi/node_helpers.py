@@ -1,8 +1,9 @@
 from dataclasses import dataclass, field
-from goofi.connection import Connection
+from multiprocessing import Process
 from threading import Thread
 from typing import Callable, Dict, List, Optional, Tuple
 
+from goofi.connection import Connection
 from goofi.data import Data, DataType
 from goofi.message import Message, MessageType
 
@@ -62,10 +63,13 @@ class NodeRef:
     - `NODE_PARAMS_REQUEST`: Raises `ValueError`. NodeRef instances should not receive this message type.
 
     ### Parameters
+    `process` : Process
+        The process handle for this node, which can be used to terminate the node.
     `connection` : Connection
         The connection object to the node.
     """
 
+    process: Process
     connection: Connection
 
     input_slots: Dict[str, DataType] = field(default_factory=dict)
@@ -98,9 +102,10 @@ class NodeRef:
         while self._alive:
             try:
                 msg = self.connection.recv()
-            except (EOFError, ConnectionResetError):
+            except (EOFError, ConnectionResetError, OSError):
                 # the connection was closed, consider the node dead
                 self._alive = False
+                self.connection.close()
                 continue
 
             if not isinstance(msg, Message):

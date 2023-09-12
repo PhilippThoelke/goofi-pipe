@@ -68,13 +68,8 @@ class Manager:
         mod = importlib.import_module(f"goofi.nodes.{node_path.lower()}")
         node = getattr(mod, node_cls)
 
-        # create a communication pipe for the node
-        conn1, conn2 = Pipe()
-        # create a reference to the node
-        ref = NodeRef(conn1)
-        # instantiate the node in a separate process
-        Process(target=node, args=(conn2,), daemon=True).start()
-        # add the node reference to the container
+        # instantiate the node and add it to the container
+        ref = node.create()
         name = self.nodes.add_node(node_cls.lower(), ref)
 
         # add the node to the gui

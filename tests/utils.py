@@ -1,9 +1,7 @@
-from multiprocessing import Pipe
-from goofi.connection import Connection
-from typing import Dict, Tuple
+from typing import Dict
 
+from goofi.connection import Connection
 from goofi.data import DataType
-from goofi.manager import NodeRef
 from goofi.node import Node
 
 
@@ -61,8 +59,3 @@ class BrokenProcessingNode(Node):
             self.n_fails -= 1
             raise Exception("BrokenProcessingNode")
         return {}
-
-
-def create_dummy_node(*args, **kwargs) -> Tuple[NodeRef, DummyNode]:
-    manager_pipe, node_pipe = Pipe()
-    return NodeRef(manager_pipe), DummyNode(node_pipe, *args, **kwargs)
