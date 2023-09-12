@@ -144,7 +144,9 @@ if __name__ == "__main__":
     mngr = manager.Manager(
         data_in={
             "eeg": data_in.EEGRecording.make_eegbci(),
-            "": data_in.SerialStream(sfreq=60, buffer_seconds=60)  # stream some pre-recorded EEG from a file
+            "": data_in.SerialStream(
+                sfreq=60, buffer_seconds=60
+            ),  # stream some pre-recorded EEG from a file
         },
         processors=[
             # global delta power

@@ -25,7 +25,7 @@ if __name__ == "__main__":
             ),
             processors.TextGeneration(
                 processors.TextGeneration.NARRATIVE_INFORMED_PROMPT,
-                #"/file/text-generation"
+                # "/file/text-generation"
                 "/file/bioelements/ch0_bioelements",
                 model="gpt-4",
                 keep_conversation=True,

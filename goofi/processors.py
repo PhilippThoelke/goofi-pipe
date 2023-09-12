@@ -224,7 +224,7 @@ class LempelZiv(Processor):
         else:
             return {
                 f"{self.label}/{ch}": lziv_complexity(binarized[i], normalize=True)
-                for i,ch in enumerate(info["ch_names"])
+                for i, ch in enumerate(info["ch_names"])
             }
 
 
@@ -613,9 +613,15 @@ class Biotuner(Processor):
                         metrics,
                         tuning,
                         harm_tuning,
-                        amps
-                    ) = biotuner_realtime(ch, self.sfreq, n_peaks=self.n_peaks, peaks_function=self.peaks_function,
-                                            min_freq=self.freq_range[0], max_freq=self.freq_range[1])
+                        amps,
+                    ) = biotuner_realtime(
+                        ch,
+                        self.sfreq,
+                        n_peaks=self.n_peaks,
+                        peaks_function=self.peaks_function,
+                        min_freq=self.freq_range[0],
+                        max_freq=self.freq_range[1],
+                    )
                     peaks_list.append(peaks)
                     extended_peaks_list.append(extended_peaks)
                     metrics_list.append(metrics)
@@ -625,7 +631,7 @@ class Biotuner(Processor):
             except:
                 print("biotuner_realtime failed.")
                 continue
-            
+
             if harmonic_connectivity is True:
                 try:
                     harm_conn = compute_conn_matrix_single(np.array(raw), self.sfreq)
@@ -897,7 +903,7 @@ class Cardiac(Processor):
             if raw is None:
                 time.sleep(0.05)
                 continue
-            #try:
+            # try:
             if raw.shape[0] > 1:
                 print("got more than one channel")
             if self.data_type == "ppg":
@@ -906,8 +912,8 @@ class Cardiac(Processor):
             elif self.data_type == "ecg":
                 signal, info = nk.ecg_process(raw[0], sampling_rate=self.sfreq)
                 hrv_df = nk.hrv(info, sampling_rate=self.sfreq)
-                print('HRV_DF', hrv_df)
-            #except:
+                print("HRV_DF", hrv_df)
+            # except:
             #    # print the traceback
             #    print("neurokit failed.")
             #    continue
@@ -1026,7 +1032,7 @@ class TextGeneration(Processor):
         "words at maximum. Strictly follow this limit! DO NOT NAME ANY OF THE PROVIDED WORDS. KEEP YOUR "
         "RESPONSES SHORT AND CONCISE."
     )
-    
+
     SCIENCE_INFORMED_PROMPT = (
         "I want you to inspire yourself from a text2image prompt to write a systematic description "
         "of the described content in scientific terms, inspiring yourself from biology, neuroscience, "
@@ -1039,7 +1045,7 @@ class TextGeneration(Processor):
         "words at maximum. Strictly follow this limit! DO NOT NAME ANY OF THE PROVIDED WORDS. KEEP YOUR "
         "RESPONSES SHORT AND CONCISE."
     )
-    
+
     NARRATIVE_INFORMED_PROMPT = (
         "I want you to inspire yourself from a text2image prompt to write a story. "
         " I want the story to be coherent and original. The idea is to write a story"
@@ -1157,7 +1163,7 @@ class TextGeneration(Processor):
         "Make sure the whole image fits the archetypes and symbolism of the words I provide. BE VERY SHORT "
         "AND CONCISE. LIMIT YOURSELF TO A MAXIMUM OF 60 WORDS."
     )
-    
+
     TXT2IMG_SCIENCE_PROMPT = (
         "Your job is to come up with a prompt for a text-to-image model. The prompt should be concise and "
         "describe an the content of a page from the Codex Seraphinianus book "
@@ -1171,7 +1177,8 @@ class TextGeneration(Processor):
         "from the Codex Seraphinianus book, with inspiration from occult diagrams and anatomical representations. "
         "Be purely descriptive, your response does not have to be a complete sentence. "
         "Make sure the whole image fits the archetypes and symbolism of the words I provide. BE VERY SHORT "
-        "AND CONCISE. LIMIT YOURSELF TO A MAXIMUM OF 60 WORDS.")
+        "AND CONCISE. LIMIT YOURSELF TO A MAXIMUM OF 60 WORDS."
+    )
 
     BRAIN2STYLE_PROMPT = (
         "I want you to provide me with a list of 3 visual artists or art styles which are matching"
@@ -1752,10 +1759,13 @@ class AugmentedPoetry(Processor):
 
         style_input = processed[self.style_feature]
 
-        if len(self.user_input) == 0 or processed[self.user_input_feature] != self.user_input[-1]:
+        if (
+            len(self.user_input) == 0
+            or processed[self.user_input_feature] != self.user_input[-1]
+        ):
             self.user_input.append(processed[self.user_input_feature])
             if len(self.user_input) > self.n_lines:
-                self.user_input = self.user_input[-self.n_lines:]
+                self.user_input = self.user_input[-self.n_lines :]
 
         # print all the inputs
         output_prompt = "\n".join(self.user_input) + ", in the style of " + style_input
@@ -1778,19 +1788,20 @@ class SignalStd(Processor):
     ) -> Dict[str, float]:
         return {self.label: raw.std(axis=0).mean()}
 
+
 class RawDataAdder(Processor):
     """
     This processor takes raw data from specified input labels and adds them to the intermediates.
-    
+
     Parameters:
         labels (List[str]): List of input label names to check and add to intermediates.
         channels (Dict[str, List[str]]): Channel list for each input stream.
     """
-    
+
     def __init__(self, label: str, channels: Dict[str, List[str]] = None):
         super(RawDataAdder, self).__init__(label, channels)
         self.label = label
-    
+
     def process(
         self,
         raw: np.ndarray,
@@ -1799,9 +1810,9 @@ class RawDataAdder(Processor):
         intermediates: Dict[str, Any],
     ):
         """
-        This function checks for the existence of each label in the intermediates 
+        This function checks for the existence of each label in the intermediates
         dictionary and adds the raw data if it exists.
-        
+
         Parameters:
             raw (np.ndarray): The raw EEG buffer with shape (Channels, Time).
             info (mne.Info): Info object containing e.g. channel names, sampling frequency, etc.
@@ -1813,25 +1824,37 @@ class RawDataAdder(Processor):
             intermediates[f"{self.label}_sfreq"] = info["sfreq"]
         return {}
 
+
 from scipy.signal import coherence, resample
 from scipy.signal import coherence, resample
 import threading
 
+
 class MultiModalCoupling(Processor):
     """
-    This processor computes various coupling metrics (like spectral coherence) between two raw signals 
+    This processor computes various coupling metrics (like spectral coherence) between two raw signals
     from specified input labels present in the intermediates.
-    
+
     Parameters:
         labels (List[str]): List of two input label names to read from intermediates.
         channels (Dict[str, List[str]]): Channel list for each input stream.
     """
-    
-    def __init__(self, label: str, labels_read: List[str], channels: Dict[str, List[str]] = None,
-                 normalize: bool = False, peaks_function: str = "EMD", precision: float = 0.1,
-                 metric: str = "wPLI_multiband", freq_range: Tuple[int, int] = (1, 50),
-                 IMF=False):
-        assert len(labels_read) == 2, "There should be exactly two labels for coupling computation."
+
+    def __init__(
+        self,
+        label: str,
+        labels_read: List[str],
+        channels: Dict[str, List[str]] = None,
+        normalize: bool = False,
+        peaks_function: str = "EMD",
+        precision: float = 0.1,
+        metric: str = "wPLI_multiband",
+        freq_range: Tuple[int, int] = (1, 50),
+        IMF=False,
+    ):
+        assert (
+            len(labels_read) == 2
+        ), "There should be exactly two labels for coupling computation."
         super(MultiModalCoupling, self).__init__(label, channels, normalize=normalize)
         self.labels_read = labels_read
         self.label = label
@@ -1846,7 +1869,7 @@ class MultiModalCoupling(Processor):
         self.metric = metric
         self.freq_range = freq_range
         self.IMF = IMF
-    
+
     def process(
         self,
         raw: np.ndarray,
@@ -1855,16 +1878,16 @@ class MultiModalCoupling(Processor):
         intermediates: Dict[str, Any],
     ):
         """
-        This function checks for the existence of each label in the intermediates 
+        This function checks for the existence of each label in the intermediates
         dictionary, reads the raw data, matches the sampling frequency, and computes the spectral coherence.
-        
+
         Parameters:
             raw (np.ndarray): The raw EEG buffer with shape (Channels, Time).
             info (mne.Info): Info object containing e.g. channel names, sampling frequency, etc.
             processed (Dict[str, float]): Dictionary collecting extracted features.
             intermediates (Dict[str, Any]): Dictionary containing intermediate representations.
         """
-        
+
         signals = []
         sfreqs = []
         # Fetch signals and their respective sampling frequencies
@@ -1874,9 +1897,9 @@ class MultiModalCoupling(Processor):
                 sfreqs.append(intermediates[f"{l}_sfreq"])
             else:
                 raise ValueError(f"No data found for label '{l}' in intermediates.")
-        #print('First signal length: ', len(signals[0]))
-        #print('Second signal length: ', len(signals[1]))
-        #print(intermediates)
+        # print('First signal length: ', len(signals[0]))
+        # print('Second signal length: ', len(signals[1]))
+        # print(intermediates)
 
         # Match the sampling frequencies by downsampling the signal with the higher sampling frequency.
         if len(signals[0]) > len(signals[1]):
@@ -1886,33 +1909,42 @@ class MultiModalCoupling(Processor):
 
         try:
             f, Cxy = coherence(signals[0], signals[1], fs=info["sfreq"])
-            
+
             signals_ = np.array([signals[0], signals[1]])
             lowest_sfreq = np.min(sfreqs)
             hc = harmonic_connectivity(
-                    sf=lowest_sfreq,
-                    data=signals_,
-                    peaks_function=self.peaks_function,
-                    precision=self.precision,
-                    n_harm=10,
-                    harm_function="mult",
-                    min_freq=self.freq_range[0],
-                    max_freq=self.freq_range[1],
-                    n_peaks=5)
+                sf=lowest_sfreq,
+                data=signals_,
+                peaks_function=self.peaks_function,
+                precision=self.precision,
+                n_harm=10,
+                harm_function="mult",
+                min_freq=self.freq_range[0],
+                max_freq=self.freq_range[1],
+                n_peaks=5,
+            )
 
-            conn = hc.compute_harm_connectivity(metric=self.metric,
-                    delta_lim=50,
-                    save=False,
-                    savename="_",
-                    graph=False,
-                    FREQ_BANDS=None)
+            conn = hc.compute_harm_connectivity(
+                metric=self.metric,
+                delta_lim=50,
+                save=False,
+                savename="_",
+                graph=False,
+                FREQ_BANDS=None,
+            )
             if self.IMF is True:
-                df = hc.compute_IMF_correlation(nIMFs=4, freq_range=self.freq_range, precision=self.precision)
+                df = hc.compute_IMF_correlation(
+                    nIMFs=4, freq_range=self.freq_range, precision=self.precision
+                )
                 # Filtering the dataframe for elec1=0 and elec2=1 and then sorting by 'pearson' column to get top 5 pairs
-                top_pairs = df[(df['elec1'] == 0) & (df['elec2'] == 1)].sort_values(by='harmsim', ascending=False).head(3)
+                top_pairs = (
+                    df[(df["elec1"] == 0) & (df["elec2"] == 1)]
+                    .sort_values(by="harmsim", ascending=False)
+                    .head(3)
+                )
                 # Extract the desired columns into lists of lists
-                metrics = top_pairs['harmsim'].values.tolist()
-                peaks = top_pairs[['peak_freq1', 'peak_freq2']].values.tolist()
+                metrics = top_pairs["harmsim"].values.tolist()
+                peaks = top_pairs[["peak_freq1", "peak_freq2"]].values.tolist()
                 peaks1 = [p[0] for p in peaks]
                 peaks2 = [p[1] for p in peaks]
             with self.coupling_lock:
@@ -1923,23 +1955,23 @@ class MultiModalCoupling(Processor):
                     self.latest_peaks2 = peaks2
                     self.latest_metric = metrics
         except:
-            print('Error in computing MultiModalCoupling.')
+            print("Error in computing MultiModalCoupling.")
 
         # Saving the average coherence to the instance variable.
-        
-        
+
         # Build the result dictionary
         result = {}
-        print('Latest Conn', self.latest_conn)
+        print("Latest Conn", self.latest_conn)
         if self.latest_coherence is not None:
             ch_prefix = f"ch0_"  # As an example, using channel 0 prefix, can be modified accordingly
-            result[f"{self.label}/{ch_prefix}spectral_coherence"] = self.latest_coherence
+            result[
+                f"{self.label}/{ch_prefix}spectral_coherence"
+            ] = self.latest_coherence
             result[f"{self.label}/{ch_prefix}harmonic_connectivity"] = self.latest_conn
             if self.IMF is True:
                 for i in range(len(metrics)):
                     result[f"{self.label}/peak1_{i}_val"] = peaks1[i]
                     result[f"{self.label}/peak2_{i}_val"] = peaks2[i]
                     result[f"{self.label}/IMF_conn{i}"] = metrics[i]
-        
-        return result
 
+        return result

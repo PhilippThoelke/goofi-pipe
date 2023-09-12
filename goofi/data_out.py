@@ -215,13 +215,13 @@ class OSCStream(DataOut):
         """
         # initialize an empty bundle
         bundle = osc_bundle_builder.OscBundleBuilder(osc_bundle_builder.IMMEDIATELY)
-        #print(processed)
+        # print(processed)
         for key, val in processed.items():
             # create a new message
             msg = OscMessageBuilder(self.address_prefix + key)
-            #check instance of val
-            #print(val)
-            #print(type(val))
+            # check instance of val
+            # print(val)
+            # print(type(val))
             if isinstance(val, float):
                 msg.add_arg(val, OscMessageBuilder.ARG_TYPE_FLOAT)
             elif isinstance(val, str):
@@ -229,10 +229,10 @@ class OSCStream(DataOut):
             elif isinstance(val, (list, tuple)):
                 val = ", ".join([str(v) for v in val])
                 msg.add_arg(val, OscMessageBuilder.ARG_TYPE_STRING)
-            #elif isinstance(val, None):
+            # elif isinstance(val, None):
             #    pass
             else:
-                #msg.add_arg(val)
+                # msg.add_arg(val)
                 pass
 
             # add the message to the bundle
@@ -424,9 +424,9 @@ class ProcessedToFile(DataOut):
                 f'The file "{fname}" already exists. You can set '
                 "overwrite=True if you want to allow overwriting."
             )
-        #assert (
+        # assert (
         #    fname.split(".")[-1].lower() == "csv"
-        #), "Expected the file ending to be .csv"
+        # ), "Expected the file ending to be .csv"
 
         self.fname = fname
         self.header_done = False
@@ -454,10 +454,10 @@ class ProcessedToFile(DataOut):
             file_mode = "w"
 
         # create a DataFrame out of the features and append it to the CSV file
-        #print(processed)
-        #df = pd.DataFrame(processed, index=[time.time() - self.start_time])
+        # print(processed)
+        # df = pd.DataFrame(processed, index=[time.time() - self.start_time])
         # Initialize an empty DataFrame with a single row and your calculated index
-        
+
         # Initialize dictionaries to hold data for each category
         data_bioelement = {}
         data_long_string = {}
@@ -466,17 +466,23 @@ class ProcessedToFile(DataOut):
 
         # Iterate over each item in the dictionary
         for key, value in processed.items():
-            #print(key)
-            if 'bioelement' in key:
+            # print(key)
+            if "bioelement" in key:
                 data_bioelement[key] = [value]
-            elif 'biocolor' in key:
+            elif "biocolor" in key:
                 data_biocolor[key] = [value]
             elif isinstance(value, str) and len(value.split()) > 5:
                 data_long_string[key] = [value]
                 self.long_string_keys.add(key)
-            elif isinstance(value, Iterable) and not isinstance(value, str) and pd.isna(value).any():  # Check if any value in array is NaN
+            elif (
+                isinstance(value, Iterable)
+                and not isinstance(value, str)
+                and pd.isna(value).any()
+            ):  # Check if any value in array is NaN
                 pass
-            elif not isinstance(value, Iterable) and pd.isna(value):  # Check if single value is NaN
+            elif not isinstance(value, Iterable) and pd.isna(
+                value
+            ):  # Check if single value is NaN
                 pass
             else:
                 data_remaining[key] = [value]
@@ -485,28 +491,46 @@ class ProcessedToFile(DataOut):
 
         if data_bioelement:
             df_bioelement = pd.DataFrame(data_bioelement)
-            df_bioelement.to_csv(f"{self.fname}_bioelement.csv", mode=file_mode, header=not self.header_done)
+            df_bioelement.to_csv(
+                f"{self.fname}_bioelement.csv",
+                mode=file_mode,
+                header=not self.header_done,
+            )
         if data_biocolor:
             df_biocolor = pd.DataFrame(data_biocolor)
-            df_biocolor.to_csv(f"{self.fname}_biocolor.csv", mode=file_mode, header=not self.header_done)
-        #print(data_long_string)
-        
+            df_biocolor.to_csv(
+                f"{self.fname}_biocolor.csv",
+                mode=file_mode,
+                header=not self.header_done,
+            )
+        # print(data_long_string)
+
         if data_long_string:
             df_long_string_all = pd.DataFrame()  # Create an empty DataFrame
 
             for key, value in data_long_string.items():
                 last_word_key = key.split()[-1]  # Get the last word of the key
-                df_long_string = pd.DataFrame(value, columns=[f"{last_word_key}"])  # Append 'text_generation' to the last word of the key
-                df_long_string_all = pd.concat([df_long_string_all, df_long_string], axis=1)  # Concatenate along columns
+                df_long_string = pd.DataFrame(
+                    value, columns=[f"{last_word_key}"]
+                )  # Append 'text_generation' to the last word of the key
+                df_long_string_all = pd.concat(
+                    [df_long_string_all, df_long_string], axis=1
+                )  # Concatenate along columns
 
-            df_long_string_all.to_csv(f"{self.fname}_text_generation.csv", mode=file_mode, header=not self.header_done)
+            df_long_string_all.to_csv(
+                f"{self.fname}_text_generation.csv",
+                mode=file_mode,
+                header=not self.header_done,
+            )
 
-        #print('LONG STRING KEYS', self.long_string_keys)
+        # print('LONG STRING KEYS', self.long_string_keys)
         if data_remaining:
             df_remaining = pd.DataFrame(data_remaining)
             for key in self.long_string_keys:
                 if key in df_remaining.columns:
                     df_remaining = df_remaining.drop(columns=key)
-            df_remaining.to_csv(f"{self.fname}.csv", mode=file_mode, header=not self.header_done)
+            df_remaining.to_csv(
+                f"{self.fname}.csv", mode=file_mode, header=not self.header_done
+            )
 
         self.header_done = True

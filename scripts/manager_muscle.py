@@ -3,7 +3,9 @@ from goofi import data_in, data_out, manager, normalization, processors
 if __name__ == "__main__":
     mngr = manager.Manager(
         data_in={
-            "muscle": data_in.SerialStream(sfreq=350, buffer_seconds=5, auto_select=False, port='COM4'),
+            "muscle": data_in.SerialStream(
+                sfreq=350, buffer_seconds=5, auto_select=False, port="COM4"
+            ),
         },
         processors=[
             processors.PSD(label="gamma"),
@@ -19,7 +21,7 @@ if __name__ == "__main__":
             data_out.OSCStream("127.0.0.1", 5000),
             data_out.PlotRaw("muscle"),
             ##data_out.ProcessedToFile("plant_processed_test", overwrite=True),
-            #data_out.RawToFile("plant_raw_test.csv")
+            # data_out.RawToFile("plant_raw_test.csv")
             data_out.PlotProcessed(),
         ],
         frequency=5,
