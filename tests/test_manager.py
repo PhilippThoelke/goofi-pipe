@@ -33,6 +33,8 @@ def test_simple():
     rates = []
     data = []
     for _ in range(10):
+        if not node_conn.poll(0.5):
+            raise TimeoutError("No message received from node.")
         msg = node_conn.recv()
         data.append(msg.content["data"].data[0])
 

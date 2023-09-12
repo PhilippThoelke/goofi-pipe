@@ -241,8 +241,8 @@ def test_node_params_request_multiple():
     def callback(_: NodeRef, msg: Message):
         messages.append(msg)
 
-    in_slots = {"in1": DataType.STRING, "in2": DataType.FLOAT_1D}
-    out_slots = {"out1": DataType.FLOAT_1D, "out2": DataType.FLOAT_2D}
+    in_slots = {"in1": DataType.STRING, "in2": DataType.ARRAY}
+    out_slots = {"out1": DataType.ARRAY, "out2": DataType.STRING}
 
     ref, _ = create_dummy_node(input_slots=in_slots, output_slots=out_slots)
     ref.set_message_handler(MessageType.NODE_PARAMS, callback)

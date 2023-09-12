@@ -10,7 +10,7 @@ from goofi.node import Node
 class Constant(Node):
     def __init__(self, connection: Connection) -> None:
         super().__init__(connection, autotrigger=True)
-        self.register_output("out", DataType.FLOAT_1D)
+        self.register_output("out", DataType.ARRAY)
 
     def process(self) -> Dict[str, Data]:
-        return {"out": Data(DataType.FLOAT_1D, np.ones(1), {})}
+        return {"out": Data(DataType.ARRAY, np.ones(1), {})}

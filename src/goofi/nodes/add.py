@@ -8,11 +8,11 @@ class Add(Node):
     def __init__(self, connection: Connection) -> None:
         super().__init__(connection)
 
-        self.register_input("a", DataType.FLOAT_1D)
-        self.register_input("b", DataType.FLOAT_1D)
-        self.register_output("out", DataType.FLOAT_1D)
+        self.register_input("a", DataType.ARRAY)
+        self.register_input("b", DataType.ARRAY)
+        self.register_output("out", DataType.ARRAY)
 
     def process(self, a: Data, b: Data) -> Data:
         if a is None or b is None:
             return None
-        return {"out": Data(DataType.FLOAT_1D, a.data + b.data, {})}
+        return {"out": Data(DataType.ARRAY, a.data + b.data, {})}
