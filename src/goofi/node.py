@@ -48,7 +48,6 @@ class Node(ABC):
     """
 
     def __init__(self, connection: Connection, autotrigger: bool = False) -> None:
-        print(connection, Connection, isinstance(connection, Connection))
         if not isinstance(connection, Connection):
             raise TypeError(f"Expected Connection, got {type(connection)}.")
         self._alive = True
