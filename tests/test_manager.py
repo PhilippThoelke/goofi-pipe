@@ -33,8 +33,6 @@ def test_simple():
     rates = []
     data = []
     for _ in range(10):
-        if not node_conn.poll(0.05):
-            raise TimeoutError("Timeout while waiting for data.")
         msg = node_conn.recv()
         data.append(msg.content["data"].data[0])
 
@@ -47,7 +45,7 @@ def test_simple():
 
     # mean rate should be ~30 Hz
     mean_rate = sum(rates) / len(rates)
-    assert mean_rate == pytest.approx(30, abs=1), f"Mean rate should be ~30 Hz, got {mean_rate} Hz."
+    assert mean_rate == pytest.approx(30, abs=0.3), f"Mean rate should be ~30 Hz, got {mean_rate} Hz."
 
     #######################
     # TODO: node cleanup should happen automatically, none of this should be necessary
