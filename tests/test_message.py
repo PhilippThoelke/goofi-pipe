@@ -2,11 +2,16 @@ from multiprocessing import Pipe
 
 import pytest
 
+from goofi.connection import MultiprocessingConnection
 from goofi.data import Data, DataType
 from goofi.message import Message, MessageType
 
 EXAMPLE_CONTENT = {
-    MessageType.ADD_OUTPUT_PIPE: {"slot_name_out": "out", "slot_name_in": "in", "node_connection": Pipe()[0]},
+    MessageType.ADD_OUTPUT_PIPE: {
+        "slot_name_out": "out",
+        "slot_name_in": "in",
+        "node_connection": MultiprocessingConnection.create()[0],
+    },
     MessageType.REMOVE_OUTPUT_PIPE: {"slot_name": "test"},
     MessageType.DATA: {"slot_name": "test", "data": Data(DataType.STRING, "", {})},
     MessageType.PING: {},

@@ -63,14 +63,14 @@ class NodeRef:
     - `NODE_PARAMS_REQUEST`: Raises `ValueError`. NodeRef instances should not receive this message type.
 
     ### Parameters
-    `process` : Process
-        The process handle for this node, which can be used to terminate the node.
     `connection` : Connection
         The connection object to the node.
+    `process` : Optional[Process]
+        If the node is running in a separate process, this should be the process object. Defaults to None.
     """
 
-    process: Process
     connection: Connection
+    process: Optional[Process] = None
 
     input_slots: Dict[str, DataType] = field(default_factory=dict)
     output_slots: Dict[str, DataType] = field(default_factory=dict)
@@ -93,7 +93,7 @@ class NodeRef:
         """Terminates the node by closing the connection to it."""
         try:
             self.connection.send(Message(MessageType.TERMINATE, {}))
-        except BrokenPipeError:
+        except ConnectionError:
             pass
         self.connection.close()
 
@@ -102,7 +102,7 @@ class NodeRef:
         while self._alive:
             try:
                 msg = self.connection.recv()
-            except (EOFError, ConnectionResetError, OSError):
+            except ConnectionError:
                 # the connection was closed, consider the node dead
                 self._alive = False
                 self.connection.close()

@@ -1,8 +1,8 @@
 import argparse
 import importlib
-from multiprocessing import Pipe, Process
 from typing import Dict
 
+from goofi.connection import MultiprocessingConnection
 from goofi.gui import Window
 from goofi.message import Message, MessageType
 from goofi.node_helpers import NodeRef
@@ -107,10 +107,10 @@ class Manager:
         return self._headless
 
 
-def main():
+def main(duration: float = 10, args=None):
     parser = argparse.ArgumentParser(description="goofi-pipe")
     parser.add_argument("--headless", action="store_true", help="run in headless mode")
-    args = parser.parse_args()
+    args = parser.parse_args(args)
 
     import time
 
@@ -122,13 +122,17 @@ def main():
     manager.connect("constant0", "add0", "out", "a")
     manager.connect("sine0", "add0", "out", "b")
 
-    my_conn, node_conn = Pipe()
+    my_conn, node_conn = MultiprocessingConnection.create()
     manager.nodes["add0"].connection.send(
         Message(MessageType.ADD_OUTPUT_PIPE, {"slot_name_out": "out", "slot_name_in": "in", "node_connection": my_conn})
     )
 
-    last = time.time()
+    start = last = time.time()
     while manager.running:
+        if time.time() - start > duration:
+            manager.terminate()
+            break
+
         if not node_conn.poll(0.05):
             continue
         msg = node_conn.recv()

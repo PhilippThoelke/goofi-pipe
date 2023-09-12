@@ -1,9 +1,10 @@
 import platform
 import time
-from multiprocessing import Pipe
 
 import pytest
 
+import goofi
+from goofi.connection import MultiprocessingConnection
 from goofi.manager import Manager
 from goofi.message import Message, MessageType
 
@@ -12,10 +13,8 @@ def test_creation():
     Manager()
 
 
+@pytest.mark.skipif(platform.system() == "Windows", reason="Multiprocessing is very slow on Windows.")
 def test_simple():
-    if platform.system() == "Windows":
-        pytest.skip("Multiprocessing is very slow on Windows.")
-
     manager = Manager()
     manager.add_node("generators.Constant")
     manager.add_node("generators.Sine")
@@ -24,7 +23,7 @@ def test_simple():
     manager.connect("constant0", "add0", "out", "a")
     manager.connect("sine0", "add0", "out", "b")
 
-    my_conn, node_conn = Pipe()
+    my_conn, node_conn = MultiprocessingConnection.create()
     manager.nodes["add0"].connection.send(
         Message(MessageType.ADD_OUTPUT_PIPE, {"slot_name_out": "out", "slot_name_in": "in", "node_connection": my_conn})
     )
@@ -57,3 +56,7 @@ def test_simple():
     time.sleep(0.05)
     manager.nodes.remove_node("add0")
     #######################
+
+
+def test_main():
+    goofi.manager.main(1, ["--headless"])

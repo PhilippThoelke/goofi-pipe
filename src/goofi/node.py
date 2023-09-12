@@ -4,7 +4,7 @@ from multiprocessing import Pipe, Process
 from threading import Event, Thread
 from typing import Callable, Dict, Tuple
 
-from goofi.connection import Connection
+from goofi.connection import Connection, MultiprocessingConnection
 from goofi.data import Data, DataType
 from goofi.message import Message, MessageType
 from goofi.node_helpers import InputSlot, NodeRef, OutputSlot
@@ -79,10 +79,10 @@ class Node(ABC):
         """
         Create a new node instance in a separate process and return a reference to the node.
         """
-        conn1, conn2 = Pipe()
-        p = Process(target=cls, args=(conn2,) + args, kwargs=kwargs, daemon=True)
-        p.start()
-        return NodeRef(p, conn1)
+        conn1, conn2 = MultiprocessingConnection.create()
+        proc = Process(target=cls, args=(conn2,) + args, kwargs=kwargs, daemon=True)
+        proc.start()
+        return NodeRef(conn1, proc)
 
     @classmethod
     def create_local(cls, *args, **kwargs) -> Tuple[NodeRef, "Node"]:
@@ -90,9 +90,9 @@ class Node(ABC):
         Create a new node instance in the current process and return a reference to the node,
         as well as the node itself.
         """
-        conn1, conn2 = Pipe()
+        conn1, conn2 = MultiprocessingConnection.create()
         node = cls(conn2, *args, **kwargs)
-        return NodeRef(None, conn1), node
+        return NodeRef(conn1), node
 
     def _messaging_loop(self):
         """

@@ -175,25 +175,22 @@ def test_terminate_func():
 
 
 def test_multiproc():
-    conn1, conn2 = Pipe()
-    proc = Process(target=DummyNode, args=(conn2,), daemon=True)
-    proc.start()
+    ref = DummyNode.create()
 
     time.sleep(0.1)  # TODO: 0.1 is quite long but required on Windows, Linux works with 0.01
     # make sure the node is not dead
-    assert proc.is_alive(), "Process should be alive."
+    assert ref.process.is_alive(), "Process should be alive."
 
     # send a terminate message
-    conn1.send(Message(MessageType.TERMINATE, {}))
+    ref.connection.send(Message(MessageType.TERMINATE, {}))
     time.sleep(0.1)  # TODO: 0.1 is quite long but required on Windows, Linux works with 0.01
     # make sure the node is dead
-    assert not proc.is_alive(), "Process should be dead."
+    assert not ref.process.is_alive(), "Process should be dead."
 
 
 @pytest.mark.filterwarnings("ignore::pytest.PytestUnhandledThreadExceptionWarning")
 def test_broken_processing():
-    conn1, conn2 = Pipe()
-    n = BrokenProcessingNode(conn2)
+    ref, n = BrokenProcessingNode.create_local()
 
     # manually trigger processing once
     n.process_flag.set()
@@ -207,9 +204,12 @@ def test_broken_processing():
     assert n.messaging_thread.is_alive(), "Messaging thread should be alive."
 
     # sending a message should restart the processing thread
-    conn1.send(Message(MessageType.PING, {}))
+    ref.connection.send(Message(MessageType.PING, {}))
     time.sleep(0.01)
     assert n.processing_thread.is_alive(), "Processing thread should be alive."
+
+    # clean up dangling threads
+    ref.terminate()
 
 
 def test_node_params_request_empty():
