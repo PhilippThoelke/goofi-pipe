@@ -8,6 +8,10 @@ if __name__ == "__main__":
             ),
         },
         processors=[
+            processors.PSD(label="delta"),
+            processors.PSD(label="theta"),
+            processors.PSD(label="alpha"),
+            processors.PSD(label="beta"),
             processors.PSD(label="gamma"),
             processors.PSD(label="muscle_low"),
             processors.PSD(label="muscle_mid"),
@@ -18,10 +22,10 @@ if __name__ == "__main__":
         ],
         normalization=normalization.StaticBaselineNormal(duration=10),
         data_out=[
-            data_out.OSCStream("127.0.0.1", 5000),
-            data_out.PlotRaw("muscle"),
+            data_out.OSCStream("192.168.0.255", 7008),
+            #data_out.PlotRaw("muscle"),
             ##data_out.ProcessedToFile("plant_processed_test", overwrite=True),
-            # data_out.RawToFile("plant_raw_test.csv")
+            #data_out.RawToFile("guitar_raw_test.csv", data_in_name='muscle', overwrite=True),
             data_out.PlotProcessed(),
         ],
         frequency=5,

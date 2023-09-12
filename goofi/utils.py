@@ -415,6 +415,55 @@ def bioelements_realtime(data, Fs, df):
     types = res_filtered["type"].unique().tolist()
     return elements_final, spectrum_regions, types
 
+def bioplanets_realtime(data, Fs, df):
+    # Define the list of planets you are interested in
+    desired_planets = ["venus", "earth", "mars", "jupiter", "saturn"]
+
+    # initialize biotuner object
+    biotuning = compute_biotuner(
+        1000,
+        peaks_function="EMD",
+        precision=0.1,
+        n_harm=100,
+        ratios_n_harms=10,
+        ratios_inc_fit=False,
+        ratios_inc=False,
+    )
+    biotuning.peaks_extraction(data, ratios_extension=False, max_freq=50)
+    _, _, _ = biotuning.peaks_extension(
+        method="harmonic_fit", harm_function="mult", cons_limit=0.1
+    )
+    peaks_ang = [hertz_to_nm(x) * 10 for x in biotuning.extended_peaks]  # convert to Angstrom
+
+    # find_matching_spectral_lines is a function you must have defined elsewhere
+    res = find_matching_spectral_lines(df, peaks_ang, tolerance=5)
+
+    # Filter the res DataFrame for the desired planets
+    res_filtered = res[res["planet"].isin(desired_planets)]
+
+    # Extract and output the wavelengths for these planets
+    wavelengths_by_planet = {}
+    for planet in desired_planets:
+        # Filter wavelengths for a given planet
+        wavelengths = res_filtered[res_filtered['planet'] == planet]['wavelength'].tolist()
+
+        # Round each wavelength to two decimal places
+        wavelengths = [round(w, 2) for w in wavelengths]
+        
+        # Remove duplicates by converting to a set, then back to a list
+        unique_wavelengths = list(set(wavelengths))
+
+        # Sort for readability (optional)
+        unique_wavelengths.sort()
+
+        wavelengths_by_planet[planet] = unique_wavelengths
+
+        print(f"Wavelengths for {planet}: {unique_wavelengths}")
+
+    return wavelengths_by_planet
+
+
+
 
 # Helper function for computing a single connectivity matrix
 def compute_conn_matrix_single(data, sf):

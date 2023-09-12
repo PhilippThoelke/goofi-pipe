@@ -25,6 +25,7 @@ from goofi.utils import (
     ImageSender,
     Processor,
     bioelements_realtime,
+    bioplanets_realtime,
     biotuner_realtime,
     compute_conn_matrix_single,
     get_resources_path,
@@ -855,6 +856,124 @@ class Bioelements(Processor):
             result[f"{self.label}/{ch_prefix}bioelements"] = bioelements[i]
             result[f"{self.label}/{ch_prefix}spectrum_regions"] = spectrum_regions[i]
             result[f"{self.label}/{ch_prefix}types"] = types[i]
+        return result
+
+
+class Bioplanets(Processor):
+    """
+    Feature extractor for bioelement matching.
+
+    Parameters:
+        label (str): label under which to save the extracted feature
+        channels (Dict[str, List[str]]): channel list for each input stream
+        extraction_frequency (float, optional): the frequency in Hz at which to run the peak extraction loop
+    """
+
+    def __init__(
+        self,
+        label: str = "bioplanets",
+        channels: Dict[str, List[str]] = None,
+        extraction_frequency: float = 1 / 5,
+    ):
+        super(Bioplanets, self).__init__(label, channels, normalize=False)
+        self.sfreq = None
+        self.latest_raw = None
+        self.latest_planets = None
+        self.latest_peaks = None
+        self.raw_lock = threading.Lock()
+        self.features_lock = threading.Lock()
+        self.extraction_frequency = extraction_frequency
+        self.extraction_thread = threading.Thread(
+            target=self.extraction_loop, daemon=True
+        )
+        # load elements data from csv
+        res = get_resources_path()
+        self.planets_file = pd.read_csv(join(res, "planets_peaks_prominence02.csv"))
+        self.extraction_thread.start()
+
+    def extraction_loop(self):
+        """
+        This function runs the biotuner_realtime function in a loop in a separate thread.
+        It continuously grabs the latest raw data, processes it, and updates the latest_hsvs.
+        """
+        while True:
+            with self.raw_lock:
+                raw = self.latest_raw
+
+            if raw is None:
+                time.sleep(0.05)
+                continue
+
+            planets_list = []
+            peaks_list = []
+            try:
+                for ch in raw:
+                    res= bioplanets_realtime(
+                        ch, self.sfreq, self.planets_file
+                    )
+                    planets_list.append(list(res.keys()))
+                    
+                    peaks_list.append(list(res.values()))
+                    print('PLANETS', planets_list)
+                    print('PEAKS', peaks_list)
+            except:
+                print("bioplanets computation failed.")
+                continue
+
+            with self.features_lock:
+                self.latest_planets = planets_list
+                self.latest_peaks = peaks_list
+
+            if self.extraction_frequency is not None:
+                sleep_time = 1 / self.extraction_frequency
+                time.sleep(sleep_time)
+
+    def process(
+        self,
+        raw: np.ndarray,
+        info: mne.Info,
+        processed: Dict[str, float],
+        intermediates: Dict[str, Any],
+    ):
+        """
+        This function computes the biotuner metrics for each channel.
+
+        Parameters:
+            raw (np.ndarray): the raw EEG buffer with shape (Channels, Time)
+            info (mne.Info): info object containing e.g. channel names, sampling frequency, etc.
+            processed (Dict[str, float]): dictionary collecting extracted features
+            intermediates (Dict[str, Any]): dictionary containing intermediate representations
+        """
+        self.sfreq = info["sfreq"]
+
+        with self.raw_lock:
+            self.latest_raw = raw
+
+        with self.features_lock:
+            bioplanets = self.latest_planets
+            biopeaks = self.latest_peaks
+
+        if bioplanets is None:
+            bioplanets = [""] * info["nchan"]
+
+        if biopeaks is None:
+            biopeaks = [[0]] * info["nchan"]
+
+        result = {}
+
+        if not isinstance(bioplanets, list):
+            bioplanets = [bioplanets]
+        for i in range(len(bioplanets)):  # iterate over channels
+            ch_prefix = f"ch{i}_"
+            bioplanets_ = ' '.join(bioplanets[i])
+            result[f"{self.label}/{ch_prefix}bioplanets"] = bioplanets_
+            for j in range(len(biopeaks[i])):
+                if isinstance(biopeaks[i][j], int):
+                    result[f"{self.label}/{ch_prefix}biopeaks/{j}"] = biopeaks[i][j]
+                elif isinstance(biopeaks[i][j], list):
+                    for k in range(len(biopeaks[i][j])):
+                        result[f"{self.label}/{ch_prefix}biopeaks/{j}/{k}"] = biopeaks[i][j][k]
+                        
         return result
 
 

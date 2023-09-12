@@ -354,7 +354,55 @@ class AudioStream(DataIn):
             self.stream.stop()
             self.stream.close()
 
+from pythonosc import dispatcher, osc_server
+import numpy as np
+import mne
 
+class OSCStream(DataIn):
+    def __init__(self, address: str="/osc_address", port: Optional[int]=8000, buffer_seconds: int=5):
+        super().__init__(buffer_seconds)
+        self.address = address
+        self.port = port
+        self.buffer = []
+        
+        self.dispatcher = dispatcher.Dispatcher()
+        self.dispatcher.map(self.address, self.osc_callback)
+        
+        self.server = osc_server.ThreadingOSCUDPServer(("0.0.0.0", self.port), self.dispatcher)
+        self.server_thread = threading.Thread(target=self.server.serve_forever)
+        
+    def osc_callback(self, unused_addr, *args):
+        self.buffer.append(args)
+
+    @property
+    def info(self) -> mne.Info:
+        ch_types = ['eeg']
+        ch_names = ['OSC']
+        return mne.create_info(ch_names, 1000, ch_types)
+
+    def receive(self) -> np.ndarray:
+        if len(self.buffer) == 0:
+            print("No data received yet.")
+            return None
+
+        buffer_length = len(self.buffer)
+        channel_count = len(self.buffer[0])
+        
+        data = np.zeros((channel_count, buffer_length))
+        for i in range(buffer_length):
+            for j in range(channel_count):
+                data[j, i] = self.buffer[i][j]
+        
+        self.buffer = []  # Clear the buffer
+        return data
+
+    def start(self):
+        print(f"Listening for OSC messages on port {self.port}...")
+        self.server_thread.start()
+
+    def __del__(self):
+        self.server.shutdown()
+        
 # list_audio_devices()
 # print('-------------------------------------------')
 # print(sd.query_devices(kind='input'))
