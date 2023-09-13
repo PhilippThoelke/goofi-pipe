@@ -1,5 +1,5 @@
 import inspect
-from typing import Any, Dict, List, Tuple, Type
+from typing import List, Type
 
 from goofi import params
 from goofi.connection import Connection

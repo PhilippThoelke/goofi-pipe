@@ -1,10 +1,7 @@
-import inspect
-from typing import List, Type
-
 import pytest
 
 from goofi import params
-from goofi.params import DEFAULT_PARAMS, NodeParams, Param
+from goofi.params import DEFAULT_PARAMS, NodeParams
 
 from .utils import list_param_types
 

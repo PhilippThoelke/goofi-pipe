@@ -1,8 +1,8 @@
 from dataclasses import dataclass
 from enum import Enum
-from goofi.connection import Connection
 from typing import Any, Dict
 
+from goofi.connection import Connection
 from goofi.data import Data
 
 

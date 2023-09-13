@@ -1,5 +1,3 @@
-from multiprocessing import Pipe
-
 import pytest
 
 from goofi.connection import MultiprocessingConnection

@@ -1,10 +1,7 @@
-import inspect
 from abc import ABC, abstractmethod
 from multiprocessing import Pipe
 from multiprocessing.connection import _ConnectionBase
-from typing import List, Tuple, Type
-
-import goofi
+from typing import Tuple
 
 
 class Connection(ABC):
