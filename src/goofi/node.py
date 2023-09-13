@@ -1,13 +1,15 @@
 import time
 from abc import ABC, abstractmethod
-from multiprocessing import Pipe, Process
+from copy import deepcopy
+from multiprocessing import Process
 from threading import Event, Thread
-from typing import Callable, Dict, Tuple
+from typing import Any, Callable, Dict, Tuple, Union
 
 from goofi.connection import Connection, MultiprocessingConnection
 from goofi.data import Data, DataType
 from goofi.message import Message, MessageType
 from goofi.node_helpers import InputSlot, NodeRef, OutputSlot
+from goofi.params import NodeParams, Param
 
 
 def require_init(func: Callable) -> Callable:
@@ -44,26 +46,40 @@ class Node(ABC):
     ### Parameters
     `connection` : Connection
         The input connection to the node. This is used to receive messages from the manager, or other nodes.
-    `autotrigger` : bool
-        If True, the node will automatically trigger processing regardless of whether or not it received data.
+    `input_slots` : Dict[str, InputSlot]
+        A dict containing the input slots of the node. The keys are the names of the input slots, and the values
+        are the input slots themselves.
+    `output_slots` : Dict[str, OutputSlot]
+        A dict containing the output slots of the node. The keys are the names of the output slots, and the values
+        are the output slots themselves.
+    `params` : NodeParams
+        An instance of the NodeParams class containing the parameters of the node.
     """
 
-    def __init__(self, connection: Connection, autotrigger: bool = False) -> None:
-        if not isinstance(connection, Connection):
-            raise TypeError(f"Expected Connection, got {type(connection)}.")
+    def __init__(
+        self,
+        connection: Connection,
+        input_slots: Dict[str, InputSlot],
+        output_slots: Dict[str, OutputSlot],
+        params: NodeParams,
+    ) -> None:
+        # initialize the base class
         self._alive = True
 
-        # store arguments
+        # store the arguments and validate them
         self.connection = connection
-        self.autotrigger = autotrigger
+        self._input_slots = input_slots
+        self._output_slots = output_slots
+        self._params = params
 
-        # initialize input and output slots
-        self._input_slots = dict()
-        self._output_slots = dict()
+        self._validate_attrs()
+
+        # run the setup method
+        self.setup()
 
         # initialize node flags
         self.process_flag = Event()
-        if self.autotrigger:
+        if self.params.common.autotrigger.value:
             self.process_flag.set()
 
         # initialize message handling thread
@@ -74,25 +90,29 @@ class Node(ABC):
         self.processing_thread = Thread(target=self._processing_loop, daemon=True)
         self.processing_thread.start()
 
-    @classmethod
-    def create(cls, *args, **kwargs) -> NodeRef:
+    @require_init
+    def _validate_attrs(self):
         """
-        Create a new node instance in a separate process and return a reference to the node.
+        Check that all attributes are present and of the correct type.
         """
-        conn1, conn2 = MultiprocessingConnection.create()
-        proc = Process(target=cls, args=(conn2,) + args, kwargs=kwargs, daemon=True)
-        proc.start()
-        return NodeRef(conn1, proc)
-
-    @classmethod
-    def create_local(cls, *args, **kwargs) -> Tuple[NodeRef, "Node"]:
-        """
-        Create a new node instance in the current process and return a reference to the node,
-        as well as the node itself.
-        """
-        conn1, conn2 = MultiprocessingConnection.create()
-        node = cls(conn2, *args, **kwargs)
-        return NodeRef(conn1), node
+        # check connection type
+        if not isinstance(self.connection, Connection):
+            raise TypeError(f"Expected Connection, got {type(self.connection)}")
+        # check input slots type
+        for name, slot in self._input_slots.items():
+            if not isinstance(name, str) or len(name) == 0:
+                raise ValueError(f"Expected input slot name '{name}' to be a non-empty string.")
+            if not isinstance(slot, InputSlot):
+                raise TypeError(f"Expected InputSlot for input slot '{name}', got {type(slot)}")
+        # check output slots type
+        for name, slot in self._output_slots.items():
+            if not isinstance(name, str) or len(name) == 0:
+                raise ValueError(f"Expected output slot name '{name}' to be a non-empty string.")
+            if not isinstance(slot, OutputSlot):
+                raise TypeError(f"Expected OutputSlot for output slot '{name}', got {type(slot)}")
+        # check params type
+        if not isinstance(self._params, NodeParams):
+            raise TypeError(f"Expected NodeParams, got {type(self._params)}")
 
     def _messaging_loop(self):
         """
@@ -126,19 +146,8 @@ class Node(ABC):
             elif msg.type == MessageType.DATA:
                 slot = self.input_slots[msg.content["slot_name"]]
                 slot.data = msg.content["data"]
-                if slot.trigger_update:
+                if slot.trigger_process:
                     self.process_flag.set()
-            elif msg.type == MessageType.NODE_PARAMS_REQUEST:
-                self.connection.send(
-                    Message(
-                        MessageType.NODE_PARAMS,
-                        {
-                            "params": dict(),
-                            "input_slots": {name: slot.dtype for name, slot in self.input_slots.items()},
-                            "output_slots": {name: slot.dtype for name, slot in self.output_slots.items()},
-                        },
-                    )
-                )
             else:
                 # TODO: handle the incoming message
                 raise NotImplementedError(f"Message type {msg.type} not implemented.")
@@ -153,7 +162,7 @@ class Node(ABC):
             # wait for a trigger
             self.process_flag.wait()
             # clear the trigger if autotrigger is False
-            if not self.autotrigger:
+            if not self.params.common.autotrigger.value:
                 self.process_flag.clear()
 
             # limit the update rate to 30 Hz
@@ -187,65 +196,93 @@ class Node(ABC):
             # send output data
             for name in self.output_slots.keys():
                 data = output_data[name]
-
-                # make sure the data is of the correct type
-                if self.output_slots[name].dtype != data.dtype:
-                    raise RuntimeError(f"Data type mismatch for output slot {name}")
+                if not isinstance(data, tuple) or len(data) != 2:
+                    raise ValueError(
+                        f"Expected {self.__class__.__name__}.process() to return a tuple of data and metadata but got {data}."
+                    )
+                data = Data(self.output_slots[name].dtype, data[0], data[1])
 
                 # send the data to all connected nodes
                 for target_slot, conn in self.output_slots[name].connections:
                     msg = Message(MessageType.DATA, {"data": data, "slot_name": target_slot})
                     try:
                         conn.send(msg)
-                    except BrokenPipeError:
-                        # TODO: broken pipe indicates that the target node is dead, handle this
-                        raise
+                    except ConnectionError:
+                        # TODO: this means the target node is dead, we should handle this somehow
+                        pass
 
-    @require_init
-    def _register_slot(self, name: str, dtype: DataType, is_input: bool):
-        if not isinstance(name, str) or not name:
-            raise TypeError(f"Expected non-empty str, got {type(name)}.")
-        if not isinstance(dtype, DataType):
-            raise TypeError(f"Expected DataType, got {type(dtype)}.")
+    @staticmethod
+    def _configure(cls) -> Tuple[Dict[str, InputSlot], Dict[str, OutputSlot], NodeParams]:
+        """Retrieves the node's configuration of input slots, output slots, and parameters."""
+        in_slots = cls.config_input_slots()
+        out_slots = cls.config_output_slots()
+        params = cls.config_params()
 
-        # use input or output slot dict depending on the is_input flag
-        slot_dict = self._input_slots if is_input else self._output_slots
+        return (
+            {name: slot if isinstance(slot, InputSlot) else InputSlot(slot) for name, slot in in_slots.items()},
+            {name: slot if isinstance(slot, OutputSlot) else OutputSlot(slot) for name, slot in out_slots.items()},
+            NodeParams(params),
+        )
 
-        if name in slot_dict:
-            raise ValueError(f"Input slot {name} already exists")
-
-        # create the new slot
-        slot = InputSlot(dtype) if is_input else OutputSlot(dtype)
-        slot_dict[name] = slot
-
-    def register_input(self, name: str, dtype: DataType):
+    @classmethod
+    def create(cls) -> NodeRef:
         """
-        Register an input slot with the given name and data type.
+        Create a new node instance in a separate process and return a reference to the node.
 
-        ### Parameters
-        `name` : str
-            The name of the input slot.
-        `dtype` : DataType
-            The data type of the input slot.
+        ### Returns
+        `NodeRef`
+            A reference to the node.
         """
-        self._register_slot(name, dtype, True)
+        # generate arguments for the node
+        in_slots, out_slots, params = cls._configure(cls)
+        conn1, conn2 = MultiprocessingConnection.create()
+        # instantiate the node in a separate process
+        proc = Process(target=cls, args=(conn2, in_slots, out_slots, params), daemon=True)
+        proc.start()
+        # create the node reference
+        return NodeRef(
+            conn1,
+            {name: slot.dtype for name, slot in in_slots.items()},
+            {name: slot.dtype for name, slot in out_slots.items()},
+            params,
+            process=proc,
+        )
 
-    def register_output(self, name: str, dtype: DataType):
+    @classmethod
+    def create_local(cls) -> Tuple[NodeRef, "Node"]:
         """
-        Register an output slot with the given name and data type.
+        Create a new node instance in the current process and return a reference to the node,
+        as well as the node itself.
 
-        ### Parameters
-        `name` : str
-            The name of the output slot.
-        `dtype` : DataType
-            The data type of the output slot.
+        ### Returns
+        `Tuple[NodeRef, Node]`
+            A tuple containing the node reference and the node itself.
         """
-        self._register_slot(name, dtype, False)
+        # generate arguments for the node
+        in_slots, out_slots, params = cls._configure(cls)
+        conn1, conn2 = MultiprocessingConnection.create()
+        # instantiate the node in the current process
+        node = cls(conn2, in_slots, out_slots, params)
+        # create the node reference
+        return (
+            NodeRef(
+                conn1,
+                {name: slot.dtype for name, slot in in_slots.items()},
+                {name: slot.dtype for name, slot in out_slots.items()},
+                deepcopy(params),
+            ),
+            node,
+        )
 
     @property
     @require_init
     def alive(self) -> bool:
         return self._alive
+
+    @property
+    @require_init
+    def params(self) -> NodeParams:
+        return self._params
 
     @property
     @require_init
@@ -257,6 +294,65 @@ class Node(ABC):
     def output_slots(self) -> Dict[str, OutputSlot]:
         return self._output_slots
 
+    @staticmethod
+    def config_input_slots() -> Dict[str, Union[InputSlot, DataType]]:
+        """
+        This method is called when the node is instantiated. It should return a dict containing the input slots
+        of the node. The keys are the names of the input slots, and the values are either InputSlot instances or
+        DataType instances.
+
+        ### Returns
+        `Dict[str, Union[InputSlot, DataType]]`
+            A dict containing the input slots of the node.
+        """
+        return {}
+
+    @staticmethod
+    def config_output_slots() -> Dict[str, Union[OutputSlot, DataType]]:
+        """
+        This method is called when the node is instantiated. It should return a dict containing the output slots
+        of the node. The keys are the names of the output slots, and the values are either OutputSlot instances or
+        DataType instances.
+
+        ### Returns
+        `Dict[str, Union[OutputSlot, DataType]]`
+            A dict containing the output slots of the node.
+        """
+        return {}
+
+    @staticmethod
+    def config_params() -> Dict[str, Dict[str, Param]]:
+        """
+        This method is called when the node is instantiated. It should return a dict containing the parameters
+        of the node. The keys are the names of the parameter groups, and the values are dicts containing the
+        parameters of each group. The parameters are stored as named tuples, and can be accessed as attributes.
+
+        ### Returns
+        `Dict[str, Dict[str, Param]]`
+            A dict containing the parameters of the node.
+        """
+        return {}
+
+    @require_init
+    def setup(self) -> None:
+        """
+        This method is called after the node is instantiated. It can be used to set up the node.
+        """
+        pass
+
     @abstractmethod
-    def process(self, **kwargs) -> Dict[str, Data]:
+    def process(self, **kwargs) -> Dict[str, Tuple[Any, Dict[str, Any]]]:
+        """
+        This method is called when the node is triggered. It should process the input data and return a dict
+        containing the output data.
+
+        ### Parameters
+        `**kwargs` : Any
+            The input data.
+
+        ### Returns
+        `Dict[str, Tuple[Any, Dict[str, Any]]]`
+            A dict containing the output data. The keys are the names of the output slots, and the values are
+            tuples containing the data and metadata of the output data.
+        """
         pass

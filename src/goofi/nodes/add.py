@@ -1,18 +1,15 @@
-from goofi.connection import Connection
-
 from goofi.data import Data, DataType
 from goofi.node import Node
 
 
 class Add(Node):
-    def __init__(self, connection: Connection) -> None:
-        super().__init__(connection)
+    def config_input_slots():
+        return {"a": DataType.ARRAY, "b": DataType.ARRAY}
 
-        self.register_input("a", DataType.ARRAY)
-        self.register_input("b", DataType.ARRAY)
-        self.register_output("out", DataType.ARRAY)
+    def config_output_slots():
+        return {"out": DataType.ARRAY}
 
-    def process(self, a: Data, b: Data) -> Data:
+    def process(self, a: Data, b: Data):
         if a is None or b is None:
             return None
-        return {"out": Data(DataType.ARRAY, a.data + b.data, {})}
+        return {"out": (a.data + b.data, {})}

@@ -22,11 +22,6 @@ class MessageType(Enum):
     - `PING`: Empty probe to check if a process is alive.
     - `PONG`: Response to a ping message.
     - `TERMINATE`: Empty message to indicate that a node should terminate.
-    - `NODE_PARAMS`: Message containing the parameters of a node.
-        - `params` (Dict[str, Any]): The parameters of the node.
-        - `input_slots` (Dict[str, DataType]): The input slots of the node.
-        - `output_slots` (Dict[str, DataType]): The output slots of the node.
-    - `NODE_PARAMS_REQUEST`: Empty message to request the parameters of a node.
     """
 
     ADD_OUTPUT_PIPE = 1
@@ -35,8 +30,6 @@ class MessageType(Enum):
     PING = 4
     PONG = 5
     TERMINATE = 6
-    NODE_PARAMS = 7
-    NODE_PARAMS_REQUEST = 8
 
 
 @dataclass
@@ -88,5 +81,3 @@ class Message:
             self.require_fields(slot_name=str)
         elif self.type == MessageType.DATA:
             self.require_fields(slot_name=str, data=Data)
-        elif self.type == MessageType.NODE_PARAMS:
-            self.require_fields(params=dict, input_slots=dict, output_slots=dict)

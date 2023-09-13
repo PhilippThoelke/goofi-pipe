@@ -1,42 +1,46 @@
-from typing import Dict
+import inspect
+from typing import Any, Dict, List, Tuple, Type
 
+from goofi import params
 from goofi.connection import Connection
 from goofi.data import DataType
 from goofi.node import Node
+from goofi.params import Param
+
+
+def list_param_types() -> List[Type[Param]]:
+    """
+    List all available parameter types.
+    """
+    return [cls for _, cls in inspect.getmembers(params, inspect.isclass) if issubclass(cls, Param) and cls is not Param]
 
 
 class DummyNode(Node):
-    """
-    A dummy node that does nothing.
-
-    ### Parameters
-    `input_pipe` : Connection
-        The input connection to the node. This is used to receive messages from the manager, or other nodes.
-    `call_super` : bool
-        Whether or not to call the super class constructor (for testing only).
-    `input_slots` : Dict[str, DataType]
-        The input slots of the node.
-    `output_slots` : Dict[str, DataType]
-        The output slots of the node.
-    """
-
-    def __init__(
-        self,
-        input_pipe: Connection,
-        call_super: bool = True,
-        input_slots: Dict[str, DataType] = dict(),
-        output_slots: Dict[str, DataType] = dict(),
-    ) -> None:
-        if call_super:
-            super().__init__(input_pipe)
-
-            for name, dtype in input_slots.items():
-                self.register_input(name, dtype)
-            for name, dtype in output_slots.items():
-                self.register_output(name, dtype)
-
     def process(self):
-        return {}
+        return None, {}
+
+
+class FullDummyNode(Node):
+    def config_input_slots():
+        res = {}
+        for dtype in DataType.__members__.values():
+            res["in_" + dtype.name.lower()] = dtype
+        return res
+
+    def config_output_slots():
+        res = {}
+        for dtype in DataType.__members__.values():
+            res["out_" + dtype.name.lower()] = dtype
+        return res
+
+    def config_params():
+        res = {}
+        for param_type in list_param_types():
+            res["param_" + param_type.__name__.lower()] = param_type()
+        return {"test": res}
+
+    def process(self, **kwargs):
+        return None, {}
 
 
 class BrokenProcessingNode(Node):
@@ -50,8 +54,8 @@ class BrokenProcessingNode(Node):
         The number of times the node should fail before succeeding.
     """
 
-    def __init__(self, connection: Connection, n_fails: int = 1) -> None:
-        super().__init__(connection)
+    def __init__(self, connection: Connection, *args, n_fails: int = 1, **kwargs) -> None:
+        super().__init__(connection, *args, **kwargs)
         self.n_fails = n_fails
 
     def process(self):

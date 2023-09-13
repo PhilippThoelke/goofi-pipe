@@ -1,18 +1,18 @@
 import time
-from goofi.connection import Connection
-from typing import Dict
 
 import numpy as np
 
-from goofi.data import Data, DataType
+from goofi.data import DataType
 from goofi.node import Node
+from goofi.params import BoolParam
 
 
 class Sine(Node):
-    def __init__(self, connection: Connection) -> None:
-        super().__init__(connection, autotrigger=True)
-        self.register_output("out", DataType.ARRAY)
+    def config_params():
+        return {"common": {"autotrigger": BoolParam(True)}}
 
-    def process(self) -> Dict[str, Data]:
-        arr = np.array([np.sin(time.time())])
-        return {"out": Data(DataType.ARRAY, arr, {})}
+    def config_output_slots():
+        return {"out": DataType.ARRAY}
+
+    def process(self):
+        return {"out": (np.array([np.sin(time.time())]), {})}

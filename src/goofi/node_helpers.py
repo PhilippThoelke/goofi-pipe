@@ -6,42 +6,39 @@ from typing import Callable, Dict, List, Optional, Tuple
 from goofi.connection import Connection
 from goofi.data import Data, DataType
 from goofi.message import Message, MessageType
+from goofi.params import NodeParams
 
 
 @dataclass
 class InputSlot:
     """
-    An input slot is used to receive data from an output slot. It contains the data type (`dtype`) and a data
-    object (`data`). The data object is updated when data is received from an output slot. The data type is used
-    to check that the data received from the output slot is of the correct type.
+    Nodes have a number of input slots that can be connected to output slots of other nodes. Each input slot
+    has a specific data type (`dtype`) and a `trigger_process` flag that indicates if the node's process
+    function should be triggered when data is received on this input slot. The input slot also internally
+    handles the data (`data`) received on the input slot.
 
     ### Parameters
     `dtype` : DataType
         The data type of the input slot.
-    `data` : Optional[Data]
-        The data object of the input slot. Defaults to None.
-    `trigger_update` : bool
-        If True, the node will automatically trigger processing when the data object is updated.
+    `trigger_process` : Optional[bool]
+        Optional flag to indicate if the node's process function should be triggered when data is received on
+        this input slot. Defaults to True.
     """
 
     dtype: DataType
+    trigger_process: bool = True
     data: Optional[Data] = None
-    trigger_update: bool = True
 
 
 @dataclass
 class OutputSlot:
     """
-    An output slot is used to send data to an input slot. It contains the data type (`dtype`) and a list of
-    connections (`connections`). The data type is used to check that the data sent out from the output slot
-    is of the correct type. The connections list maps names of target input slots to the connection
-    objects that are used to send data to other nodes.
+    Nodes have a number of output slots that can be connected to input slots of other nodes. Each output slot
+    has a specific data type (`dtype`) and internally handles a list of connections (`connections`).
 
     ### Parameters
     `dtype` : DataType
         The data type of the output slot.
-    `connections` : List[Tuple[str, Connection]]
-        A list of tuples containing the name of the target input slot and the connection object of the target.
     """
 
     dtype: DataType
@@ -60,20 +57,26 @@ class NodeRef:
 
     - `PING`: Responds with a `PONG` message.
     - `TERMINATE`: Terminates the node by closing the connection to it.
-    - `NODE_PARAMS_REQUEST`: Raises `ValueError`. NodeRef instances should not receive this message type.
 
     ### Parameters
     `connection` : Connection
         The connection object to the node.
+    `input_slots` : Dict[str, DataType]
+        A dictionary of input slots and their data types.
+    `output_slots` : Dict[str, DataType]
+        A dictionary of output slots and their data types.
+    `params` : NodeParams
+        The parameters of the node.
     `process` : Optional[Process]
         If the node is running in a separate process, this should be the process object. Defaults to None.
     """
 
     connection: Connection
-    process: Optional[Process] = None
+    input_slots: Dict[str, DataType]
+    output_slots: Dict[str, DataType]
+    params: NodeParams
 
-    input_slots: Dict[str, DataType] = field(default_factory=dict)
-    output_slots: Dict[str, DataType] = field(default_factory=dict)
+    process: Optional[Process] = None
     callbacks: Dict[MessageType, Callable] = field(default_factory=dict)
 
     def set_message_handler(self, msg_type: MessageType, callback: Optional[Callable]) -> None:
@@ -122,8 +125,6 @@ class NodeRef:
             elif msg.type == MessageType.TERMINATE:
                 self._alive = False
                 self.connection.close()
-            elif msg.type == MessageType.NODE_PARAMS_REQUEST:
-                raise ValueError("Nodes should not send NODE_PARAMS_REQUEST messages.")
 
     def __post_init__(self):
         if self.connection is None:

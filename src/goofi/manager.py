@@ -69,7 +69,7 @@ class Manager:
         node = getattr(mod, node_cls)
 
         # instantiate the node and add it to the container
-        ref = node.create()
+        ref = node.create_local()[0]
         name = self.nodes.add_node(node_cls.lower(), ref)
 
         # add the node to the gui
@@ -107,7 +107,7 @@ class Manager:
         return self._headless
 
 
-def main(duration: float = 10, args=None):
+def main(duration: float = 0, args=None):
     parser = argparse.ArgumentParser(description="goofi-pipe")
     parser.add_argument("--headless", action="store_true", help="run in headless mode")
     args = parser.parse_args(args)
@@ -129,7 +129,7 @@ def main(duration: float = 10, args=None):
 
     start = last = time.time()
     while manager.running:
-        if time.time() - start > duration:
+        if duration > 0 and time.time() - start > duration:
             manager.terminate()
             break
 

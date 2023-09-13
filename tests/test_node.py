@@ -1,28 +1,31 @@
 import time
-from multiprocessing import Pipe, Process
 
 import pytest
 
+from goofi.connection import MultiprocessingConnection
 from goofi.data import DataType
 from goofi.message import Message, MessageType
-from goofi.node import InputSlot, Node, OutputSlot
-from goofi.node_helpers import NodeRef
+from goofi.node import Node
+from goofi.node_helpers import InputSlot, NodeRef, OutputSlot
+from goofi.params import DEFAULT_PARAMS, NodeParams
 
-from .utils import BrokenProcessingNode, DummyNode
+from .utils import BrokenProcessingNode, DummyNode, FullDummyNode, list_param_types
 
 
 def test_abstract_node():
     # instantiating an abstract node should raise a TypeError
     with pytest.raises(TypeError):
-        Node(Pipe()[0])
+        Node(MultiprocessingConnection.create()[0])
 
 
 def test_create_node():
     ref, n = DummyNode.create_local()
 
     # some basic checks
+    assert n.alive, "Node is not alive."
     assert len(n.input_slots) == 0, "Node input slots are not empty."
     assert len(n.output_slots) == 0, "Node output slots are not empty."
+    assert n.params == NodeParams(DEFAULT_PARAMS), "Node params are not default."
     assert n.messaging_thread.is_alive(), "Node messaging thread is not alive."
     assert n.processing_thread.is_alive(), "Node processing thread is not alive."
 
@@ -42,96 +45,10 @@ def test_dead_pipe():
     assert not n.messaging_thread.is_alive(), "Node messaging thread is alive."
 
 
-def test_create_node_errors():
-    # connection is None
-    with pytest.raises(TypeError):
-        DummyNode(None)
-    # connection is not Connection
-    with pytest.raises(TypeError):
-        DummyNode(1)
-
-
-def test_missing_super_call():
-    ref, n = DummyNode.create_local(call_super=False)
-
-    # check all properties and methods that should raise a RuntimeError if super() is not called
-    with pytest.raises(RuntimeError):
-        n.input_slots
-    with pytest.raises(RuntimeError):
-        n.output_slots
-    with pytest.raises(RuntimeError):
-        n.register_input("test", DataType.STRING)
-    with pytest.raises(RuntimeError):
-        n.register_output("test", DataType.STRING)
-
-    # clean up dangling threads
-    ref.terminate()
-
-
-@pytest.mark.parametrize("is_input", [True, False])
-def test_register_slot(is_input):
-    ref, n = DummyNode.create_local()
-
-    fn = n.register_input if is_input else n.register_output
-    slot_dict = n.input_slots if is_input else n.output_slots
-    slot_cls = InputSlot if is_input else OutputSlot
-
-    # register a slot, no errors should occur
-    fn("slot1", DataType.STRING)
-    assert len(slot_dict) == 1, "Slots should have one entry."
-    assert "slot1" in slot_dict, "Slots should have a slot named 'slot1'."
-    assert isinstance(slot_dict["slot1"], slot_cls), f"Slot 'slot1' should be of type {slot_cls.__name__}."
-    assert slot_dict["slot1"].dtype == DataType.STRING, "Slot 'slot1' should have type DataType.STRING."
-
-    # slot already exists
-    with pytest.raises(ValueError):
-        fn("slot1", DataType.STRING)
-
-    # dtype is None
-    with pytest.raises(TypeError):
-        fn("slot2", None)
-
-    # dtype is not DataType
-    with pytest.raises(TypeError):
-        fn("slot2", 1)
-
-    # name is None
-    with pytest.raises(TypeError):
-        fn(None, DataType.STRING)
-
-    # name is empty
-    with pytest.raises(TypeError):
-        fn("", DataType.STRING)
-
-    # name is not str
-    with pytest.raises(TypeError):
-        fn(1, DataType.STRING)
-
-    assert len(slot_dict) == 1, "Slots should still have one entry."
-
-    # clean up dangling threads
-    ref.terminate()
-
-
-@pytest.mark.parametrize("is_input", [True, False])
-@pytest.mark.parametrize("dtype", DataType.__members__.values())
-def test_register_slot_dtypes(is_input, dtype):
-    ref, n = DummyNode.create_local()
-
-    if is_input:
-        # try to register an input slot with the given dtype
-        n.register_input("slot1", dtype)
-    else:
-        # try to register an output slot with the given dtype
-        n.register_output("slot1", dtype)
-
-    # clean up dangling threads
-    ref.terminate()
-
-
 @pytest.mark.parametrize("dtype", DataType.__members__.values())
 def test_input_slot(dtype):
     slot = InputSlot(dtype)
+    assert slot.trigger_process is True, "InputSlot trigger_process should be False."
     assert slot.data is None, "InputSlot data should be None."
 
 
@@ -160,7 +77,7 @@ def test_ping_pong():
     ref.terminate()
 
 
-def test_terminate():
+def test_terminate_message():
     ref, n = DummyNode.create_local()
     ref.connection.send(Message(MessageType.TERMINATE, {}))
     time.sleep(0.01)
@@ -212,75 +129,50 @@ def test_broken_processing():
     ref.terminate()
 
 
-def test_node_params_request_empty():
-    messages = []
+def test_full_node_input_slots():
+    ref, n = FullDummyNode.create_local()
 
-    def callback(_: NodeRef, msg: Message):
-        messages.append(msg)
+    for name, slot in ref.input_slots.items():
+        assert isinstance(slot, DataType), f"NodeRef slots should be DataTypes, got {type(slot)}"
+        assert name in n.input_slots, f"NodeRef input slot {name} is missing from node input slots."
+        assert isinstance(
+            n.input_slots[name], InputSlot
+        ), f"Node input slot {name} should be an InputSlot, got {type(n.input_slots[name])}"
+        assert slot == n.input_slots[name].dtype, f"Mismatching slot types for {name}: {slot} != {n.input_slots[name].dtype}"
 
-    ref, _ = DummyNode.create_local()
-    ref.set_message_handler(MessageType.NODE_PARAMS, callback)
-
-    ref.connection.send(Message(MessageType.NODE_PARAMS_REQUEST, {}))
-    time.sleep(0.01)
-    assert len(messages) == 1, "Node should have received one message."
-    assert messages[0].type == MessageType.NODE_PARAMS, "Node should have received a node params message."
-
-    # the dummy node has no params, no input slots and no output slots
-    assert messages[0].content["params"] == dict(), "params should be empty for DummyNode."
-    assert messages[0].content["input_slots"] == dict(), "input_slots should be empty for DummyNode."
-    assert messages[0].content["output_slots"] == dict(), "output_slots should be empty for DummyNode."
-
-    # clean up dangling threads
     ref.terminate()
 
 
-def test_node_params_request_multiple():
-    messages = []
+def test_full_node_output_slots():
+    ref, n = FullDummyNode.create_local()
 
-    def callback(_: NodeRef, msg: Message):
-        messages.append(msg)
+    for name, slot in ref.output_slots.items():
+        assert isinstance(slot, DataType), f"NodeRef slots should be DataTypes, got {type(slot)}"
+        assert name in n.output_slots, f"NodeRef output slot {name} is missing from node output slots."
+        assert isinstance(
+            n.output_slots[name], OutputSlot
+        ), f"Node output slot {name} should be an OutputSlot, got {type(n.output_slots[name])}"
+        assert slot == n.output_slots[name].dtype, f"Mismatching slot types for {name}: {slot} != {n.output_slots[name].dtype}"
 
-    in_slots = {"in1": DataType.STRING, "in2": DataType.ARRAY}
-    out_slots = {"out1": DataType.ARRAY, "out2": DataType.STRING}
-
-    ref, _ = DummyNode.create_local(input_slots=in_slots, output_slots=out_slots)
-    ref.set_message_handler(MessageType.NODE_PARAMS, callback)
-
-    ref.connection.send(Message(MessageType.NODE_PARAMS_REQUEST, {}))
-    time.sleep(0.01)
-    assert len(messages) == 1, "Node should have received one message."
-    assert messages[0].type == MessageType.NODE_PARAMS, "Node should have received a node params message."
-
-    # the dummy node has no params, no input slots and no output slots
-    assert messages[0].content["params"] == dict(), "params should be empty for DummyNode."
-    assert messages[0].content["input_slots"] == in_slots, "input_slots should be empty for DummyNode."
-    assert messages[0].content["output_slots"] == out_slots, "output_slots should be empty for DummyNode."
-
-    # clean up dangling threads
     ref.terminate()
 
 
-@pytest.mark.parametrize("dtype1", DataType.__members__.values())
-@pytest.mark.parametrize("dtype2", DataType.__members__.values())
-def test_node_params_request_dtypes(dtype1, dtype2):
-    messages = []
+def test_full_node_params():
+    ref, n = FullDummyNode.create_local()
 
-    def callback(_: NodeRef, msg: Message):
-        messages.append(msg)
+    assert isinstance(ref.params, NodeParams), f"NodeRef params should be a NodeParams, got {type(ref.params)}"
+    assert ref.params == n.params, "NodeRef params should be equal to node params."
 
-    ref, _ = DummyNode.create_local(input_slots={"in": dtype1}, output_slots={"out": dtype2})
-    ref.set_message_handler(MessageType.NODE_PARAMS, callback)
+    assert "common" in ref.params, "Node params should contain common params."
+    assert "test" in ref.params, "Node params should contain test params."
 
-    ref.connection.send(Message(MessageType.NODE_PARAMS_REQUEST, {}))
-    time.sleep(0.01)
-    assert len(messages) == 1, "Node should have received one message."
-    assert messages[0].type == MessageType.NODE_PARAMS, "Node should have received a node params message."
+    print(ref.params.test)
+    for param_type in list_param_types():
+        name = "param_" + param_type.__name__.lower()
+        print(name,ref.params.test)
+        assert name in ref.params.test, f"Node params should contain param '{name}'. Got {ref.params.test}"
+        assert isinstance(
+            getattr(ref.params.test, name), param_type
+        ), f"Node param '{name}' should be a {param_type}, got {type(ref.params.test[name])}"
 
-    # the dummy node has no params, no input slots and no output slots
-    assert messages[0].content["params"] == dict(), "params should be empty for DummyNode."
-    assert messages[0].content["input_slots"] == {"in": dtype1}, "input_slots should have one item."
-    assert messages[0].content["output_slots"] == {"out": dtype2}, "output_slots should have one item."
-
-    # clean up dangling threads
     ref.terminate()

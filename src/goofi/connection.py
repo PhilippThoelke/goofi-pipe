@@ -72,7 +72,7 @@ class MultiprocessingConnection(Connection):
     def send(self, obj: object) -> None:
         try:
             self.conn.send(obj)
-        except OSError:
+        except (OSError, BrokenPipeError):
             raise ConnectionError("Connection closed")
 
     def recv(self) -> object:
@@ -92,14 +92,3 @@ class MultiprocessingConnection(Connection):
             return self.conn.poll(timeout)
         except OSError:
             raise ConnectionError("Connection closed")
-
-
-def list_backends() -> List[Type[Connection]]:
-    """
-    List all available connection backends.
-    """
-    return [
-        cls
-        for _, cls in inspect.getmembers(goofi.connection, inspect.isclass)
-        if issubclass(cls, Connection) and cls is not Connection
-    ]
