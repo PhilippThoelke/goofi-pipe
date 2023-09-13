@@ -14,9 +14,8 @@ class Window:
     Window().close() is called.
 
     ### Parameters
-    `close_callback` : Callable
-        A callback function that will be called when the window is closed. This function takes no
-        arguments and returns nothing.
+    `manager` : Manager
+        The manager instance.
     """
 
     _instance = None
