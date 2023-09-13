@@ -166,10 +166,8 @@ def test_full_node_params():
     assert "common" in ref.params, "Node params should contain common params."
     assert "test" in ref.params, "Node params should contain test params."
 
-    print(ref.params.test)
     for param_type in list_param_types():
         name = "param_" + param_type.__name__.lower()
-        print(name, ref.params.test)
         assert name in ref.params.test, f"Node params should contain param '{name}'. Got {ref.params.test}"
         assert isinstance(
             getattr(ref.params.test, name), param_type
