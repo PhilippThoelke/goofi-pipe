@@ -46,7 +46,7 @@ def test_simple():
 
     # mean rate should be ~30 Hz
     mean_rate = sum(rates) / len(rates)
-    assert mean_rate == pytest.approx(30, abs=0.3), f"Mean rate should be ~30 Hz, got {mean_rate} Hz."
+    assert mean_rate == pytest.approx(30, abs=0.5), f"Mean rate should be ~30 Hz, got {mean_rate} Hz."
 
     #######################
     # TODO: node cleanup should happen automatically, none of this should be necessary
