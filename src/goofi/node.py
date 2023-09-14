@@ -165,9 +165,10 @@ class Node(ABC):
             if not self.params.common.autotrigger.value:
                 self.process_flag.clear()
 
+            # TODO: replace by a global setting
             # limit the update rate to 30 Hz
-            if time.time() - last_update < 1 / 30:
-                sleep_time = 1 / 30 - (time.time() - last_update)
+            sleep_time = 1 / 30 - (time.time() - last_update)
+            if sleep_time > 0:
                 time.sleep(sleep_time)
             last_update = time.time()
 
