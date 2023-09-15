@@ -1,11 +1,18 @@
 import threading
 import time
-from typing import Tuple
+from dataclasses import dataclass
+from typing import Dict, Tuple
 
 import dearpygui.dearpygui as dpg
 
+from goofi.data import DataType
 from goofi.gui.events import KEY_MAP
 from goofi.node_helpers import NodeRef
+
+DTYPE_SHAPE_MAP = {
+    DataType.ARRAY: dpg.mvNode_PinShape_CircleFilled,
+    DataType.STRING: dpg.mvNode_PinShape_TriangleFilled,
+}
 
 
 def running(func):
@@ -20,6 +27,13 @@ def running(func):
         return func(*args, **kwargs)
 
     return wrapper
+
+
+@dataclass
+class GUINode:
+    item: int
+    input_slots: Dict[str, int]
+    output_slots: Dict[str, int]
 
 
 class Window:
@@ -46,7 +60,7 @@ class Window:
     @running
     def add_node(self, name: str, node: NodeRef) -> None:
         # add node
-        dpg.add_node(
+        node_id = dpg.add_node(
             parent=self.node_editor,
             id=name,
             label=name,
@@ -54,31 +68,61 @@ class Window:
         )
 
         # add input slots
-        for slot_name, slot in node.input_slots.items():
-            dpg.add_node_attribute(
+        in_slots = {}
+        for slot_name, dtype in node.input_slots.items():
+            in_slots[slot_name] = dpg.add_node_attribute(
                 parent=name,
-                id=f"{name}_{slot_name}_in",
                 label=slot_name,
                 attribute_type=dpg.mvNode_Attr_Input,
+                shape=DTYPE_SHAPE_MAP[dtype],
             )
         # add output slots
-        for slot_name, slot in node.output_slots.items():
-            dpg.add_node_attribute(
+        out_slots = {}
+        for slot_name, dtype in node.output_slots.items():
+            out_slots[slot_name] = dpg.add_node_attribute(
                 parent=name,
-                id=f"{name}_{slot_name}_out",
                 label=slot_name,
                 attribute_type=dpg.mvNode_Attr_Output,
+                shape=DTYPE_SHAPE_MAP[dtype],
             )
 
-    @running
-    def remove_node(self, item: int) -> None:
-        manager = dpg.get_item_user_data(self.window)
-        manager.remove_node(dpg.get_item_label(item), call_gui=False)
-        dpg.delete_item(item)
+        # add node to node list
+        self.nodes[name] = GUINode(node_id, in_slots, out_slots)
 
     @running
-    def add_link(self, sender: int, items: Tuple[int, int]) -> None:
-        dpg.add_node_link(items[0], items[1], parent=sender)
+    def remove_node(self, name: str) -> None:
+        self._remove_node(self.nodes[name], notify_manager=False)
+
+    @running
+    def _remove_node(self, item: int, notify_manager: bool = True) -> None:
+        name = dpg.get_item_label(item)
+
+        # remove links associated with node
+        for link in list(self.links.keys()):
+            if link[0] == name or link[1] == name:
+                self._remove_link(self.links[link], notify_manager=False)
+
+        # unregister node
+        del self.nodes[name]
+
+        # delete node from gui
+        dpg.delete_item(item)
+
+        if notify_manager:
+            # remove node from manager
+            manager = dpg.get_item_user_data(self.window)
+            manager.remove_node(name, notify_gui=False)
+
+    @running
+    def add_link(self, node_out: str, node_in: str, slot_out: str, slot_in: str) -> None:
+        # get slot IDs
+        slot1 = self.nodes[node_out].output_slots[slot_out]
+        slot2 = self.nodes[node_in].input_slots[slot_in]
+        # add link
+        self._add_link(self.node_editor, (slot1, slot2), notify_manager=False)
+
+    @running
+    def _add_link(self, sender: int, items: Tuple[int, int], notify_manager: bool = True) -> None:
         # get slot names
         slot1 = dpg.get_item_label(items[0])
         slot2 = dpg.get_item_label(items[1])
@@ -86,12 +130,19 @@ class Window:
         node1 = dpg.get_item_label(dpg.get_item_parent(items[0]))
         node2 = dpg.get_item_label(dpg.get_item_parent(items[1]))
 
-        # connect nodes
-        manager = dpg.get_item_user_data(self.window)
-        manager.add_link(node1, node2, slot1, slot2)
+        # register link
+        self.links[(node1, node2, slot1, slot2)] = dpg.add_node_link(items[0], items[1], parent=sender)
+
+        if notify_manager:
+            # add link to manager
+            manager = dpg.get_item_user_data(self.window)
+            manager.add_link(node1, node2, slot1, slot2, notify_gui=False)
+
+    def remove_link(self, node_out: str, node_in: str, slot_out: str, slot_in: str) -> None:
+        self._remove_link(self.links[(node_out, node_in, slot_out, slot_in)], notify_manager=False)
 
     @running
-    def remove_link(self, item: int) -> None:
+    def _remove_link(self, item: int, notify_manager: bool = True) -> None:
         conf = dpg.get_item_configuration(item)
         # get slot names
         slot1, slot2 = dpg.get_item_label(conf["attr_1"]), dpg.get_item_label(conf["attr_2"])
@@ -99,23 +150,37 @@ class Window:
         node1 = dpg.get_item_label(dpg.get_item_parent(conf["attr_1"]))
         node2 = dpg.get_item_label(dpg.get_item_parent(conf["attr_2"]))
 
-        manager = dpg.get_item_user_data(self.window)
-        manager.remove_link(node1, node2, slot1, slot2)
+        if notify_manager:
+            # remove link from manager
+            manager = dpg.get_item_user_data(self.window)
+            manager.remove_link(node1, node2, slot1, slot2, notify_gui=False)
+
+        # unregister link
+        del self.links[(node1, node2, slot1, slot2)]
+        # delete link from gui
         dpg.delete_item(item)
 
     def link_callback(self, sender, data):
-        self.add_link(sender, data)
+        self._add_link(sender, data)
 
-    def delink_callback(self, sender, data):
-        self.remove_link(sender, data)
+    def delink_callback(self, _, data):
+        self._remove_link(data)
 
-    def key_press_callback(self, sender, data):
+    def key_press_callback(self, _, data):
         if data in KEY_MAP:
-            KEY_MAP[data](sender, self)
+            KEY_MAP[data](self)
+
+    def resize_callback(self, _, data):
+        dpg.configure_item(self.window, width=data[0], height=data[1])
 
     def _initialize(self, manager):
         dpg.create_context()
 
+        # initialize dicts to map names to dpg items
+        self.nodes = {}
+        self.links = {}
+
+        # create window
         self.window = dpg.add_window(
             label="goofi-pipe",
             width=800,
@@ -126,27 +191,33 @@ class Window:
             no_close=True,
             no_collapse=True,
         )
+        # create node editor
         self.node_editor = dpg.add_node_editor(
             parent=self.window, callback=self.link_callback, delink_callback=self.delink_callback
         )
 
+        # store manager in the window's user data
         dpg.set_item_user_data(self.window, manager)
 
+        # register key press handler
         with dpg.handler_registry():
             dpg.add_key_press_handler(callback=self.key_press_callback)
 
+        # register viewport resize handler
         dpg.set_viewport_resize_callback(self.resize_callback)
 
+        # start DearPyGui
         dpg.create_viewport(title="goofi-pipe", width=800, height=600)
         dpg.setup_dearpygui()
         dpg.show_viewport()
         dpg.start_dearpygui()
         dpg.destroy_context()
 
-        manager.terminate()
+        print("Closing Window...")
 
-    def close(self):
+        # terminate manager
+        manager.terminate(notify_gui=False)
+
+    def terminate(self):
+        """Stop DearPyGui and close the window."""
         dpg.stop_dearpygui()
-
-    def resize_callback(self, sender, data):
-        dpg.configure_item(self.window, width=data[0], height=data[1])

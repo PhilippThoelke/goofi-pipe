@@ -1,9 +1,11 @@
 import pytest
 
-from goofi.data import Data, DataType
+from goofi.data import Data
+
+from .utils import list_data_types
 
 
-@pytest.mark.parametrize("dtype", DataType.__members__.values())
+@pytest.mark.parametrize("dtype", list_data_types())
 def test_create_data(dtype):
     # all dtype checks should pass
     Data(dtype, dtype.empty(), {})
@@ -21,7 +23,7 @@ def test_create_data(dtype):
         Data(None, dtype.empty(), {})
 
     # make sure all other dtypes raise a ValueError
-    for other_dtype in DataType.__members__.values():
+    for other_dtype in list_data_types():
         if other_dtype == dtype:
             continue
         with pytest.raises(ValueError):

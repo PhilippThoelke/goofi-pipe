@@ -9,10 +9,13 @@ from goofi.params import Param
 
 
 def list_param_types() -> List[Type[Param]]:
-    """
-    List all available parameter types.
-    """
+    """List all available parameter types."""
     return [cls for _, cls in inspect.getmembers(params, inspect.isclass) if issubclass(cls, Param) and cls is not Param]
+
+
+def list_data_types() -> List[DataType]:
+    """List all available data types."""
+    return list(DataType.__members__.values())
 
 
 class DummyNode(Node):
@@ -23,13 +26,13 @@ class DummyNode(Node):
 class FullDummyNode(Node):
     def config_input_slots():
         res = {}
-        for dtype in DataType.__members__.values():
+        for dtype in list_data_types():
             res["in_" + dtype.name.lower()] = dtype
         return res
 
     def config_output_slots():
         res = {}
-        for dtype in DataType.__members__.values():
+        for dtype in list_data_types():
             res["out_" + dtype.name.lower()] = dtype
         return res
 

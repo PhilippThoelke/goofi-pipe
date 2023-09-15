@@ -9,7 +9,7 @@ from goofi.connection import Connection, MultiprocessingConnection
 from goofi.data import Data, DataType
 from goofi.message import Message, MessageType
 from goofi.node_helpers import InputSlot, NodeRef, OutputSlot
-from goofi.params import NodeParams, Param
+from goofi.params import NodeParams
 
 
 def require_init(func: Callable) -> Callable:
@@ -152,10 +152,17 @@ class Node(ABC):
                 slot.connections.append((msg.content["slot_name_in"], msg.content["node_connection"]))
             elif msg.type == MessageType.REMOVE_OUTPUT_PIPE:
                 # clear the data in the input slot
-                msg.content["node_connection"].try_send(Message(MessageType.CLEAR_DATA, {"slot_name": msg.content["slot_name_in"]}))
+                msg.content["node_connection"].try_send(
+                    Message(MessageType.CLEAR_DATA, {"slot_name": msg.content["slot_name_in"]})
+                )
                 # remove the connection
                 slot = self.output_slots[msg.content["slot_name_out"]]
-                slot.connections.remove((msg.content["slot_name_in"], msg.content["node_connection"]))
+                try:
+                    slot.connections.remove((msg.content["slot_name_in"], msg.content["node_connection"]))
+                except ValueError:
+                    # connection doesn't exist
+                    # TODO: send error message to manager
+                    pass
             elif msg.type == MessageType.DATA:
                 # received data from another node
                 slot = self.input_slots[msg.content["slot_name"]]

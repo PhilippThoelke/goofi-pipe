@@ -1,4 +1,3 @@
-import argparse
 import importlib
 from typing import Dict
 
@@ -47,6 +46,15 @@ class NodeContainer:
 
 
 class Manager:
+    """
+    The manager keeps track of all nodes, and provides methods to add and remove nodes, and links between them.
+    It also interfaces with the GUI to display the nodes and links, and to handle user interaction.
+
+    ### Parameters
+    `headless` : bool
+        Whether to run in headless mode. If `True`, the GUI will not be started.
+    """
+
     def __init__(self, headless: bool = True) -> None:
         self._headless = headless
         self._running = True
@@ -55,17 +63,16 @@ class Manager:
         if not self.headless:
             Window(self)
 
-    def add_node(self, node_path: str, call_gui: bool = True) -> None:
+    def add_node(self, node_path: str, notify_gui: bool = True) -> None:
         """
         Adds a node to the container.
 
         ### Parameters
         `node_path` : str
             The path to the node class, e.g. `generators.Constant`.
-        `call_gui` : bool
-            Whether to call the gui to add the node.
+        `notify_gui` : bool
+            Whether to notify the gui to add the node.
         """
-
         node_cls = node_path.split(".")[-1]
         mod = importlib.import_module(f"goofi.nodes.{node_path.lower()}")
         node = getattr(mod, node_cls)
@@ -75,57 +82,89 @@ class Manager:
         name = self.nodes.add_node(node_cls.lower(), ref)
 
         # add the node to the gui
-        if not self.headless and call_gui:
+        if not self.headless and notify_gui:
             Window().add_node(name, ref)
         return name
 
-    def remove_node(self, name: str, call_gui: bool = True) -> None:
+    def remove_node(self, name: str, notify_gui: bool = True) -> None:
         """
         Removes a node from the container.
 
         ### Parameters
         `name` : str
             The name of the node.
-        `call_gui` : bool
-            Whether to call the gui to remove the node.
+        `notify_gui` : bool
+            Whether to notify the gui to remove the node.
         """
-        if name in self.nodes:
-            self.nodes.remove_node(name)
+        self.nodes.remove_node(name)
 
-            if not self.headless and call_gui:
-                Window().remove_node(name)
+        if not self.headless and notify_gui:
+            Window().remove_node(name)
 
-    def add_link(self, node1: str, node2: str, slot1: str, slot2: str) -> None:
-        if node1 not in self.nodes:
-            raise KeyError(f"Node {node1} not in container")
-        if node2 not in self.nodes:
-            raise KeyError(f"Node {node2} not in container")
+    def add_link(self, node_out: str, node_in: str, slot_out: str, slot_in: str, notify_gui: bool = True) -> None:
+        """
+        Adds a link between two nodes.
 
-        node1 = self.nodes[node1]
-        node2 = self.nodes[node2]
-        node1.connection.send(
+        ### Parameters
+        `node_out` : str
+            The name of the output node.
+        `node_in` : str
+            The name of the input node.
+        `slot_out` : str
+            The output slot name of `node_out`.
+        `slot_in` : str
+            The input slot name of `node_in`.
+        `notify_gui` : bool
+            Whether to notify the gui to add the link.
+        """
+        self.nodes[node_out].connection.send(
             Message(
                 MessageType.ADD_OUTPUT_PIPE,
-                {"slot_name_out": slot1, "slot_name_in": slot2, "node_connection": node2.connection},
+                {"slot_name_out": slot_out, "slot_name_in": slot_in, "node_connection": self.nodes[node_in].connection},
             )
         )
 
-    def remove_link(self, node1: str, node2: str, slot1: str, slot2: str) -> None:
-        if node1 not in self.nodes:
-            raise KeyError(f"Node {node1} not in container")
-        if node2 not in self.nodes:
-            raise KeyError(f"Node {node2} not in container")
+        if not self.headless and notify_gui:
+            Window().add_link(node_out, node_in, slot_out, slot_in)
 
-        n1 = self.nodes[node1]
-        n2 = self.nodes[node2]
-        n1.connection.send(
+    def remove_link(self, node_out: str, node_in: str, slot_out: str, slot_in: str, notify_gui: bool = True) -> None:
+        """
+        Removes a link between two nodes.
+
+        ### Parameters
+        `node_out` : str
+            The name of the output node.
+        `node_in` : str
+            The name of the input node.
+        `slot_out` : str
+            The output slot name of `node_out`.
+        `slot_in` : str
+            The input slot name of `node_in`.
+        `notify_gui` : bool
+            Whether to notify the gui to remove the link.
+        """
+        self.nodes[node_out].connection.send(
             Message(
                 MessageType.REMOVE_OUTPUT_PIPE,
-                {"slot_name_out": slot1, "slot_name_in": slot2, "node_connection": n2.connection},
+                {"slot_name_out": slot_out, "slot_name_in": slot_in, "node_connection": self.nodes[node_in].connection},
             )
         )
 
-    def terminate(self) -> None:
+        if not self.headless and notify_gui:
+            Window().remove_link(node_out, node_in, slot_out, slot_in)
+
+    def terminate(self, notify_gui: bool = True) -> None:
+        """
+        Terminates the manager and all nodes.
+
+        ### Parameters
+        `notify_gui` : bool
+            Whether to notify the gui to terminate.
+        """
+        if not self.headless and notify_gui:
+            Window().terminate()
+
+        print("Terminating manager...")
         self._running = False
         for node in self.nodes:
             self.nodes[node].connection.send(Message(MessageType.TERMINATE, {}))
@@ -141,39 +180,49 @@ class Manager:
 
 
 def main(duration: float = 0, args=None):
+    import argparse
+    import time
+
+    # parse arguments
     parser = argparse.ArgumentParser(description="goofi-pipe")
     parser.add_argument("--headless", action="store_true", help="run in headless mode")
     args = parser.parse_args(args)
 
-    import time
-
+    # create manager
     manager = Manager(headless=args.headless)
+
+    # add some example nodes
     manager.add_node("generators.Constant")
     manager.add_node("generators.Sine")
     manager.add_node("Add")
 
-    # manager.connect("constant0", "add0", "out", "a")
-    # manager.connect("sine0", "add0", "out", "b")
+    # connect example nodes
+    manager.add_link("constant0", "add0", "out", "a")
+    manager.add_link("sine0", "add0", "out", "b")
 
+    # create a local pipe to receive data from the node
     my_conn, node_conn = MultiprocessingConnection.create()
     manager.nodes["add0"].connection.send(
         Message(MessageType.ADD_OUTPUT_PIPE, {"slot_name_out": "out", "slot_name_in": "in", "node_connection": my_conn})
     )
 
-    start = last = time.time()
+    # print data from the node until the manager terminates
+    start = last_msg = time.time()
     while manager.running:
         if duration > 0 and time.time() - start > duration:
+            # duration exceeded, terminate the manager
             manager.terminate()
             break
 
-        if not node_conn.poll(0.05):
+        # check if there is a message from the node
+        if not node_conn.poll(0.01):
             continue
+
+        # parse the message and print the data
         msg = node_conn.recv()
-
         if msg.type == MessageType.DATA:
-            print(f"{1/(time.time()-last):.2f}: {msg.content['data'].data[0]}")
-
-        last = time.time()
+            print(f"{1 / (time.time() - last_msg):.2f} Hz: Output of 'add0' is {msg.content['data'].data[0]}")
+        last_msg = time.time()
 
 
 if __name__ == "__main__":
