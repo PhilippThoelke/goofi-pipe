@@ -13,6 +13,10 @@ def test_creation():
     Manager()
 
 
+def test_main():
+    goofi.manager.main(1, ["--headless"])
+
+
 @pytest.mark.skipif(platform.system() == "Windows", reason="Multiprocessing is very slow on Windows.")
 def test_simple():
     manager = Manager()
@@ -48,15 +52,5 @@ def test_simple():
     mean_rate = sum(rates) / len(rates)
     assert mean_rate == pytest.approx(30, abs=0.5), f"Mean rate should be ~30 Hz, got {mean_rate} Hz."
 
-    #######################
-    # TODO: node cleanup should happen automatically, none of this should be necessary
-    manager.nodes.remove_node("sine0")
-    time.sleep(0.05)
-    manager.nodes.remove_node("constant0")
-    time.sleep(0.05)
-    manager.nodes.remove_node("add0")
-    #######################
-
-
-def test_main():
-    goofi.manager.main(1, ["--headless"])
+    # clean up
+    manager.terminate()
