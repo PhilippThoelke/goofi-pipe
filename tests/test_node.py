@@ -202,7 +202,7 @@ def test_pipes():
         )
     )
 
-    time.sleep(0.05)
+    time.sleep(0.1)
 
     assert n1.output_slots["out"].connections == [("in", ref2.connection)], "Output slot connections are incorrect."
     assert len(results) > 0, "Processing callback should have been called once."

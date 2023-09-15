@@ -137,20 +137,35 @@ class Node(ABC):
                 raise TypeError(f"Expected Message, got {type(msg)}")
 
             if msg.type == MessageType.PING:
+                # respond to a ping message by sending a pong message
                 self.connection.send(Message(MessageType.PONG, {}))
             elif msg.type == MessageType.TERMINATE:
+                # terminate the node
                 self._alive = False
+                # clear data in connected downstream nodes
+                for slot in self.output_slots.values():
+                    for slot_name, conn in slot.connections:
+                        conn.send(Message(MessageType.CLEAR_DATA, {"slot_name": slot_name}))
             elif msg.type == MessageType.ADD_OUTPUT_PIPE:
+                # add a connection to the output slot
                 slot = self.output_slots[msg.content["slot_name_out"]]
                 slot.connections.append((msg.content["slot_name_in"], msg.content["node_connection"]))
             elif msg.type == MessageType.REMOVE_OUTPUT_PIPE:
+                # clear the data in the input slot
+                msg.content["node_connection"].send(Message(MessageType.CLEAR_DATA, {"slot_name": msg.content["slot_name_in"]}))
+                # remove the connection
                 slot = self.output_slots[msg.content["slot_name_out"]]
                 slot.connections.remove((msg.content["slot_name_in"], msg.content["node_connection"]))
             elif msg.type == MessageType.DATA:
+                # received data from another node
                 slot = self.input_slots[msg.content["slot_name"]]
                 slot.data = msg.content["data"]
                 if slot.trigger_process:
                     self.process_flag.set()
+            elif msg.type == MessageType.CLEAR_DATA:
+                # clear the data in the input slot (usually triggered by a REMOVE_OUTPUT_PIPE message)
+                slot = self.input_slots[msg.content["slot_name"]]
+                slot.data = None
             else:
                 # TODO: handle the incoming message
                 raise NotImplementedError(f"Message type {msg.type} not implemented.")
@@ -180,6 +195,10 @@ class Node(ABC):
 
             # process data
             output_data = self.process(**input_data)
+
+            if not self.alive:
+                # the node was terminated during processing
+                break
 
             # if process returns None, skip sending output data
             if output_data is None:
@@ -212,8 +231,8 @@ class Node(ABC):
                     try:
                         conn.send(msg)
                     except ConnectionError:
-                        # TODO: this means the target node is dead, we should handle this somehow
-                        pass
+                        # the target node is dead, remove the connection
+                        self.output_slots[name].connections.remove((target_slot, conn))
 
     @staticmethod
     def _configure(cls) -> Tuple[Dict[str, InputSlot], Dict[str, OutputSlot], NodeParams]:

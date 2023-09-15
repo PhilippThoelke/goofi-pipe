@@ -20,8 +20,8 @@ def test_simple():
     manager.add_node("generators.Sine")
     manager.add_node("Add")
 
-    manager.connect("constant0", "add0", "out", "a")
-    manager.connect("sine0", "add0", "out", "b")
+    manager.add_link("constant0", "add0", "out", "a")
+    manager.add_link("sine0", "add0", "out", "b")
 
     my_conn, node_conn = MultiprocessingConnection.create()
     manager.nodes["add0"].connection.send(

@@ -3,7 +3,7 @@ import importlib
 from typing import Dict
 
 from goofi.connection import MultiprocessingConnection
-from goofi.gui import Window
+from goofi.gui.window import Window
 from goofi.message import Message, MessageType
 from goofi.node_helpers import NodeRef
 
@@ -55,13 +55,15 @@ class Manager:
         if not self.headless:
             Window(self)
 
-    def add_node(self, node_path: str) -> None:
+    def add_node(self, node_path: str, call_gui: bool = True) -> None:
         """
         Adds a node to the container.
 
         ### Parameters
         `node_path` : str
             The path to the node class, e.g. `generators.Constant`.
+        `call_gui` : bool
+            Whether to call the gui to add the node.
         """
 
         node_cls = node_path.split(".")[-1]
@@ -73,11 +75,27 @@ class Manager:
         name = self.nodes.add_node(node_cls.lower(), ref)
 
         # add the node to the gui
-        if not self.headless:
+        if not self.headless and call_gui:
             Window().add_node(name, ref)
         return name
 
-    def connect(self, node1: str, node2: str, slot1: str, slot2: str) -> None:
+    def remove_node(self, name: str, call_gui: bool = True) -> None:
+        """
+        Removes a node from the container.
+
+        ### Parameters
+        `name` : str
+            The name of the node.
+        `call_gui` : bool
+            Whether to call the gui to remove the node.
+        """
+        if name in self.nodes:
+            self.nodes.remove_node(name)
+
+            if not self.headless and call_gui:
+                Window().remove_node(name)
+
+    def add_link(self, node1: str, node2: str, slot1: str, slot2: str) -> None:
         if node1 not in self.nodes:
             raise KeyError(f"Node {node1} not in container")
         if node2 not in self.nodes:
@@ -89,6 +107,21 @@ class Manager:
             Message(
                 MessageType.ADD_OUTPUT_PIPE,
                 {"slot_name_out": slot1, "slot_name_in": slot2, "node_connection": node2.connection},
+            )
+        )
+
+    def remove_link(self, node1: str, node2: str, slot1: str, slot2: str) -> None:
+        if node1 not in self.nodes:
+            raise KeyError(f"Node {node1} not in container")
+        if node2 not in self.nodes:
+            raise KeyError(f"Node {node2} not in container")
+
+        n1 = self.nodes[node1]
+        n2 = self.nodes[node2]
+        n1.connection.send(
+            Message(
+                MessageType.REMOVE_OUTPUT_PIPE,
+                {"slot_name_out": slot1, "slot_name_in": slot2, "node_connection": n2.connection},
             )
         )
 
@@ -119,8 +152,8 @@ def main(duration: float = 0, args=None):
     manager.add_node("generators.Sine")
     manager.add_node("Add")
 
-    manager.connect("constant0", "add0", "out", "a")
-    manager.connect("sine0", "add0", "out", "b")
+    # manager.connect("constant0", "add0", "out", "a")
+    # manager.connect("sine0", "add0", "out", "b")
 
     my_conn, node_conn = MultiprocessingConnection.create()
     manager.nodes["add0"].connection.send(
@@ -136,7 +169,10 @@ def main(duration: float = 0, args=None):
         if not node_conn.poll(0.05):
             continue
         msg = node_conn.recv()
-        print(f"{1/(time.time()-last):.2f}: {msg.content['data'].data[0]}")
+
+        if msg.type == MessageType.DATA:
+            print(f"{1/(time.time()-last):.2f}: {msg.content['data'].data[0]}")
+
         last = time.time()
 
 

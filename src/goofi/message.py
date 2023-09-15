@@ -21,6 +21,7 @@ class MessageType(Enum):
     - `DATA`: Sent by one node to another and contains data sent from an output slot to an input slot.
         - `slot_name` (str): The name of the target input slot.
         - `data` (Data): The data object. See the `Data` class for more information.
+    - `CLEAR_DATA`: Clear the data field on an input slot.
     - `PING`: Empty probe to check if a process is alive.
     - `PONG`: Response to a ping message.
     - `TERMINATE`: Empty message to indicate that a node should terminate.
@@ -29,9 +30,10 @@ class MessageType(Enum):
     ADD_OUTPUT_PIPE = 1
     REMOVE_OUTPUT_PIPE = 2
     DATA = 3
-    PING = 4
-    PONG = 5
-    TERMINATE = 6
+    CLEAR_DATA = 4
+    PING = 5
+    PONG = 6
+    TERMINATE = 7
 
 
 @dataclass
@@ -83,3 +85,5 @@ class Message:
             self.require_fields(slot_name_out=str, slot_name_in=str, node_connection=Connection)
         elif self.type == MessageType.DATA:
             self.require_fields(slot_name=str, data=Data)
+        elif self.type == MessageType.CLEAR_DATA:
+            self.require_fields(slot_name=str)

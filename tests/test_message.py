@@ -16,6 +16,7 @@ EXAMPLE_CONTENT = {
         "node_connection": MultiprocessingConnection.create()[0],
     },
     MessageType.DATA: {"slot_name": "test", "data": Data(DataType.STRING, "", {})},
+    MessageType.CLEAR_DATA: {"slot_name": "test"},
     MessageType.PING: {},
     MessageType.PONG: {},
     MessageType.TERMINATE: {},
