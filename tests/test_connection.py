@@ -76,6 +76,23 @@ def test_close(backend):
 
 
 @pytest.mark.parametrize("backend", list_connection_backends())
+def test_try_send(backend):
+    conn1, conn2 = backend.create()
+
+    assert conn2.try_send(1), "Connection.try_send() should return True on non-empty connection"
+
+    if not conn1.poll():
+        pytest.fail("Connection.poll() returned False")
+    assert conn1.recv() == 1, "Connection.send() and Connection.recv() didn't work"
+
+    # closing conn1 should raise an error on conn2.send(), but not on conn2.try_send()
+    conn1.close()
+    assert not conn2.try_send(1), "Connection.try_send() should return False on closed connection"
+
+    conn2.close()
+
+
+@pytest.mark.parametrize("backend", list_connection_backends())
 def test_poll(backend):
     conn1, conn2 = backend.create()
     assert not conn1.poll(), "Connection.poll() should return False on empty connection"

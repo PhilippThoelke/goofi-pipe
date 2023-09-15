@@ -65,6 +65,24 @@ class Connection(ABC):
         """
         pass
 
+    def try_send(self, obj: object) -> bool:
+        """
+        Try to send an object through the connection. If the connection is closed, return False.
+
+        ### Parameters
+        `obj` : object
+            The object to send through the connection.
+
+        ### Returns
+        `bool`
+            True if the object was sent, False otherwise.
+        """
+        try:
+            self.send(obj)
+            return True
+        except ConnectionError:
+            return False
+
     def __eq__(self, other: object) -> bool:
         if not isinstance(other, Connection):
             return False

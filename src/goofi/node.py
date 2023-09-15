@@ -138,21 +138,21 @@ class Node(ABC):
 
             if msg.type == MessageType.PING:
                 # respond to a ping message by sending a pong message
-                self.connection.send(Message(MessageType.PONG, {}))
+                self.connection.try_send(Message(MessageType.PONG, {}))
             elif msg.type == MessageType.TERMINATE:
                 # terminate the node
                 self._alive = False
                 # clear data in connected downstream nodes
                 for slot in self.output_slots.values():
                     for slot_name, conn in slot.connections:
-                        conn.send(Message(MessageType.CLEAR_DATA, {"slot_name": slot_name}))
+                        conn.try_send(Message(MessageType.CLEAR_DATA, {"slot_name": slot_name}))
             elif msg.type == MessageType.ADD_OUTPUT_PIPE:
                 # add a connection to the output slot
                 slot = self.output_slots[msg.content["slot_name_out"]]
                 slot.connections.append((msg.content["slot_name_in"], msg.content["node_connection"]))
             elif msg.type == MessageType.REMOVE_OUTPUT_PIPE:
                 # clear the data in the input slot
-                msg.content["node_connection"].send(Message(MessageType.CLEAR_DATA, {"slot_name": msg.content["slot_name_in"]}))
+                msg.content["node_connection"].try_send(Message(MessageType.CLEAR_DATA, {"slot_name": msg.content["slot_name_in"]}))
                 # remove the connection
                 slot = self.output_slots[msg.content["slot_name_out"]]
                 slot.connections.remove((msg.content["slot_name_in"], msg.content["node_connection"]))
