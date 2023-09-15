@@ -1,10 +1,20 @@
 import importlib
+import logging
 from typing import Dict
 
 from goofi.connection import MultiprocessingConnection
 from goofi.gui.window import Window
 from goofi.message import Message, MessageType
 from goofi.node_helpers import NodeRef
+
+logging.basicConfig(
+    level=logging.INFO,
+    style="{",
+    format="{asctime} | {levelname:^8} | {name:^20} | {message}",
+    datefmt="%Y-%m-%d %H:%M:%S",
+)
+
+logger = logging.getLogger(__name__)
 
 
 class NodeContainer:
@@ -59,6 +69,8 @@ class Manager:
         self._headless = headless
         self._running = True
         self.nodes = NodeContainer()
+
+        logger.info("Manager initialized.")
 
         if not self.headless:
             Window(self)
@@ -162,13 +174,15 @@ class Manager:
             Whether to notify the gui to terminate.
         """
         if not self.headless and notify_gui:
+            # terminate the gui, which calls manager.terminate() with notify_gui=False once it is closed
             Window().terminate()
-
-        print("Terminating manager...")
-        self._running = False
-        for node in self.nodes:
-            self.nodes[node].connection.send(Message(MessageType.TERMINATE, {}))
-            self.nodes[node].connection.close()
+        else:
+            # terminate the manager
+            self._running = False
+            for node in self.nodes:
+                self.nodes[node].connection.send(Message(MessageType.TERMINATE, {}))
+                self.nodes[node].connection.close()
+            logger.info("Manager terminated.")
 
     @property
     def running(self) -> bool:
@@ -209,20 +223,24 @@ def main(duration: float = 0, args=None):
     # print data from the node until the manager terminates
     start = last_msg = time.time()
     while manager.running:
-        if duration > 0 and time.time() - start > duration:
-            # duration exceeded, terminate the manager
+        try:
+            if duration > 0 and time.time() - start > duration:
+                # duration exceeded, terminate the manager
+                manager.terminate()
+                break
+
+            # check if there is a message from the node
+            if not node_conn.poll(0.01):
+                continue
+
+            # parse the message and print the data
+            msg = node_conn.recv()
+            if msg.type == MessageType.DATA:
+                print(f"{1 / (time.time() - last_msg):.2f} Hz: Output of 'add0' is {msg.content['data'].data[0]}")
+            last_msg = time.time()
+        except KeyboardInterrupt:
             manager.terminate()
             break
-
-        # check if there is a message from the node
-        if not node_conn.poll(0.01):
-            continue
-
-        # parse the message and print the data
-        msg = node_conn.recv()
-        if msg.type == MessageType.DATA:
-            print(f"{1 / (time.time() - last_msg):.2f} Hz: Output of 'add0' is {msg.content['data'].data[0]}")
-        last_msg = time.time()
 
 
 if __name__ == "__main__":

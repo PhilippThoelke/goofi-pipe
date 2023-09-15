@@ -1,3 +1,4 @@
+import logging
 import threading
 import time
 from dataclasses import dataclass
@@ -8,6 +9,8 @@ import dearpygui.dearpygui as dpg
 from goofi.data import DataType
 from goofi.gui.events import KEY_MAP
 from goofi.node_helpers import NodeRef
+
+logger = logging.getLogger(__name__)
 
 DTYPE_SHAPE_MAP = {
     DataType.ARRAY: dpg.mvNode_PinShape_CircleFilled,
@@ -53,41 +56,31 @@ class Window:
     def __new__(cls, manager=None):
         if cls._instance is None:
             # instantiate the window thread
+            logger.info("Starting graphical user interface.")
             cls._instance = super(Window, cls).__new__(cls)
             threading.Thread(target=cls._instance._initialize, args=(manager,), daemon=True).start()
         return cls._instance
 
     @running
-    def add_node(self, name: str, node: NodeRef) -> None:
-        # add node
-        node_id = dpg.add_node(
-            parent=self.node_editor,
-            id=name,
-            label=name,
-            user_data=node,
-        )
+    def add_node(self, node_name: str, node: NodeRef) -> None:
+        with dpg.node(parent=self.node_editor, label=node_name) as node_id:
+            ############### input slots ###############
+            in_slots = {}
+            for name, dtype in node.input_slots.items():
+                slot_kwargs = dict(label=name, attribute_type=dpg.mvNode_Attr_Input, shape=DTYPE_SHAPE_MAP[dtype])
+                with dpg.node_attribute(**slot_kwargs) as attr:
+                    in_slots[name] = attr
 
-        # add input slots
-        in_slots = {}
-        for slot_name, dtype in node.input_slots.items():
-            in_slots[slot_name] = dpg.add_node_attribute(
-                parent=name,
-                label=slot_name,
-                attribute_type=dpg.mvNode_Attr_Input,
-                shape=DTYPE_SHAPE_MAP[dtype],
-            )
-        # add output slots
-        out_slots = {}
-        for slot_name, dtype in node.output_slots.items():
-            out_slots[slot_name] = dpg.add_node_attribute(
-                parent=name,
-                label=slot_name,
-                attribute_type=dpg.mvNode_Attr_Output,
-                shape=DTYPE_SHAPE_MAP[dtype],
-            )
+            ############### output slots ###############
+            out_slots = {}
+            for name, dtype in node.output_slots.items():
+                slot_kwargs = dict(label=name, attribute_type=dpg.mvNode_Attr_Output, shape=DTYPE_SHAPE_MAP[dtype])
+                with dpg.node_attribute(**slot_kwargs) as attr:
+                    out_slots[name] = attr
+                    dpg.add_text(name)
 
-        # add node to node list
-        self.nodes[name] = GUINode(node_id, in_slots, out_slots)
+            # add node to node list
+            self.nodes[node_name] = GUINode(node_id, in_slots, out_slots)
 
     @running
     def remove_node(self, name: str) -> None:
@@ -220,7 +213,7 @@ class Window:
         dpg.start_dearpygui()
         dpg.destroy_context()
 
-        print("Closing Window...")
+        logger.info("Graphical user interface closed.")
 
         # terminate manager
         manager.terminate(notify_gui=False)
