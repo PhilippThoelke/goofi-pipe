@@ -197,7 +197,7 @@ class Window:
         # store manager in the window's user data
         dpg.set_item_user_data(self.window, manager)
 
-        # register key press handler
+        # register key-press handler
         with dpg.handler_registry():
             dpg.add_key_press_handler(callback=self.key_press_callback)
 
