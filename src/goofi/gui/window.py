@@ -124,6 +124,11 @@ class Window:
         node1 = dpg.get_item_label(dpg.get_item_parent(items[0]))
         node2 = dpg.get_item_label(dpg.get_item_parent(items[1]))
 
+        # remove link first if the input slot already has a link
+        for link in list(self.links.keys()):
+            if link[1] == node2 and link[3] == slot2:
+                self._remove_link(self.links[link], notify_manager=True)
+
         # register link
         self.links[(node1, node2, slot1, slot2)] = dpg.add_node_link(items[0], items[1], parent=sender)
 
