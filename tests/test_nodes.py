@@ -1,25 +1,6 @@
-import importlib
-import inspect
-import pkgutil
-
 import pytest
 
-import goofi.nodes
-from goofi.node import Node
-
-
-def list_nodes(nodes=[], parent_module=goofi.nodes):
-    """Returns a list of all nodes in goofi.nodes that are subclasses of Node."""
-    for info in pkgutil.walk_packages(parent_module.__path__):
-        module = importlib.import_module(f"{parent_module.__name__}.{info.name}")
-
-        if info.ispkg:
-            list_nodes(nodes, module)
-            continue
-
-        members = inspect.getmembers(module, inspect.isclass)
-        nodes.extend([cls for _, cls in members if issubclass(cls, Node) and cls is not Node])
-    return nodes
+from .utils import list_nodes
 
 
 @pytest.mark.parametrize("node", list_nodes())
