@@ -173,7 +173,11 @@ class Window:
     def resize_callback(self, _, data):
         dpg.configure_item(self.window, width=data[0], height=data[1])
 
-    def _initialize(self, manager):
+    def exit_callback(self, value):
+        # TODO: open a popup to confirm exit, if state was modified after save
+        self.terminate()
+
+    def _initialize(self, manager, width=1280, height=720):
         dpg.create_context()
 
         # initialize dicts to map names to dpg items
@@ -182,9 +186,9 @@ class Window:
 
         # create window
         self.window = dpg.add_window(
-            label="goofi-pipe",
-            width=800,
-            height=600,
+            label="window",
+            width=width,
+            height=height,
             no_title_bar=True,
             no_resize=True,
             no_move=True,
@@ -206,8 +210,11 @@ class Window:
         # register viewport resize handler
         dpg.set_viewport_resize_callback(self.resize_callback)
 
+        # register exit handler
+        dpg.set_exit_callback(self.exit_callback)
+
         # start DearPyGui
-        dpg.create_viewport(title="goofi-pipe", width=800, height=600)
+        dpg.create_viewport(title="goofi-pipe", width=width, height=height, disable_close=True)
         dpg.setup_dearpygui()
         dpg.show_viewport()
         dpg.start_dearpygui()
