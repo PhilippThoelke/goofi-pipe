@@ -25,7 +25,9 @@ def list_nodes(nodes=[], parent_module=goofi.nodes):
 @pytest.mark.parametrize("node", list_nodes())
 def test_implement_init(node):
     # make sure the node uses the base class' __init__ and does not override it
-    assert node.__init__.__qualname__ == "Node.__init__", f"{node.__name__} should not implement __init__. Use setup() instead."
+    assert (
+        node.__init__.__qualname__ == "Node.__init__"
+    ), f"{node.__name__} should not override __init__. Use the setup() function to initialize the node instead."
 
 
 @pytest.mark.parametrize("node", list_nodes())
