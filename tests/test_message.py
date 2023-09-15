@@ -10,7 +10,11 @@ EXAMPLE_CONTENT = {
         "slot_name_in": "in",
         "node_connection": MultiprocessingConnection.create()[0],
     },
-    MessageType.REMOVE_OUTPUT_PIPE: {"slot_name": "test"},
+    MessageType.REMOVE_OUTPUT_PIPE: {
+        "slot_name_out": "out",
+        "slot_name_in": "in",
+        "node_connection": MultiprocessingConnection.create()[0],
+    },
     MessageType.DATA: {"slot_name": "test", "data": Data(DataType.STRING, "", {})},
     MessageType.PING: {},
     MessageType.PONG: {},

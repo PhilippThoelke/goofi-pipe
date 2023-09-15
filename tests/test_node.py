@@ -9,7 +9,13 @@ from goofi.node import Node
 from goofi.node_helpers import InputSlot, NodeRef, OutputSlot
 from goofi.params import DEFAULT_PARAMS, NodeParams
 
-from .utils import BrokenProcessingNode, DummyNode, FullDummyNode, list_param_types
+from .utils import (
+    BrokenProcessingNode,
+    DummyNode,
+    FullDummyNode,
+    list_param_types,
+    make_custom_node,
+)
 
 
 def test_abstract_node():
@@ -174,3 +180,44 @@ def test_full_node_params():
         ), f"Node param '{name}' should be a {param_type}, got {type(ref.params.test[name])}"
 
     ref.terminate()
+
+
+def test_pipes():
+    results = []
+
+    def callback(**kwargs):
+        results.append(kwargs["in"])
+
+    cls1 = make_custom_node(output_slots={"out": DataType.ARRAY}, params={"common": {"autotrigger": True}})
+    cls2 = make_custom_node(input_slots={"in": DataType.ARRAY}, process_callback=callback)
+
+    ref1, n1 = cls1.create_local()
+    ref2, _ = cls2.create_local()
+
+    # connect the nodes
+    ref1.connection.send(
+        Message(
+            MessageType.ADD_OUTPUT_PIPE,
+            {"slot_name_out": "out", "slot_name_in": "in", "node_connection": ref2.connection},
+        )
+    )
+
+    time.sleep(0.05)
+
+    assert n1.output_slots["out"].connections == [("in", ref2.connection)], "Output slot connections are incorrect."
+    assert len(results) > 0, "Processing callback should have been called once."
+
+    # disconnect the nodes
+    ref1.connection.send(
+        Message(
+            MessageType.REMOVE_OUTPUT_PIPE,
+            {"slot_name_out": "out", "slot_name_in": "in", "node_connection": ref2.connection},
+        )
+    )
+
+    time.sleep(0.05)
+
+    assert n1.output_slots["out"].connections == [], "Output slot connections are incorrect."
+
+    ref1.terminate()
+    ref2.terminate()

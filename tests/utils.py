@@ -1,5 +1,5 @@
 import inspect
-from typing import List, Type
+from typing import Callable, Dict, List, Type
 
 from goofi import params
 from goofi.connection import Connection
@@ -63,3 +63,34 @@ class BrokenProcessingNode(Node):
             self.n_fails -= 1
             raise Exception("BrokenProcessingNode")
         return {}
+
+
+def make_custom_node(
+    input_slots: Dict[str, DataType] = None,
+    output_slots: Dict[str, DataType] = None,
+    params: Dict[str, Dict[str, Param]] = None,
+    process_callback: Callable = None,
+) -> Type[Node]:
+    class CustomNode(Node):
+        @staticmethod
+        def config_input_slots():
+            return input_slots or {}
+
+        @staticmethod
+        def config_output_slots():
+            return output_slots or {}
+
+        @staticmethod
+        def config_params():
+            return params or {}
+
+        def process(self, **kwargs):
+            if process_callback:
+                return process_callback(**kwargs)
+
+            res = {}
+            for name, slot in self.output_slots.items():
+                res[name] = slot.dtype.empty(), {}
+            return res
+
+    return CustomNode

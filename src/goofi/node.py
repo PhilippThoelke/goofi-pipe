@@ -143,6 +143,9 @@ class Node(ABC):
             elif msg.type == MessageType.ADD_OUTPUT_PIPE:
                 slot = self.output_slots[msg.content["slot_name_out"]]
                 slot.connections.append((msg.content["slot_name_in"], msg.content["node_connection"]))
+            elif msg.type == MessageType.REMOVE_OUTPUT_PIPE:
+                slot = self.output_slots[msg.content["slot_name_out"]]
+                slot.connections.remove((msg.content["slot_name_in"], msg.content["node_connection"]))
             elif msg.type == MessageType.DATA:
                 slot = self.input_slots[msg.content["slot_name"]]
                 slot.data = msg.content["data"]
@@ -322,15 +325,16 @@ class Node(ABC):
         return {}
 
     @staticmethod
-    def config_params() -> Dict[str, Dict[str, Param]]:
+    def config_params() -> Dict[str, Dict[str, Any]]:
         """
         This method is called when the node is instantiated. It should return a dict containing the parameters
         of the node. The keys are the names of the parameter groups, and the values are dicts containing the
-        parameters of each group. The parameters are stored as named tuples, and can be accessed as attributes.
+        parameters of each group.
 
         ### Returns
-        `Dict[str, Dict[str, Param]]`
-            A dict containing the parameters of the node.
+        `Dict[str, Dict[str, Any]]`
+            A dict containing the parameters of the node. The values may be any type that is supported by the
+            `Param` class.
         """
         return {}
 

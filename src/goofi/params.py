@@ -45,6 +45,11 @@ DEFAULT_PARAMS = {
     },
 }
 
+TYPE_PARAM_MAP = {
+    bool: BoolParam,
+    float: FloatParam,
+}
+
 
 class NodeParams:
     """
@@ -55,11 +60,11 @@ class NodeParams:
     When initializing a `NodeParams` object, a set of default parameters is inserted if they are not provided.
 
     ### Parameters
-    `data` : Dict[str, Dict[str, object]]
+    `data` : Dict[str, Dict[str, Any]]
         A dictionary of parameter groups, where each group is a dictionary of parameter names and values.
     """
 
-    def __init__(self, data: Dict[str, Dict[str, object]]):
+    def __init__(self, data: Dict[str, Dict[str, Any]]):
         # insert default parameters if they are not present
         for name, group in deepcopy(DEFAULT_PARAMS).items():
             if name not in data:
@@ -70,6 +75,14 @@ class NodeParams:
                 for param_name, param in group.items():
                     if param_name not in data[name]:
                         data[name][param_name] = param
+
+        # convert values to Param objects
+        for group, params in data.items():
+            for param_name, param in params.items():
+                if not isinstance(param, Param):
+                    if type(param) not in TYPE_PARAM_MAP:
+                        raise TypeError(f"Invalid parameter type {type(param)}. Must be one of {list(TYPE_PARAM_MAP.keys())}")
+                    data[group][param_name] = TYPE_PARAM_MAP[type(param)](param)
 
         # convert to named tuples
         self._data = {}

@@ -3,8 +3,17 @@ from multiprocessing import Pipe
 from multiprocessing.connection import _ConnectionBase
 from typing import Tuple
 
+_CONNECTION_IDS = set()
+
 
 class Connection(ABC):
+    def __init__(self) -> None:
+        # register a unique id for the connection
+        self._id = 0
+        while self._id in _CONNECTION_IDS:
+            self._id += 1
+        _CONNECTION_IDS.add(self._id)
+
     @staticmethod
     @abstractmethod
     def create(cls) -> Tuple["Connection", "Connection"]:
@@ -56,9 +65,15 @@ class Connection(ABC):
         """
         pass
 
+    def __eq__(self, other: object) -> bool:
+        if not isinstance(other, Connection):
+            return False
+        return self._id == other._id
+
 
 class MultiprocessingConnection(Connection):
     def __init__(self, conn: _ConnectionBase) -> None:
+        super().__init__()
         self.conn = conn
 
     @staticmethod

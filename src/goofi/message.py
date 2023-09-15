@@ -15,7 +15,9 @@ class MessageType(Enum):
         - `slot_name_in` (str): The name of the input slot.
         - `node_connection` (Connection): The connection object to the node.
     - `REMOVE_OUTPUT_PIPE`: Sent by the manager to a node to remove an output pipe from an output slot.
-        - `slot_name` (str): The name of the output slot.
+        - `slot_name_out` (str): The name of the output slot.
+        - `slot_name_in` (str): The name of the input slot.
+        - `node_connection` (Connection): The connection object to the node.
     - `DATA`: Sent by one node to another and contains data sent from an output slot to an input slot.
         - `slot_name` (str): The name of the target input slot.
         - `data` (Data): The data object. See the `Data` class for more information.
@@ -78,6 +80,6 @@ class Message:
         if self.type == MessageType.ADD_OUTPUT_PIPE:
             self.require_fields(slot_name_out=str, slot_name_in=str, node_connection=Connection)
         elif self.type == MessageType.REMOVE_OUTPUT_PIPE:
-            self.require_fields(slot_name=str)
+            self.require_fields(slot_name_out=str, slot_name_in=str, node_connection=Connection)
         elif self.type == MessageType.DATA:
             self.require_fields(slot_name=str, data=Data)
