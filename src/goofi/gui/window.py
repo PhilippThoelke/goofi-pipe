@@ -70,6 +70,7 @@ class Window:
                 slot_kwargs = dict(label=name, attribute_type=dpg.mvNode_Attr_Input, shape=DTYPE_SHAPE_MAP[dtype])
                 with dpg.node_attribute(**slot_kwargs) as attr:
                     in_slots[name] = attr
+                    dpg.add_text(name)
 
             ############### output slots ###############
             out_slots = {}
