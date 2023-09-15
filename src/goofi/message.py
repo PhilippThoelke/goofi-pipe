@@ -63,9 +63,11 @@ class Message:
         """
         for field, field_type in fields.items():
             if field not in self.content:
-                raise ValueError(f"Message content must contain field {field}")
+                raise ValueError(f"Message content must contain field {field}.")
             if not isinstance(self.content[field], field_type):
-                raise ValueError(f"Message content field {field} must be of type {field_type}, got {type(self.content[field])}")
+                raise ValueError(
+                    f"Message content field {field} must be of type {field_type} but got {type(self.content[field])}."
+                )
 
     def __post_init__(self):
         """
@@ -74,9 +76,9 @@ class Message:
         """
         # general checks
         if self.type is None:
-            raise ValueError("Expected message type, got None")
+            raise ValueError("Expected message type, got None.")
         if not isinstance(self.content, dict):
-            raise ValueError(f"Expected dict, got {type(self.content)}")
+            raise ValueError(f"Expected dict, got {type(self.content)}.")
 
         # check the content for the specific message type
         if self.type == MessageType.ADD_OUTPUT_PIPE:
