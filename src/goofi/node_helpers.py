@@ -94,10 +94,7 @@ class NodeRef:
 
     def terminate(self) -> None:
         """Terminates the node by closing the connection to it."""
-        try:
-            self.connection.send(Message(MessageType.TERMINATE, {}))
-        except ConnectionError:
-            pass
+        self.connection.try_send(Message(MessageType.TERMINATE, {}))
         self.connection.close()
 
     def _messaging_loop(self) -> None:
@@ -133,3 +130,12 @@ class NodeRef:
         self._alive = True
         self._messaging_thread = Thread(target=self._messaging_loop, daemon=True)
         self._messaging_thread.start()
+
+        # register the node reference as an output pipe for each output slot
+        for name in self.output_slots.keys():
+            self.connection.send(
+                Message(
+                    MessageType.ADD_OUTPUT_PIPE,
+                    {"slot_name_out": name, "slot_name_in": name, "node_connection": None},
+                )
+            )

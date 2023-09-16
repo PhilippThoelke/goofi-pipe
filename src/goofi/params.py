@@ -38,6 +38,16 @@ class FloatParam(Param):
         return 0.0
 
 
+@dataclass
+class IntParam(Param):
+    min: int = 0
+    max: int = 10
+
+    @staticmethod
+    def default() -> int:
+        return 0
+
+
 DEFAULT_PARAMS = {
     "common": {
         "autotrigger": BoolParam(False),
@@ -48,6 +58,7 @@ DEFAULT_PARAMS = {
 TYPE_PARAM_MAP = {
     bool: BoolParam,
     float: FloatParam,
+    int: IntParam,
 }
 
 

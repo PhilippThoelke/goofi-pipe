@@ -28,6 +28,11 @@ def test_param_types(param_type):
     for type2 in list_param_types():
         if type2 is param_type:
             continue
+
+        if isinstance(type2.default(), type(param_type.default())):
+            # some types may be instances of other types, e.g. bool is an instance of int
+            continue
+
         with pytest.raises(TypeError):
             param_type(type2.default())
 

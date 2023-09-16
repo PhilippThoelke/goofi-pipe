@@ -149,7 +149,12 @@ class Node(ABC):
             elif msg.type == MessageType.ADD_OUTPUT_PIPE:
                 # add a connection to the output slot
                 slot = self.output_slots[msg.content["slot_name_out"]]
-                slot.connections.append((msg.content["slot_name_in"], msg.content["node_connection"]))
+                conn = msg.content["node_connection"]
+
+                if conn is None:
+                    # if no connection is specified, connect to the node's own node reference
+                    conn = self.connection
+                slot.connections.append((msg.content["slot_name_in"], conn))
             elif msg.type == MessageType.REMOVE_OUTPUT_PIPE:
                 # clear the data in the input slot
                 msg.content["node_connection"].try_send(

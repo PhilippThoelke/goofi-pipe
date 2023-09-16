@@ -2,12 +2,15 @@ import logging
 import threading
 import time
 from dataclasses import dataclass
-from typing import Dict, Tuple
+from functools import partial
+from typing import Dict, List, Tuple
 
 import dearpygui.dearpygui as dpg
+import numpy as np
 
 from goofi.data import DataType
 from goofi.gui.events import KEY_MAP
+from goofi.message import Message, MessageType
 from goofi.node_helpers import NodeRef
 
 logger = logging.getLogger(__name__)
@@ -37,6 +40,50 @@ class GUINode:
     item: int
     input_slots: Dict[str, int]
     output_slots: Dict[str, int]
+
+
+def draw_data(node: NodeRef, data: Message, plot: List[int], minmax: List[int], margin: float = 0.1, shrinking: float = 0.001):
+    """
+    Draw data on a plot.
+
+    ### Parameters
+    `node` : NodeRef
+        The node reference.
+    `data` : Message
+        The data message.
+    `plot` : List[int]
+        A list of three item tags: data series, x-axis, y-axis.
+    `minmax` : List[int]
+        A list of two values: minimum and maximum values of the data.
+    """
+    dtype = data.content["data"].dtype
+    value = np.squeeze(data.content["data"].data)
+
+    if dtype == DataType.ARRAY:
+        if minmax[0] is not None and minmax[1] is not None:
+            # apply shrinking to minmax
+            minmax[:] = minmax[0] * (1 - shrinking) + shrinking * minmax[1], minmax[1] * (1 - shrinking) + shrinking * minmax[0]
+        # update minmax
+        if minmax[0] is None or np.min(value) < minmax[0]:
+            minmax[0] = np.min(value)
+        if minmax[1] is None or np.max(value) > minmax[1]:
+            minmax[1] = np.max(value)
+
+        if value.ndim == 0:
+            # extend value to have at least 2 elements
+            value = np.array([value, value])
+        if value.ndim == 1:
+            # update plot data
+            xs = np.arange(value.shape[0])
+            dpg.set_value(plot[0], [xs, value])
+            # autoscale x-axis
+            dpg.set_axis_limits(plot[1], xs.min(), xs.max())
+            # set y-axis limits
+            dpg.set_axis_limits(plot[2], minmax[0] - minmax[0] * margin, minmax[1] + minmax[1] * margin)
+        else:
+            raise NotImplementedError("TODO: plot multi-dimensional data")
+    else:
+        raise NotImplementedError("TODO: plot non-array data")
 
 
 class Window:
@@ -78,7 +125,41 @@ class Window:
                 slot_kwargs = dict(label=name, attribute_type=dpg.mvNode_Attr_Output, shape=DTYPE_SHAPE_MAP[dtype])
                 with dpg.node_attribute(**slot_kwargs) as attr:
                     out_slots[name] = attr
-                    dpg.add_text(name)
+
+                    # create plot
+                    plot = dpg.add_plot(
+                        label=name,
+                        width=175,
+                        height=125,
+                        no_menus=True,
+                        no_box_select=True,
+                        no_mouse_pos=True,
+                        no_highlight=True,
+                        no_child=True,
+                    )
+                    # x-axis
+                    xax = dpg.add_plot_axis(
+                        dpg.mvXAxis,
+                        parent=plot,
+                        no_gridlines=True,
+                        no_tick_marks=True,
+                        # no_tick_labels=True,
+                        lock_min=True,
+                        lock_max=True,
+                    )
+                    # y-axis
+                    yax = dpg.add_plot_axis(
+                        dpg.mvYAxis,
+                        parent=plot,
+                        no_gridlines=True,
+                        no_tick_marks=True,
+                        # no_tick_labels=True,
+                        lock_min=True,
+                        lock_max=True,
+                    )
+
+                    series = dpg.add_line_series(np.linspace(0, 10, 100), np.sin(np.linspace(0, 10, 100)), parent=yax)
+                    node.set_message_handler(MessageType.DATA, partial(draw_data, plot=[series, xax, yax], minmax=[None, None]))
 
             # add node to node list
             self.nodes[node_name] = GUINode(node_id, in_slots, out_slots)
