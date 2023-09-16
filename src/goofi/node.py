@@ -165,6 +165,8 @@ class Node(ABC):
                     pass
             elif msg.type == MessageType.DATA:
                 # received data from another node
+                if msg.content["slot_name"] not in self.input_slots:
+                    raise ValueError(f"Received DATA message but input slot '{msg.content['slot_name']}' doesn't exist.")
                 slot = self.input_slots[msg.content["slot_name"]]
                 slot.data = msg.content["data"]
                 if slot.trigger_process:
