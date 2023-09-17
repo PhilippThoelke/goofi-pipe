@@ -66,7 +66,7 @@ class FullDummyNode(Node):
         return None, {}
 
 
-class BrokenProcessingNode(Node):
+class ProcessingErrorNode(Node):
     """
     A node that raises an exception in its process method.
 

@@ -10,9 +10,9 @@ from goofi.node_helpers import InputSlot, NodeRef, OutputSlot
 from goofi.params import DEFAULT_PARAMS, NodeParams
 
 from .utils import (
-    BrokenProcessingNode,
     DummyNode,
     FullDummyNode,
+    ProcessingErrorNode,
     list_param_types,
     make_custom_node,
 )
@@ -111,14 +111,13 @@ def test_multiproc():
     assert not ref.process.is_alive(), "Process should be dead."
 
 
-@pytest.mark.filterwarnings("ignore::pytest.PytestUnhandledThreadExceptionWarning")
-def test_broken_processing():
+def test_processing_error():
     messages = []
 
     def error_callback(ref: NodeRef, msg: Message):
         messages.append(msg)
 
-    ref, n = BrokenProcessingNode.create_local()
+    ref, n = ProcessingErrorNode.create_local()
 
     ref.set_message_handler(MessageType.PROCESSING_ERROR, error_callback)
 
