@@ -113,23 +113,28 @@ def test_multiproc():
 
 @pytest.mark.filterwarnings("ignore::pytest.PytestUnhandledThreadExceptionWarning")
 def test_broken_processing():
+    messages = []
+
+    def error_callback(ref: NodeRef, msg: Message):
+        messages.append(msg)
+
     ref, n = BrokenProcessingNode.create_local()
+
+    ref.set_message_handler(MessageType.PROCESSING_ERROR, error_callback)
 
     # manually trigger processing once
     n.process_flag.set()
     time.sleep(0.01)
 
-    # the processing thread should be dead
-    assert not n.processing_thread.is_alive(), "Processing thread should be dead."
+    # the processing thread should be alive as the node is expected to handle the error
+    assert n.processing_thread.is_alive(), "Processing thread should still be alive."
 
     # the node and messaging thread should be alive
     assert n.alive, "Node should be alive."
     assert n.messaging_thread.is_alive(), "Messaging thread should be alive."
 
-    # sending a message should restart the processing thread
-    ref.connection.send(Message(MessageType.PING, {}))
-    time.sleep(0.01)
-    assert n.processing_thread.is_alive(), "Processing thread should be alive."
+    # make sure we received the error message
+    assert len(messages) == 1, "Node should have received one message."
 
     # clean up dangling threads
     ref.terminate()

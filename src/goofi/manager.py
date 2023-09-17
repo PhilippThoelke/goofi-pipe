@@ -210,9 +210,6 @@ def main(duration: float = 0, args=None):
     manager.add_node("generators.Constant")
     manager.add_node("generators.Sine")
     manager.add_node("Add")
-    manager.add_node("Buffer")
-    manager.add_node("Buffer")
-    manager.add_node("Stack")
 
     # connect example nodes
     manager.add_link("constant0", "add0", "out", "a")
