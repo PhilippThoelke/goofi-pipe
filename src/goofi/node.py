@@ -207,8 +207,12 @@ class Node(ABC):
             # gather input data
             input_data = {name: slot.data for name, slot in self.input_slots.items()}
 
-            # process data
-            output_data = self.process(**input_data)
+            try:
+                # process data
+                output_data = self.process(**input_data)
+            except Exception as e:
+                self.connection.try_send(Message(MessageType.PROCESSING_ERROR, {"error": str(e)}))
+                continue
 
             if not self.alive:
                 # the node was terminated during processing

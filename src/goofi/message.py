@@ -25,6 +25,8 @@ class MessageType(Enum):
     - `PING`: Empty probe to check if a process is alive.
     - `PONG`: Response to a ping message.
     - `TERMINATE`: Empty message to indicate that a node should terminate.
+    - `PROCESSING_ERROR`: Sent by a node to indicate that an error occurred during processing.
+        - `error` (str): The error message.
     """
 
     ADD_OUTPUT_PIPE = 1
@@ -34,6 +36,7 @@ class MessageType(Enum):
     PING = 5
     PONG = 6
     TERMINATE = 7
+    PROCESSING_ERROR = 8
 
 
 @dataclass
@@ -89,3 +92,5 @@ class Message:
             self.require_fields(slot_name=str, data=Data)
         elif self.type == MessageType.CLEAR_DATA:
             self.require_fields(slot_name=str)
+        elif self.type == MessageType.PROCESSING_ERROR:
+            self.require_fields(error=str)

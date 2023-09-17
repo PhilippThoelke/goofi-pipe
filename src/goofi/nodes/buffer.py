@@ -14,7 +14,7 @@ class Buffer(Node):
         return {"out": DataType.ARRAY}
 
     def config_params():
-        return {"buffer": {"size": 500, "axis": 0}}
+        return {"buffer": {"size": 100, "axis": 0}}
 
     def setup(self):
         self.buffer = deque(maxlen=self.params.buffer.size.value)

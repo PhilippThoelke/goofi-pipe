@@ -20,6 +20,7 @@ EXAMPLE_CONTENT = {
     MessageType.PING: {},
     MessageType.PONG: {},
     MessageType.TERMINATE: {},
+    MessageType.PROCESSING_ERROR: {"error": "test"},
 }
 
 

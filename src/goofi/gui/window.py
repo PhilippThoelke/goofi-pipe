@@ -52,7 +52,7 @@ def draw_data(node: NodeRef, data: Message, plot: List[int], minmax: List[int], 
     `data` : Message
         The data message.
     `plot` : List[int]
-        A list of three item tags: data series, x-axis, y-axis.
+        A list of at least two item tags: x-axis, y-axis, and optional data series tags.
     `minmax` : List[int]
         A list of two values: minimum and maximum values of the data.
     """
@@ -73,15 +73,43 @@ def draw_data(node: NodeRef, data: Message, plot: List[int], minmax: List[int], 
             # extend value to have at least 2 elements
             value = np.array([value, value])
         if value.ndim == 1:
-            # update plot data
+            # remove extra data series
+            while len(plot) > 3:
+                dpg.delete_item(plot.pop())
+
             xs = np.arange(value.shape[0])
-            dpg.set_value(plot[0], [xs, value])
+            if len(plot) == 2:
+                # add new data series
+                plot.append(dpg.add_line_series(xs, value, parent=plot[1]))
+            else:
+                # update existing data series
+                dpg.set_value(plot[2], [xs, value])
+
             # autoscale x-axis
-            dpg.set_axis_limits(plot[1], xs.min(), xs.max())
+            dpg.set_axis_limits(plot[0], xs.min(), xs.max())
             # set y-axis limits
-            dpg.set_axis_limits(plot[2], minmax[0] - minmax[0] * margin, minmax[1] + minmax[1] * margin)
+            dpg.set_axis_limits(plot[1], minmax[0] - minmax[0] * margin, minmax[1] + minmax[1] * margin)
+        elif value.ndim == 2:
+            # remove extra data series
+            while len(plot) > value.shape[0] + 2:
+                dpg.delete_item(plot.pop())
+
+            # add new data series
+            xs = np.arange(value.shape[1])
+            for i in range(value.shape[0]):
+                if len(plot) == i + 2:
+                    # add new data series
+                    plot.append(dpg.add_line_series(xs, value[i], parent=plot[1]))
+                else:
+                    # update existing data series
+                    dpg.set_value(plot[i + 2], [xs, value[i]])
+
+            # autoscale x-axis
+            dpg.set_axis_limits(plot[0], xs.min(), xs.max())
+            # set y-axis limits
+            dpg.set_axis_limits(plot[1], minmax[0] - minmax[0] * margin, minmax[1] + minmax[1] * margin)
         else:
-            raise NotImplementedError("TODO: plot multi-dimensional data")
+            raise NotImplementedError("TODO: plot higher-dimensional data")
     else:
         raise NotImplementedError("TODO: plot non-array data")
 
@@ -157,9 +185,10 @@ class Window:
                         lock_min=True,
                         lock_max=True,
                     )
+                    node.set_message_handler(MessageType.DATA, partial(draw_data, plot=[xax, yax], minmax=[None, None]))
 
-                    series = dpg.add_line_series(np.linspace(0, 10, 100), np.sin(np.linspace(0, 10, 100)), parent=yax)
-                    node.set_message_handler(MessageType.DATA, partial(draw_data, plot=[series, xax, yax], minmax=[None, None]))
+            # TODO: register PROCESSING_ERROR message handler and display error messages
+            node.set_message_handler(MessageType.PROCESSING_ERROR, lambda node, data: logger.error(data.content["error"]))
 
             # add node to node list
             self.nodes[node_name] = GUINode(node_id, in_slots, out_slots)
