@@ -191,9 +191,9 @@ class Node(ABC):
                     raise ValueError(f"Parameter '{param_name}' doesn't exist in group '{group}'.")
                 self.params[group][param_name].value = param_value
 
-                # handle autotrigger parameter
-                if group == "common" and param_name == "autotrigger" and param_value:
-                    self.process_flag.set()
+                # call the callback if it exists
+                if hasattr(self, f"{group}_{param_name}_changed"):
+                    getattr(self, f"{group}_{param_name}_changed")(param_value)
             else:
                 # TODO: handle the incoming message
                 raise NotImplementedError(f"Message type {msg.type} not implemented.")
@@ -278,6 +278,11 @@ class Node(ABC):
             {name: slot if isinstance(slot, OutputSlot) else OutputSlot(slot) for name, slot in out_slots.items()},
             NodeParams(params),
         )
+
+    def common_autotrigger_changed(self, value):
+        """If the new value of the parameter common.autotrigger is True, trigger the processing loop."""
+        if value:
+            self.process_flag.set()
 
     @classmethod
     def create(cls) -> NodeRef:

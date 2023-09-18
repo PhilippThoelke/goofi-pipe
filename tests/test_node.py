@@ -228,3 +228,43 @@ def test_pipes():
 
     ref1.terminate()
     ref2.terminate()
+
+
+@pytest.mark.parametrize("value", [10.0, 100.0])
+def test_change_parameter(value):
+    ref, n = DummyNode.create_local()
+
+    # change a parameter
+    ref.update_param("common", "max_frequency", value)
+
+    time.sleep(0.01)
+
+    # check that the parameter was changed
+    assert n.params.common.max_frequency.value == value, "Parameter was not changed."
+
+    # clean up dangling threads
+    ref.terminate()
+
+
+@pytest.mark.parametrize("value", [10.0, 100.0])
+def test_change_parameter_callback(value):
+    results = []
+
+    def callback(_, value):
+        results.append(value)
+
+    # create a dummy node type with a callback for the common.max_frequency parameter
+    CallbackDummyNode = type("CallbackDummyNode", (DummyNode,), {"common_max_frequency_changed": callback})
+    ref, _ = CallbackDummyNode.create_local()
+
+    # change a parameter
+    ref.update_param("common", "max_frequency", value)
+
+    time.sleep(0.01)
+
+    # check that the parameter callback was called with the correct value
+    assert len(results) == 1, "Parameter callback was not called."
+    assert results[0] == value, "Parameter callback was called with the wrong value."
+
+    # clean up dangling threads
+    ref.terminate()

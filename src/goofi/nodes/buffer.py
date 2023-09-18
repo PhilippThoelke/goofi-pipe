@@ -4,6 +4,7 @@ import numpy as np
 
 from goofi.data import Data, DataType
 from goofi.node import Node
+from goofi.params import IntParam
 
 
 class Buffer(Node):
@@ -14,7 +15,7 @@ class Buffer(Node):
         return {"out": DataType.ARRAY}
 
     def config_params():
-        return {"buffer": {"size": 100, "axis": 0}}
+        return {"buffer": {"size": IntParam(10, 1, 5000), "axis": 0}}
 
     def setup(self):
         self.buffer = deque(maxlen=self.params.buffer.size.value)
@@ -25,3 +26,6 @@ class Buffer(Node):
 
         self.buffer.append(val.data)
         return {"out": (np.stack(self.buffer, axis=self.params.buffer.axis.value), val.meta)}
+
+    def buffer_size_changed(self, value):
+        self.buffer = deque(maxlen=value)

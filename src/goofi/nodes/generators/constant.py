@@ -7,7 +7,10 @@ from goofi.params import FloatParam
 
 class Constant(Node):
     def config_params():
-        return {"common": {"autotrigger": True}, "constant": {"value": FloatParam(1.0, -10.0, 10.0)}}
+        return {
+            "constant": {"value": FloatParam(1.0, -10.0, 10.0)},
+            "common": {"autotrigger": True},
+        }
 
     def config_output_slots():
         return {"out": DataType.ARRAY}
