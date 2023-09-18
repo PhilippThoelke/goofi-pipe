@@ -102,11 +102,11 @@ class NodeParams:
             NamedTupleClass = namedtuple(group.capitalize(), params.keys())
 
             # implement __contains__ for the named tuple class
-            class CustomNamedTuple(NamedTupleClass):
-                def __contains__(self, item):
-                    return hasattr(self, item)
+            NamedTupleClass = type(
+                NamedTupleClass.__name__, (NamedTupleClass,), {"__contains__": lambda self, item: hasattr(self, item)}
+            )
 
-            self._data[group] = CustomNamedTuple(**params)
+            self._data[group] = NamedTupleClass(**params)
 
     def __getattr__(self, group: str):
         # don't allow access to the _data attribute
