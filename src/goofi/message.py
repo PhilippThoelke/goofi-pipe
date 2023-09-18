@@ -27,6 +27,10 @@ class MessageType(Enum):
     - `TERMINATE`: Empty message to indicate that a node should terminate.
     - `PROCESSING_ERROR`: Sent by a node to indicate that an error occurred during processing.
         - `error` (str): The error message.
+    - `PARAMETER_UPDATE`: Sent by the manager to a node to update a parameter.
+        - `group` (str): The name of the parameter group.
+        - `param_name` (str): The name of the parameter.
+        - `param_value` (Any): The new parameter value.
     """
 
     ADD_OUTPUT_PIPE = 1
@@ -37,6 +41,7 @@ class MessageType(Enum):
     PONG = 6
     TERMINATE = 7
     PROCESSING_ERROR = 8
+    PARAMETER_UPDATE = 9
 
 
 @dataclass
@@ -94,3 +99,5 @@ class Message:
             self.require_fields(slot_name=str)
         elif self.type == MessageType.PROCESSING_ERROR:
             self.require_fields(error=str)
+        elif self.type == MessageType.PARAMETER_UPDATE:
+            self.require_fields(group=str, param_name=str, param_value=object)

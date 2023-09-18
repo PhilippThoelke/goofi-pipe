@@ -236,8 +236,8 @@ def main(duration: float = 0, args=None):
 
             # parse the message and print the data
             msg = node_conn.recv()
-            if msg.type == MessageType.DATA:
-                print(f"{1 / (time.time() - last_msg):.2f} Hz: Output of 'add0' is {msg.content['data'].data[0]}")
+            # if msg.type == MessageType.DATA:
+            #     print(f"{1 / (time.time() - last_msg):.2f} Hz: Output of 'add0' is {msg.content['data'].data[0]}")
             last_msg = time.time()
         except KeyboardInterrupt:
             manager.terminate()

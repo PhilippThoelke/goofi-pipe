@@ -180,6 +180,20 @@ class Node(ABC):
                 # clear the data in the input slot (usually triggered by a REMOVE_OUTPUT_PIPE message)
                 slot = self.input_slots[msg.content["slot_name"]]
                 slot.data = None
+            elif msg.type == MessageType.PARAMETER_UPDATE:
+                # update a parameter
+                group = msg.content["group"]
+                param_name = msg.content["param_name"]
+                param_value = msg.content["param_value"]
+                if group not in self.params:
+                    raise ValueError(f"Parameter group '{group}' doesn't exist.")
+                if param_name not in self.params[group]:
+                    raise ValueError(f"Parameter '{param_name}' doesn't exist in group '{group}'.")
+                self.params[group][param_name].value = param_value
+
+                # handle autotrigger parameter
+                if group == "common" and param_name == "autotrigger" and param_value:
+                    self.process_flag.set()
             else:
                 # TODO: handle the incoming message
                 raise NotImplementedError(f"Message type {msg.type} not implemented.")
@@ -197,12 +211,12 @@ class Node(ABC):
             if not self.params.common.autotrigger.value:
                 self.process_flag.clear()
 
-            # TODO: replace by a global setting
-            # limit the update rate to 30 Hz
-            sleep_time = 1 / 30 - (time.time() - last_update)
-            if sleep_time > 0:
-                time.sleep(sleep_time)
-            last_update = time.time()
+            # limit the update rate
+            if self.params.common.max_frequency.value > 0:
+                sleep_time = 1 / self.params.common.max_frequency.value - (time.time() - last_update)
+                if sleep_time > 0:
+                    time.sleep(sleep_time)
+                last_update = time.time()
 
             # gather input data
             input_data = {name: slot.data for name, slot in self.input_slots.items()}

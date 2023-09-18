@@ -92,6 +92,35 @@ class NodeRef:
         """
         self.callbacks[msg_type] = callback
 
+    def update_param(self, group, param_name, param_value):
+        """
+        Updates the value of a parameter in the local node reference, and sends a message to the node to
+        update the parameter value.
+
+        ### Parameters
+        `group` : str
+            The name of the parameter group.
+        `param_name` : str
+            The name of the parameter.
+        `param_value` : Any
+            The new value of the parameter.
+        """
+        if group not in self.params:
+            raise ValueError(f"Parameter group '{group}' doesn't exist.")
+        if param_name not in self.params[group]:
+            raise ValueError(f"Parameter '{param_name}' doesn't exist in group '{group}'.")
+        self.params[group][param_name].value = param_value
+        self.connection.send(
+            Message(
+                MessageType.PARAMETER_UPDATE,
+                {
+                    "group": group,
+                    "param_name": param_name,
+                    "param_value": param_value,
+                },
+            )
+        )
+
     def terminate(self) -> None:
         """Terminates the node by closing the connection to it."""
         self.connection.try_send(Message(MessageType.TERMINATE, {}))

@@ -21,6 +21,7 @@ EXAMPLE_CONTENT = {
     MessageType.PONG: {},
     MessageType.TERMINATE: {},
     MessageType.PROCESSING_ERROR: {"error": "test"},
+    MessageType.PARAMETER_UPDATE: {"group": "common", "param_name": "test", "param_value": "test"},
 }
 
 

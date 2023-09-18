@@ -3,15 +3,16 @@ import threading
 import time
 from dataclasses import dataclass
 from functools import partial
-from typing import Dict, List, Tuple
+from typing import Dict, List, Optional, Tuple
 
 import dearpygui.dearpygui as dpg
 import numpy as np
 
 from goofi.data import DataType
-from goofi.gui.events import KEY_MAP
+from goofi.gui import events
 from goofi.message import Message, MessageType
 from goofi.node_helpers import NodeRef
+from goofi.params import BoolParam, FloatParam, IntParam, Param
 
 logger = logging.getLogger(__name__)
 
@@ -19,6 +20,13 @@ DTYPE_SHAPE_MAP = {
     DataType.ARRAY: dpg.mvNode_PinShape_CircleFilled,
     DataType.STRING: dpg.mvNode_PinShape_TriangleFilled,
 }
+
+PARAM_WINDOW_WIDTH = 400
+
+
+def format_name(name: str) -> str:
+    """Format a name to be used as a node label."""
+    return name.replace("_", " ").title()
 
 
 def running(func):
@@ -40,6 +48,7 @@ class GUINode:
     item: int
     input_slots: Dict[str, int]
     output_slots: Dict[str, int]
+    node_ref: NodeRef
 
 
 def draw_data(node: NodeRef, data: Message, plot: List[int], minmax: List[int], margin: float = 0.1, shrinking: float = 0.001):
@@ -114,6 +123,59 @@ def draw_data(node: NodeRef, data: Message, plot: List[int], minmax: List[int], 
         raise NotImplementedError("TODO: plot non-array data")
 
 
+def param_updated(_, value, user_data):
+    """A callback function for updating a parameter value."""
+    user_data[2].update_param(user_data[0], user_data[1], value)
+
+
+def add_param(parent: int, group: str, name: str, param: Param, node: NodeRef) -> None:
+    """
+    Add a parameter to the GUI.
+
+    ### Parameters
+    `parent` : int
+        The parent item.
+    `group` : str
+        The parameter group.
+    `name` : str
+        The parameter name.
+    `param` : Param
+        The parameter.
+    `node` : NodeRef
+        The node reference.
+    """
+    with dpg.group(horizontal=True, parent=parent):
+        dpg.add_text(format_name(name))
+        dpg.add_spacer(width=-1)
+
+        if isinstance(param, BoolParam):
+            # parameter is a bool
+            if param.toggle:
+                dpg.add_checkbox(default_value=param.value, callback=param_updated, user_data=(group, name, node))
+            else:
+                dpg.add_button(callback=param_updated, user_data=(group, name, node))
+        elif isinstance(param, FloatParam):
+            # parameter is a float
+            dpg.add_slider_float(
+                default_value=param.value,
+                min_value=param.vmin,
+                max_value=param.vmax,
+                user_data=(group, name, node),
+                callback=param_updated,
+            )
+        elif isinstance(param, IntParam):
+            # parameter is an integer
+            dpg.add_slider_int(
+                default_value=param.value,
+                min_value=param.vmin,
+                max_value=param.vmax,
+                callback=param_updated,
+                user_data=(group, name, node),
+            )
+        else:
+            raise NotImplementedError(f"Parameter type {type(param)} not implemented.")
+
+
 class Window:
     """
     The graphical user interface window, implemented as a threaded singleton. The window is created
@@ -158,7 +220,7 @@ class Window:
                     plot = dpg.add_plot(
                         label=name,
                         width=175,
-                        height=125,
+                        height=100,
                         no_menus=True,
                         no_box_select=True,
                         no_mouse_pos=True,
@@ -171,7 +233,7 @@ class Window:
                         parent=plot,
                         no_gridlines=True,
                         no_tick_marks=True,
-                        # no_tick_labels=True,
+                        no_tick_labels=True,
                         lock_min=True,
                         lock_max=True,
                     )
@@ -181,7 +243,6 @@ class Window:
                         parent=plot,
                         no_gridlines=True,
                         no_tick_marks=True,
-                        # no_tick_labels=True,
                         lock_min=True,
                         lock_max=True,
                     )
@@ -191,7 +252,7 @@ class Window:
             node.set_message_handler(MessageType.PROCESSING_ERROR, lambda node, data: logger.error(data.content["error"]))
 
             # add node to node list
-            self.nodes[node_name] = GUINode(node_id, in_slots, out_slots)
+            self.nodes[node_name] = GUINode(node_id, in_slots, out_slots, node)
 
     @running
     def remove_node(self, name: str) -> None:
@@ -269,18 +330,44 @@ class Window:
         # delete link from gui
         dpg.delete_item(item)
 
+    def _select_node(self, item: Optional[int]):
+        if self.selected_node == item:
+            # do nothing if the node is already selected
+            return
+
+        # update window layout
+        self.selected_node = item
+        self.resize_callback(None, [dpg.get_viewport_width(), dpg.get_viewport_height()])
+        # clear parameters window
+        dpg.delete_item(self.parameters, children_only=True)
+
+        if item is None:
+            # node deselected, hide parameters window
+            dpg.configure_item(self.parameters, show=False)
+            return
+
+        # get node reference
+        node = self.nodes[dpg.get_item_label(item)].node_ref
+        with dpg.tab_bar(parent=self.parameters):
+            for group in node.params:
+                with dpg.tab(label=format_name(group)) as tab:
+                    for name, param in node.params[group].items():
+                        add_param(tab, group, name, param, node)
+
+        dpg.configure_item(self.parameters, show=True)
+
     def link_callback(self, sender, data):
         self._add_link(sender, data)
 
     def delink_callback(self, _, data):
         self._remove_link(data)
 
-    def key_press_callback(self, _, data):
-        if data in KEY_MAP:
-            KEY_MAP[data](self)
-
     def resize_callback(self, _, data):
         dpg.configure_item(self.window, width=data[0], height=data[1])
+        if self.selected_node is None:
+            dpg.configure_item(self.node_editor, width=data[0])
+        else:
+            dpg.configure_item(self.node_editor, width=data[0] - PARAM_WINDOW_WIDTH)
 
     def exit_callback(self, value):
         # TODO: open a popup to confirm exit, if state was modified after save
@@ -292,6 +379,7 @@ class Window:
         # initialize dicts to map names to dpg items
         self.nodes = {}
         self.links = {}
+        self.selected_node = None
 
         # create window
         self.window = dpg.add_window(
@@ -304,23 +392,28 @@ class Window:
             no_close=True,
             no_collapse=True,
         )
-        # create node editor
-        self.node_editor = dpg.add_node_editor(
-            parent=self.window, callback=self.link_callback, delink_callback=self.delink_callback
-        )
+        with dpg.group(horizontal=True, parent=self.window):
+            # create node editor
+            self.node_editor = dpg.add_node_editor(callback=self.link_callback, delink_callback=self.delink_callback)
+            # add parameters window
+            self.parameters = dpg.add_child_window(label="Parameters", autosize_x=True)
 
         # store manager in the window's user data
         dpg.set_item_user_data(self.window, manager)
 
         # register key-press handler
         with dpg.handler_registry():
-            dpg.add_key_press_handler(callback=self.key_press_callback)
+            dpg.add_key_press_handler(callback=events.key_press_callback, user_data=self)
+            dpg.add_mouse_click_handler(callback=events.click_callback, user_data=self)
 
         # register viewport resize handler
         dpg.set_viewport_resize_callback(self.resize_callback)
 
         # register exit handler
         dpg.set_exit_callback(self.exit_callback)
+
+        # set up window
+        self.resize_callback(None, [width, height])
 
         # start DearPyGui
         dpg.create_viewport(title="goofi-pipe", width=width, height=height, disable_close=True)

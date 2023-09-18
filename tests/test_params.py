@@ -71,3 +71,65 @@ def test_type_param_map(param_type):
 def test_raw_value(type_cls):
     data = {"test": {"param": type_cls()}}
     NodeParams(data)
+
+
+def test_node_params_iter():
+    params = DEFAULT_PARAMS.copy()
+    params["test"] = {"param": True}
+
+    p = NodeParams(params)
+    assert len(p) == 2, "NodeParams should have 2 groups."
+
+    it = iter(p)
+    assert next(it) == "common", "First group should be 'common'."
+    assert next(it) == "test", "Second group should be 'test'."
+    with pytest.raises(StopIteration):
+        next(it)
+
+    expected = ["common", "test"]
+    groups = list(p)
+    assert groups == expected, "NodeParams should have groups 'common' and 'test'."
+
+    for i, group in enumerate(p):
+        assert group == expected[i], f"NodeParams group {i} should be '{expected[i]}'."
+
+
+def test_node_params_contains():
+    params = DEFAULT_PARAMS.copy()
+    params["test"] = {"param": True}
+
+    p = NodeParams(params)
+    assert "common" in p, "NodeParams should contain group 'common'."
+    assert "test" in p, "NodeParams should contain group 'test'."
+    assert "nonexistent" not in p, "NodeParams should not contain group 'nonexistent'."
+
+
+def test_node_params_getitem():
+    p = NodeParams(DEFAULT_PARAMS)
+    assert p[0] == "common", "NodeParams group 0 should be 'common'."
+    assert p["common"] == p.common, "NodeParams group 'common' should be accessible by name."
+
+
+def test_param_group_getitem():
+    p = NodeParams(DEFAULT_PARAMS)
+    assert p.common["autotrigger"].value == False, "NodeParams group 'common' should have the correct value for 'autotrigger'."
+
+
+def test_param_group_keys():
+    p = NodeParams(DEFAULT_PARAMS)
+    assert p.common.keys() == DEFAULT_PARAMS["common"].keys(), "NodeParams group 'common' should have the correct keys."
+
+
+def test_param_group_values():
+    p = NodeParams(DEFAULT_PARAMS)
+    assert isinstance(
+        p.common.values(), type(DEFAULT_PARAMS["common"].values())
+    ), "NodeParams group 'common' should have a dict_values object."
+    assert list(p.common.values()) == list(
+        DEFAULT_PARAMS["common"].values()
+    ), "NodeParams group 'common' should have the correct values."
+
+
+def test_param_group_items():
+    p = NodeParams(DEFAULT_PARAMS)
+    assert p.common.items() == DEFAULT_PARAMS["common"].items(), "NodeParams group 'common' should have the correct items."

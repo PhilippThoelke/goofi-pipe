@@ -2,7 +2,7 @@ from abc import ABC, abstractmethod
 from collections import namedtuple
 from copy import deepcopy
 from dataclasses import dataclass
-from typing import Any, Dict
+from typing import Any, Dict, Union
 
 
 @dataclass
@@ -23,6 +23,8 @@ class Param(ABC):
 
 @dataclass
 class BoolParam(Param):
+    toggle: bool = True
+
     @staticmethod
     def default() -> bool:
         return False
@@ -30,8 +32,8 @@ class BoolParam(Param):
 
 @dataclass
 class FloatParam(Param):
-    min: float = 0.0
-    max: float = 1.0
+    vmin: float = 0.0
+    vmax: float = 1.0
 
     @staticmethod
     def default() -> float:
@@ -40,8 +42,8 @@ class FloatParam(Param):
 
 @dataclass
 class IntParam(Param):
-    min: int = 0
-    max: int = 10
+    vmin: int = 0
+    vmax: int = 10
 
     @staticmethod
     def default() -> int:
@@ -103,7 +105,15 @@ class NodeParams:
 
             # implement __contains__ for the named tuple class
             NamedTupleClass = type(
-                NamedTupleClass.__name__, (NamedTupleClass,), {"__contains__": lambda self, item: hasattr(self, item)}
+                NamedTupleClass.__name__,
+                (NamedTupleClass,),
+                {
+                    "__contains__": lambda self, item: hasattr(self, item),
+                    "__getitem__": lambda self, item: getattr(self, item),
+                    "keys": lambda self: self._asdict().keys(),
+                    "values": lambda self: self._asdict().values(),
+                    "items": lambda self: self._asdict().items(),
+                },
             )
 
             self._data[group] = NamedTupleClass(**params)
@@ -129,3 +139,11 @@ class NodeParams:
 
     def __repr__(self) -> str:
         return f"{type(self).__name__}({', '.join(map(repr,self._data.values()))})"
+
+    def __getitem__(self, group: Union[int, str]):
+        if isinstance(group, int):
+            return list(self._data.keys())[group]
+        return self._data[group]
+
+    def __len__(self) -> int:
+        return len(self._data)
