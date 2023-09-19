@@ -334,6 +334,17 @@ class Node(ABC):
             node,
         )
 
+    @classmethod
+    def category(cls) -> str:
+        """
+        Returns the category of the node, i.e. the name of the node's module.
+
+        ### Returns
+        `str`
+            The category of the node.
+        """
+        return cls.__module__.split(".")[-2]
+
     @property
     @require_init
     def alive(self) -> bool:

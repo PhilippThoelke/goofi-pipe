@@ -200,7 +200,17 @@ class Window:
 
     @running
     def add_node(self, node_name: str, node: NodeRef) -> None:
-        with dpg.node(parent=self.node_editor, label=node_name) as node_id:
+        """
+        Add a node to the GUI at the current mouse position.
+
+        ### Parameters
+        `node_name` : str
+            The name of the node.
+        `node` : NodeRef
+            The node reference.
+        """
+        pos = dpg.get_mouse_pos(local=False)
+        with dpg.node(parent=self.node_editor, label=node_name, pos=pos) as node_id:
             ############### input slots ###############
             in_slots = {}
             for name, dtype in node.input_slots.items():
@@ -275,8 +285,7 @@ class Window:
 
         if notify_manager:
             # remove node from manager
-            manager = dpg.get_item_user_data(self.window)
-            manager.remove_node(name, notify_gui=False)
+            self.manager.remove_node(name, notify_gui=False)
 
     @running
     def add_link(self, node_out: str, node_in: str, slot_out: str, slot_in: str) -> None:
@@ -305,8 +314,7 @@ class Window:
 
         if notify_manager:
             # add link to manager
-            manager = dpg.get_item_user_data(self.window)
-            manager.add_link(node1, node2, slot1, slot2, notify_gui=False)
+            self.manager.add_link(node1, node2, slot1, slot2, notify_gui=False)
 
     def remove_link(self, node_out: str, node_in: str, slot_out: str, slot_in: str) -> None:
         self._remove_link(self.links[(node_out, node_in, slot_out, slot_in)], notify_manager=False)
@@ -322,8 +330,7 @@ class Window:
 
         if notify_manager:
             # remove link from manager
-            manager = dpg.get_item_user_data(self.window)
-            manager.remove_link(node1, node2, slot1, slot2, notify_gui=False)
+            self.manager.remove_link(node1, node2, slot1, slot2, notify_gui=False)
 
         # unregister link
         del self.links[(node1, node2, slot1, slot2)]
@@ -375,11 +382,13 @@ class Window:
 
     def _initialize(self, manager, width=1280, height=720):
         dpg.create_context()
+        self.manager = manager
 
         # initialize dicts to map names to dpg items
         self.nodes = {}
         self.links = {}
         self.selected_node = None
+        self.create_node_window = None
 
         # create window
         self.window = dpg.add_window(
@@ -398,13 +407,11 @@ class Window:
             # add parameters window
             self.parameters = dpg.add_child_window(label="Parameters", autosize_x=True)
 
-        # store manager in the window's user data
-        dpg.set_item_user_data(self.window, manager)
-
         # register key-press handler
         with dpg.handler_registry():
             dpg.add_key_press_handler(callback=events.key_press_callback, user_data=self)
             dpg.add_mouse_click_handler(callback=events.click_callback, user_data=self)
+            dpg.add_mouse_double_click_handler(callback=events.double_click_callback, user_data=self)
 
         # register viewport resize handler
         dpg.set_viewport_resize_callback(self.resize_callback)

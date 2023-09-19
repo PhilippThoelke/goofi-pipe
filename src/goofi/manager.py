@@ -75,23 +75,24 @@ class Manager:
         if not self.headless:
             Window(self)
 
-    def add_node(self, node_path: str, notify_gui: bool = True) -> None:
+    def add_node(self, name: str, category: str, notify_gui: bool = True) -> None:
         """
         Adds a node to the container.
 
         ### Parameters
-        `node_path` : str
-            The path to the node class, e.g. `generators.Constant`.
+        `name` : str
+            The name of the node.
+        `category` : str
+            The category of the node.
         `notify_gui` : bool
             Whether to notify the gui to add the node.
         """
-        node_cls = node_path.split(".")[-1]
-        mod = importlib.import_module(f"goofi.nodes.{node_path.lower()}")
-        node = getattr(mod, node_cls)
+        mod = importlib.import_module(f"goofi.nodes.{category}.{name.lower()}")
+        node = getattr(mod, name)
 
         # instantiate the node and add it to the container
         ref = node.create_local()[0]
-        name = self.nodes.add_node(node_cls.lower(), ref)
+        name = self.nodes.add_node(name.lower(), ref)
 
         # add the node to the gui
         if not self.headless and notify_gui:
@@ -207,10 +208,10 @@ def main(duration: float = 0, args=None):
     manager = Manager(headless=args.headless)
 
     # add some example nodes
-    manager.add_node("generators.Constant")
-    manager.add_node("generators.Sine")
-    manager.add_node("Add")
-    manager.add_node("Buffer")
+    manager.add_node("Constant", "generators")
+    manager.add_node("Sine", "generators")
+    manager.add_node("Add", "array")
+    manager.add_node("Buffer", "array")
 
     # connect example nodes
     manager.add_link("constant0", "add0", "out", "a")
@@ -237,8 +238,8 @@ def main(duration: float = 0, args=None):
 
             # parse the message and print the data
             msg = node_conn.recv()
-            if msg.type == MessageType.DATA:
-                print(f"{1 / (time.time() - last_msg):.2f} Hz: Output of 'add0' is {msg.content['data'].data[0]}")
+            # if msg.type == MessageType.DATA:
+            #     print(f"{1 / (time.time() - last_msg):.2f} Hz: Output of 'add0' is {msg.content['data'].data[0]}")
             last_msg = time.time()
         except KeyboardInterrupt:
             manager.terminate()

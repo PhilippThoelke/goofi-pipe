@@ -21,23 +21,6 @@ def list_data_types() -> List[DataType]:
     return list(DataType.__members__.values())
 
 
-def list_nodes(nodes=None, parent_module=goofi.nodes) -> List[Type[Node]]:
-    """Returns a list of all nodes in goofi.nodes that are subclasses of Node."""
-    if nodes is None:
-        nodes = []
-
-    for info in pkgutil.walk_packages(parent_module.__path__):
-        module = importlib.import_module(f"{parent_module.__name__}.{info.name}")
-
-        if info.ispkg:
-            list_nodes(nodes, module)
-            continue
-
-        members = inspect.getmembers(module, inspect.isclass)
-        nodes.extend([cls for _, cls in members if issubclass(cls, Node) and cls is not Node])
-    return nodes
-
-
 class DummyNode(Node):
     def process(self):
         return None, {}

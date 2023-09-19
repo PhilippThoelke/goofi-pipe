@@ -1,12 +1,49 @@
+import importlib
+import inspect
+import pkgutil
 from dataclasses import dataclass, field
 from multiprocessing import Process
 from threading import Thread
-from typing import Callable, Dict, List, Optional, Tuple
+from typing import Callable, Dict, List, Optional, Tuple, Type
 
+from goofi import nodes as goofi_nodes
 from goofi.connection import Connection
 from goofi.data import Data, DataType
 from goofi.message import Message, MessageType
 from goofi.params import NodeParams
+
+
+def list_nodes() -> List[Type]:
+    """
+    Gather a list of all available nodes in the goofi.nodes module.
+
+    ### Returns
+    List[Type[None]]
+        A list containing the classes of all available nodes.
+    """
+
+    def _list_nodes_recursive(nodes=None, parent_module=goofi_nodes):
+        from goofi.node import Node
+
+        if nodes is None:
+            # first call, initialize the list
+            nodes = []
+
+        # iterate over all modules in the parent module
+        for info in pkgutil.walk_packages(parent_module.__path__):
+            module = importlib.import_module(f"{parent_module.__name__}.{info.name}")
+
+            if info.ispkg:
+                # recursively list nodes in submodules
+                _list_nodes_recursive(nodes, module)
+                continue
+
+            # current module is a node, add it to the list
+            members = inspect.getmembers(module, inspect.isclass)
+            nodes.extend([cls for _, cls in members if issubclass(cls, Node) and cls is not Node])
+        return nodes
+
+    return _list_nodes_recursive()
 
 
 @dataclass
