@@ -429,7 +429,7 @@ class Window:
         dpg.start_dearpygui()
         dpg.destroy_context()
 
-        logger.info("Graphical user interface closed.")
+        logger.info("Shutting down graphical user interface.")
 
         # terminate manager
         manager.terminate(notify_gui=False)

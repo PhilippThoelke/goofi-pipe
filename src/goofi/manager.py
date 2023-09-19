@@ -66,11 +66,11 @@ class Manager:
     """
 
     def __init__(self, headless: bool = True) -> None:
+        logger.info("Initializing goofi-pipe manager.")
+
         self._headless = headless
         self._running = True
         self.nodes = NodeContainer()
-
-        logger.info("Manager initialized.")
 
         if not self.headless:
             Window(self)
@@ -87,6 +87,9 @@ class Manager:
         `notify_gui` : bool
             Whether to notify the gui to add the node.
         """
+        logger.info(f"Adding node '{name}' from category '{category}'.")
+
+        # import the node
         mod = importlib.import_module(f"goofi.nodes.{category}.{name.lower()}")
         node = getattr(mod, name)
 
@@ -109,8 +112,9 @@ class Manager:
         `notify_gui` : bool
             Whether to notify the gui to remove the node.
         """
-        self.nodes.remove_node(name)
+        logger.info(f"Removing node '{name}'.")
 
+        self.nodes.remove_node(name)
         if not self.headless and notify_gui:
             Window().remove_node(name)
 
@@ -179,12 +183,12 @@ class Manager:
             # terminate the gui, which calls manager.terminate() with notify_gui=False once it is closed
             Window().terminate()
         else:
+            logger.info("Shutting down goofi-pipe manager.")
             # terminate the manager
             self._running = False
             for node in self.nodes:
                 self.nodes[node].connection.send(Message(MessageType.TERMINATE, {}))
                 self.nodes[node].connection.close()
-            logger.info("Manager terminated.")
 
     @property
     def running(self) -> bool:
