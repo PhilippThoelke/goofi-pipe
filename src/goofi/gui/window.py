@@ -201,7 +201,7 @@ class Window:
     @running
     def add_node(self, node_name: str, node: NodeRef) -> None:
         """
-        Add a node to the GUI at the current mouse position.
+        Outward facing method to add a node to the GUI.
 
         ### Parameters
         `node_name` : str
@@ -266,10 +266,27 @@ class Window:
 
     @running
     def remove_node(self, name: str) -> None:
+        """
+        Outward facing method to remove a node from the GUI.
+
+        ### Parameters
+        `name` : str
+            The name of the node.
+        """
         self._remove_node(self.nodes[name], notify_manager=False)
 
     @running
     def _remove_node(self, item: int, notify_manager: bool = True) -> None:
+        """
+        Remove a node from the GUI.
+
+        ### Parameters
+        `item` : int
+            The node item.
+        `notify_manager` : bool
+            Whether to notify the manager to remove the node.
+        """
+        # determine the node name
         name = dpg.get_item_label(item)
 
         # remove links associated with node
@@ -277,7 +294,7 @@ class Window:
             if link[0] == name or link[1] == name:
                 self._remove_link(self.links[link], notify_manager=False)
 
-        # unregister node
+        # unregister node by deleting it from the node list
         del self.nodes[name]
 
         # delete node from gui
@@ -289,14 +306,38 @@ class Window:
 
     @running
     def add_link(self, node_out: str, node_in: str, slot_out: str, slot_in: str) -> None:
-        # get slot IDs
+        """
+        Outward facing method to add a link between two nodes.
+
+        ### Parameters
+        `node_out` : str
+            The name of the output node.
+        `node_in` : str
+            The name of the input node.
+        `slot_out` : str
+            The output slot name of `node_out`.
+        `slot_in` : str
+            The input slot name of `node_in`.
+        """
+        # determine slot IDs
         slot1 = self.nodes[node_out].output_slots[slot_out]
         slot2 = self.nodes[node_in].input_slots[slot_in]
-        # add link
+        # add link internally
         self._add_link(self.node_editor, (slot1, slot2), notify_manager=False)
 
     @running
     def _add_link(self, sender: int, items: Tuple[int, int], notify_manager: bool = True) -> None:
+        """
+        Add a link between two nodes to the GUI.
+
+        ### Parameters
+        `sender` : int
+            The sender item.
+        `items` : Tuple[int, int]
+            The two items to link.
+        `notify_manager` : bool
+            Whether to notify the manager to add the link.
+        """
         # get slot names
         slot1 = dpg.get_item_label(items[0])
         slot2 = dpg.get_item_label(items[1])
@@ -317,10 +358,32 @@ class Window:
             self.manager.add_link(node1, node2, slot1, slot2, notify_gui=False)
 
     def remove_link(self, node_out: str, node_in: str, slot_out: str, slot_in: str) -> None:
+        """
+        Outward facing method to remove a link between two nodes.
+
+        ### Parameters
+        `node_out` : str
+            The name of the output node.
+        `node_in` : str
+            The name of the input node.
+        `slot_out` : str
+            The output slot name of `node_out`.
+        `slot_in` : str
+            The input slot name of `node_in`.
+        """
         self._remove_link(self.links[(node_out, node_in, slot_out, slot_in)], notify_manager=False)
 
     @running
     def _remove_link(self, item: int, notify_manager: bool = True) -> None:
+        """
+        Remove a link between two nodes from the GUI.
+
+        ### Parameters
+        `item` : int
+            The link item.
+        `notify_manager` : bool
+            Whether to notify the manager to remove the link.
+        """
         conf = dpg.get_item_configuration(item)
         # get slot names
         slot1, slot2 = dpg.get_item_label(conf["attr_1"]), dpg.get_item_label(conf["attr_2"])
@@ -337,7 +400,15 @@ class Window:
         # delete link from gui
         dpg.delete_item(item)
 
-    def _select_node(self, item: Optional[int]):
+    def _select_node(self, item: Optional[int]) -> None:
+        """
+        Register or unregister a node as selected. If a new node is selected, the parameters window is
+        updated to show the parameters of that node.
+
+        ### Parameters
+        `item` : Optional[int]
+            The node item. If None, deselects the currently selected node.
+        """
         if self.selected_node == item:
             # do nothing if the node is already selected
             return
@@ -361,26 +432,36 @@ class Window:
                     for name, param in node.params[group].items():
                         add_param(tab, group, name, param, node)
 
+        # show parameters window
         dpg.configure_item(self.parameters, show=True)
 
-    def link_callback(self, sender, data):
-        self._add_link(sender, data)
+    def link_callback(self, sender: int, items: Tuple[int, int]) -> None:
+        """Callback from DearPyGui that two nodes were connected."""
+        self._add_link(sender, items)
 
-    def delink_callback(self, _, data):
-        self._remove_link(data)
+    def delink_callback(self, _, item: int) -> None:
+        """Callback from DearPyGui that a link was removed."""
+        self._remove_link(item)
 
-    def resize_callback(self, _, data):
-        dpg.configure_item(self.window, width=data[0], height=data[1])
+    def resize_callback(self, _, size: Tuple[int, int]) -> None:
+        """Callback from DearPyGui that the viewport was resized."""
+        # resize window to fill viewport
+        dpg.configure_item(self.window, width=size[0], height=size[1])
+
         if self.selected_node is None:
-            dpg.configure_item(self.node_editor, width=data[0])
+            # no node selected, resize node editor to fill viewport
+            dpg.configure_item(self.node_editor, width=size[0])
         else:
-            dpg.configure_item(self.node_editor, width=data[0] - PARAM_WINDOW_WIDTH)
+            # node selected, resize node editor to fill viewport minus parameters window
+            dpg.configure_item(self.node_editor, width=size[0] - PARAM_WINDOW_WIDTH)
 
     def exit_callback(self, value):
+        """Callback from DearPyGui that the close button was pressed."""
         # TODO: open a popup to confirm exit, if state was modified after save
         self.terminate()
 
     def _initialize(self, manager, width=1280, height=720):
+        """Initialize the window and launch the event loop (blocking)."""
         dpg.create_context()
         self.manager = manager
 

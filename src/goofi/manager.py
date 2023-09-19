@@ -200,6 +200,16 @@ class Manager:
 
 
 def main(duration: float = 0, args=None):
+    """
+    This is the main entry point for goofi-pipe. It parses command line arguments, creates a manager
+    instance and runs all nodes until the manager is terminated.
+
+    ### Parameters
+    `duration` : float
+        The duration to run the manager for. If `0`, runs indefinitely.
+    `args` : list
+        A list of arguments to pass to the manager. If `None`, uses `sys.argv[1:]`.
+    """
     import argparse
     import time
 
@@ -221,33 +231,17 @@ def main(duration: float = 0, args=None):
     manager.add_link("constant0", "add0", "out", "a")
     manager.add_link("sine0", "add0", "out", "b")
 
-    # create a local pipe to receive data from the node
-    my_conn, node_conn = MultiprocessingConnection.create()
-    manager.nodes["add0"].connection.send(
-        Message(MessageType.ADD_OUTPUT_PIPE, {"slot_name_out": "out", "slot_name_in": "in", "node_connection": my_conn})
-    )
+    if duration > 0:
+        # run for a fixed duration
+        time.sleep(duration)
+        manager.terminate()
 
-    # print data from the node until the manager terminates
-    start = last_msg = time.time()
-    while manager.running:
-        try:
-            if duration > 0 and time.time() - start > duration:
-                # duration exceeded, terminate the manager
-                manager.terminate()
-                break
-
-            # check if there is a message from the node
-            if not node_conn.poll(0.01):
-                continue
-
-            # parse the message and print the data
-            msg = node_conn.recv()
-            # if msg.type == MessageType.DATA:
-            #     print(f"{1 / (time.time() - last_msg):.2f} Hz: Output of 'add0' is {msg.content['data'].data[0]}")
-            last_msg = time.time()
-        except KeyboardInterrupt:
-            manager.terminate()
-            break
+    try:
+        # run indefinitely
+        while manager.running:
+            time.sleep(1)
+    except KeyboardInterrupt:
+        manager.terminate()
 
 
 if __name__ == "__main__":
