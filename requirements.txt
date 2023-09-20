@@ -1,4 +1,3 @@
 numpy
 dearpygui
-mne
 mne-realtime
