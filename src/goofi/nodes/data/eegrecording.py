@@ -25,7 +25,7 @@ class EEGRecording(Node):
             # load data from file
             raw = mne.io.read_raw(self.params.recording.file_path.value, preload=True)
 
-        stream = MockLSLStream(self.params.recording.stream_name.value, raw, "eeg", status=True)
+        stream = MockLSLStream(self.params.recording.stream_name.value, raw, "eeg")
         stream.start()
 
         while self.running:
