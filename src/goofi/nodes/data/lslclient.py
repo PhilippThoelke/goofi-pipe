@@ -2,6 +2,7 @@ import threading
 import time
 from typing import Any, Dict, Tuple
 
+import numpy as np
 from mne_realtime import LSLClient as MNE_LSLClient
 
 from goofi.data import DataType
@@ -23,7 +24,7 @@ class LSLClient(Node):
         client = MNE_LSLClient(host=self.params.lsl_stream.stream_name.value, wait_max=0.5, verbose=False)
         try:
             client.start()
-        except RuntimeError as e:
+        except RuntimeError:
             self.running = False
             return
 
@@ -70,7 +71,7 @@ class LSLClient(Node):
             self.thread = None
             self.data_iterator = None
 
-    def process(self) -> Dict[str, Tuple[Any, Dict[str, Any]]]:
+    def process(self) -> Dict[str, Tuple[np.ndarray, Dict[str, Any]]]:
         """Fetch the next chunk of data from the client."""
         if not self.running or self.data_iterator is None:
             # client is not running, or not initialized yet
@@ -84,7 +85,10 @@ class LSLClient(Node):
         # TODO: return relevant metadata from self.client.info
         return {"out": (data, {})}
 
-    def lsl_stream_stream_name_changed(self, value: str):
+    def lsl_stream_stream_name_changed(self, value: str) -> None:
         assert value != "", "Stream name cannot be empty."
         # reinitialize the client
         self.setup(init=False)
+
+    def terminate(self) -> None:
+        self.stop()

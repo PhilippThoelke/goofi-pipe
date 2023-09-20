@@ -92,3 +92,7 @@ class EEGRecording(Node):
     def recording_stream_name_changed(self, _):
         """Reinitialize the stream."""
         self.setup(init=False)
+
+    def terminate(self):
+        """Stop the stream and terminate the node."""
+        self.stop()

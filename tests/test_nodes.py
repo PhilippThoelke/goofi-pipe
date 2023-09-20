@@ -16,6 +16,8 @@ def test_implement_init(node):
 @pytest.mark.parametrize("node", list_nodes())
 def test_create_local(node):
     node.create_local()[0].terminate()
+    # give the node some time to terminate
+    time.sleep(0.5)
 
 
 @pytest.mark.parametrize("node", list_nodes())

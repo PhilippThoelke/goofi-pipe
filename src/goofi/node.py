@@ -123,7 +123,6 @@ class Node(ABC):
             self.setup()
         except Exception as e:
             self.connection.try_send(Message(MessageType.PROCESSING_ERROR, {"error": str(e)}))
-            logger.error(f"Error in initial call to setup method of node {self.__class__.__name__}: {e}")
 
         # run the messaging loop
         while self.alive:
@@ -211,10 +210,15 @@ class Node(ABC):
                                 {"error": f"Parameter callback for {group}.{param_name} failed: {e}"},
                             )
                         )
-                        logger.error(f"Parameter callback for {group}.{param_name} failed: {e}")
             else:
                 # TODO: handle the incoming message
                 raise NotImplementedError(f"Message type {msg.type} not implemented.")
+
+        # run the node's terminate method
+        try:
+            self.terminate()
+        except Exception as e:
+            self.connection.try_send(Message(MessageType.PROCESSING_ERROR, {"error": str(e)}))
 
     def _processing_loop(self):
         """
@@ -244,7 +248,6 @@ class Node(ABC):
                 output_data = self.process(**input_data)
             except Exception as e:
                 self.connection.try_send(Message(MessageType.PROCESSING_ERROR, {"error": str(e)}))
-                logger.error(f"Error in call to process method of node {self.__class__.__name__}: {e}")
                 continue
 
             if not self.alive:
@@ -445,5 +448,12 @@ class Node(ABC):
         `Dict[str, Tuple[Any, Dict[str, Any]]]`
             A dict containing the output data. The keys are the names of the output slots, and the values are
             tuples containing the data and metadata of the output data.
+        """
+        pass
+
+    def terminate(self) -> None:
+        """
+        This method is called when the node is terminated. It can be used to clean up any resources used by the
+        node.
         """
         pass

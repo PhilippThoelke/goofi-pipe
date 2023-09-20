@@ -221,10 +221,6 @@ def main(duration: float = 0, args=None):
     # create manager
     manager = Manager(headless=args.headless)
 
-    # add some example nodes
-    manager.add_node("EEGRecording", "data")
-    manager.add_node("LSLClient", "data")
-
     if duration > 0:
         # run for a fixed duration
         time.sleep(duration)
