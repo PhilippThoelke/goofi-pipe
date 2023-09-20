@@ -28,10 +28,11 @@ class Buffer(Node):
         else:
             # extend the buffer
             maxlen = self.params.buffer.size.value
-            self.buffer = np.concatenate((self.buffer, val.data), axis=self.params.buffer.axis.value)
+            axis = self.params.buffer.axis.value
+            self.buffer = np.concatenate((self.buffer, val.data), axis=axis)
+
             # remove old data
-            slices = [slice(None)] * self.buffer.ndim
-            slices[self.params.buffer.axis.value] = slice(-maxlen, None)
-            self.buffer = self.buffer[slices]
+            if self.buffer.shape[axis] > maxlen:
+                self.buffer = np.take(self.buffer, range(-maxlen, 0), axis=axis)
 
         return {"out": (self.buffer, val.meta)}
