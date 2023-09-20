@@ -1,5 +1,6 @@
 import importlib
 import inspect
+import logging
 import pkgutil
 from dataclasses import dataclass, field
 from multiprocessing import Process
@@ -11,6 +12,8 @@ from goofi.connection import Connection
 from goofi.data import Data, DataType
 from goofi.message import Message, MessageType
 from goofi.params import NodeParams
+
+logger = logging.getLogger(__name__)
 
 
 def list_nodes() -> List[Type]:
@@ -179,7 +182,10 @@ class NodeRef:
 
             # if the message type has a registered callback, call it and skip built-in message handling
             if msg.type in self.callbacks:
-                self.callbacks[msg.type](self, msg)
+                try:
+                    self.callbacks[msg.type](self, msg)
+                except Exception as e:
+                    logger.error(f"Message callback for {msg.type} failed: {e}")
                 continue
 
             # built-in message handling
