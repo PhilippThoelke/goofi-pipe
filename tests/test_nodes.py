@@ -1,3 +1,5 @@
+import time
+
 import pytest
 
 from goofi.node_helpers import list_nodes
