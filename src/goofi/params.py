@@ -42,8 +42,8 @@ class FloatParam(Param):
 
 @dataclass
 class IntParam(Param):
-    vmin: int = 0
-    vmax: int = 10
+    vmin: int = -1
+    vmax: int = 3
 
     @staticmethod
     def default() -> int:

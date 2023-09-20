@@ -1,5 +1,3 @@
-from collections import deque
-
 import numpy as np
 
 from goofi.data import Data, DataType
@@ -15,17 +13,25 @@ class Buffer(Node):
         return {"out": DataType.ARRAY}
 
     def config_params():
-        return {"buffer": {"size": IntParam(10, 1, 5000), "axis": 0}}
+        return {"buffer": {"size": IntParam(10, 1, 5000), "axis": -1}}
 
     def setup(self):
-        self.buffer = deque(maxlen=self.params.buffer.size.value)
+        self.buffer = None
 
     def process(self, val: Data):
         if val is None:
             return None
 
-        self.buffer.append(val.data)
-        return {"out": (np.stack(self.buffer, axis=self.params.buffer.axis.value), val.meta)}
+        if self.buffer is None:
+            # initialize buffer
+            self.buffer = np.array(val.data)
+        else:
+            # extend the buffer
+            maxlen = self.params.buffer.size.value
+            self.buffer = np.concatenate((self.buffer, val.data), axis=self.params.buffer.axis.value)
+            # remove old data
+            slices = [slice(None)] * self.buffer.ndim
+            slices[self.params.buffer.axis.value] = slice(-maxlen, None)
+            self.buffer = self.buffer[slices]
 
-    def buffer_size_changed(self, value):
-        self.buffer = deque(maxlen=value)
+        return {"out": (self.buffer, val.meta)}
