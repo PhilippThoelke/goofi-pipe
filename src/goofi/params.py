@@ -50,6 +50,13 @@ class IntParam(Param):
         return 0
 
 
+@dataclass
+class StringParam(Param):
+    @staticmethod
+    def default() -> str:
+        return ""
+
+
 DEFAULT_PARAMS = {
     "common": {
         "autotrigger": BoolParam(False),
@@ -61,6 +68,7 @@ TYPE_PARAM_MAP = {
     bool: BoolParam,
     float: FloatParam,
     int: IntParam,
+    str: StringParam,
 }
 
 
@@ -94,7 +102,10 @@ class NodeParams:
             for param_name, param in params.items():
                 if not isinstance(param, Param):
                     if type(param) not in TYPE_PARAM_MAP:
-                        raise TypeError(f"Invalid parameter type {type(param)}. Must be one of {list(TYPE_PARAM_MAP.keys())}")
+                        raise TypeError(
+                            f"Invalid parameter type {type(param).__name__}. Must be one of "
+                            f"{list(map(lambda x:x.__name__,TYPE_PARAM_MAP.keys()))}"
+                        )
                     data[group][param_name] = TYPE_PARAM_MAP[type(param)](param)
 
         # convert to named tuples

@@ -186,6 +186,7 @@ class NodeRef:
                     self.callbacks[msg.type](self, msg)
                 except Exception as e:
                     logger.error(f"Message callback for {msg.type} failed: {e}")
+                    raise
                 continue
 
             # built-in message handling

@@ -20,8 +20,8 @@ def test_main():
 @pytest.mark.skipif(platform.system() == "Windows", reason="Multiprocessing is very slow on Windows.")
 def test_simple():
     manager = Manager()
-    manager.add_node("Constant", "generators")
-    manager.add_node("Sine", "generators")
+    manager.add_node("Constant", "data")
+    manager.add_node("Sine", "data")
     manager.add_node("Add", "array")
 
     manager.add_link("constant0", "add0", "out", "a")

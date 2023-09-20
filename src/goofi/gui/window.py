@@ -12,7 +12,7 @@ from goofi.data import DataType
 from goofi.gui import events
 from goofi.message import Message, MessageType
 from goofi.node_helpers import NodeRef
-from goofi.params import BoolParam, FloatParam, IntParam, Param
+from goofi.params import BoolParam, FloatParam, IntParam, Param, StringParam
 
 logger = logging.getLogger(__name__)
 
@@ -53,7 +53,10 @@ class GUINode:
 
 def draw_data(node: NodeRef, data: Message, plot: List[int], minmax: List[int], margin: float = 0.1, shrinking: float = 0.001):
     """
-    Draw data on a plot.
+    This function handles drawing numerical data to a plot. Array shapes are handled as follows:
+    - 0D (single number): the data is drawn as a horizontal line.
+    - 1D: the data is drawn as a simple line plot.
+    - 2D: the array gets interpreted as (n_channels, n_samples), and each channel is drawn as a line plot.
 
     ### Parameters
     `node` : NodeRef
@@ -66,7 +69,7 @@ def draw_data(node: NodeRef, data: Message, plot: List[int], minmax: List[int], 
         A list of two values: minimum and maximum values of the data.
     """
     dtype = data.content["data"].dtype
-    value = np.squeeze(data.content["data"].data)
+    value = np.squeeze(data.content["data"].data).copy(order="C")
 
     if dtype == DataType.ARRAY:
         if minmax[0] is not None and minmax[1] is not None:
@@ -105,6 +108,8 @@ def draw_data(node: NodeRef, data: Message, plot: List[int], minmax: List[int], 
 
             # add new data series
             xs = np.arange(value.shape[1])
+
+            # iterate over channels (first dimension)
             for i in range(value.shape[0]):
                 if len(plot) == i + 2:
                     # add new data series
@@ -169,6 +174,13 @@ def add_param(parent: int, group: str, name: str, param: Param, node: NodeRef) -
                 default_value=param.value,
                 min_value=param.vmin,
                 max_value=param.vmax,
+                callback=param_updated,
+                user_data=(group, name, node),
+            )
+        elif isinstance(param, StringParam):
+            # parameter is a string
+            dpg.add_input_text(
+                default_value=param.value,
                 callback=param_updated,
                 user_data=(group, name, node),
             )
@@ -286,6 +298,10 @@ class Window:
         `notify_manager` : bool
             Whether to notify the manager to remove the node.
         """
+        if item in dpg.get_selected_nodes(self.node_editor):
+            # deselect node if it is selected
+            self._select_node(None)
+
         # determine the node name
         name = dpg.get_item_label(item)
 

@@ -1,3 +1,4 @@
+import logging
 import time
 from abc import ABC, abstractmethod
 from copy import deepcopy
@@ -10,6 +11,8 @@ from goofi.data import Data, DataType
 from goofi.message import Message, MessageType
 from goofi.node_helpers import InputSlot, NodeRef, OutputSlot
 from goofi.params import NodeParams
+
+logger = logging.getLogger(__name__)
 
 
 def require_init(func: Callable) -> Callable:
@@ -74,9 +77,6 @@ class Node(ABC):
 
         self._validate_attrs()
 
-        # run the setup method
-        self.setup()
-
         # initialize node flags
         self.process_flag = Event()
         if self.params.common.autotrigger.value:
@@ -118,6 +118,14 @@ class Node(ABC):
         """
         This method runs in a separate thread and handles incoming messages from the manager, or other nodes.
         """
+        # run the node's setup method
+        try:
+            self.setup()
+        except Exception as e:
+            self.connection.try_send(Message(MessageType.PROCESSING_ERROR, {"error": str(e)}))
+            logger.error(f"Error in initial call to setup method of node {self.__class__.__name__}: {e}")
+
+        # run the messaging loop
         while self.alive:
             # receive the message
             try:
@@ -193,7 +201,17 @@ class Node(ABC):
 
                 # call the callback if it exists
                 if hasattr(self, f"{group}_{param_name}_changed"):
-                    getattr(self, f"{group}_{param_name}_changed")(param_value)
+                    try:
+                        getattr(self, f"{group}_{param_name}_changed")(param_value)
+                    except Exception as e:
+                        # parameter callback raised an exception, send out an error message
+                        self.connection.try_send(
+                            Message(
+                                MessageType.PROCESSING_ERROR,
+                                {"error": f"Parameter callback for {group}.{param_name} failed: {e}"},
+                            )
+                        )
+                        logger.error(f"Parameter callback for {group}.{param_name} failed: {e}")
             else:
                 # TODO: handle the incoming message
                 raise NotImplementedError(f"Message type {msg.type} not implemented.")
@@ -226,6 +244,7 @@ class Node(ABC):
                 output_data = self.process(**input_data)
             except Exception as e:
                 self.connection.try_send(Message(MessageType.PROCESSING_ERROR, {"error": str(e)}))
+                logger.error(f"Error in call to process method of node {self.__class__.__name__}: {e}")
                 continue
 
             if not self.alive:

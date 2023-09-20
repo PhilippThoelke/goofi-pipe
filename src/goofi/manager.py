@@ -222,14 +222,8 @@ def main(duration: float = 0, args=None):
     manager = Manager(headless=args.headless)
 
     # add some example nodes
-    manager.add_node("Constant", "generators")
-    manager.add_node("Sine", "generators")
-    manager.add_node("Add", "array")
-    manager.add_node("Buffer", "array")
-
-    # connect example nodes
-    manager.add_link("constant0", "add0", "out", "a")
-    manager.add_link("sine0", "add0", "out", "b")
+    manager.add_node("EEGRecording", "data")
+    manager.add_node("LSLClient", "data")
 
     if duration > 0:
         # run for a fixed duration
