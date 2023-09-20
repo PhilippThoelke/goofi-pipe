@@ -25,7 +25,7 @@ class EEGRecording(Node):
             # load data from file
             raw = mne.io.read_raw(self.params.recording.file_path.value, preload=True)
 
-        stream = MockLSLStream(self.params.recording.stream_name.value, raw, "eeg")
+        stream = MockLSLStream(self.params.recording.stream_name.value, raw, "eeg", status=True)
         stream.start()
 
         while self.running:
@@ -41,6 +41,13 @@ class EEGRecording(Node):
         `init`: bool
             Flag to indicate whether this is the first time the stream is being initialized.
         """
+        if init:
+            self.running = True
+            self.thread = None
+        else:
+            # stop previous stream if it exists
+            self.stop()
+
         if self.params.recording.use_example_data.value:
             if self.params.recording.file_path.value != "":
                 # both use_example_data and file_path are set
@@ -50,9 +57,6 @@ class EEGRecording(Node):
             raise ValueError("File path cannot be empty if 'Use Example Data' is False.")
         assert self.params.recording.stream_name.value != "", "Stream name cannot be empty."
 
-        if init:
-            self.running = True
-            self.thread = None
         # start the stream
         self.start()
 
