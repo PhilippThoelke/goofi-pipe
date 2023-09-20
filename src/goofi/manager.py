@@ -134,7 +134,7 @@ class Manager:
         `notify_gui` : bool
             Whether to notify the gui to add the link.
         """
-        # TODO: prevent multiple links to the same input slot
+        # TODO: Prevent multiple links to the same input slot. The GUI already prevents this, but the manager should too.
         self.nodes[node_out].connection.send(
             Message(
                 MessageType.ADD_OUTPUT_PIPE,
