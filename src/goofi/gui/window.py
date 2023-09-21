@@ -11,7 +11,7 @@ import numpy as np
 from goofi.data import DataType
 from goofi.gui import events
 from goofi.message import Message, MessageType
-from goofi.node_helpers import NodeRef
+from goofi.node_helpers import NodeRef,list_nodes
 from goofi.params import BoolParam, FloatParam, IntParam, Param, StringParam
 
 logger = logging.getLogger(__name__)
@@ -208,6 +208,8 @@ class Window:
             logger.info("Starting graphical user interface.")
             cls._instance = super(Window, cls).__new__(cls)
             threading.Thread(target=cls._instance._initialize, args=(manager,), daemon=True).start()
+            # call list_nodes once to initialize the cache
+            list_nodes()
         return cls._instance
 
     @running

@@ -213,7 +213,3 @@ class NodeRef:
                     {"slot_name_out": name, "slot_name_in": name, "node_connection": None},
                 )
             )
-
-
-# call list_nodes once to initialize the cache
-list_nodes()
