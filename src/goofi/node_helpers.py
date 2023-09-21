@@ -1,3 +1,4 @@
+import functools
 import importlib
 import inspect
 import logging
@@ -16,6 +17,7 @@ from goofi.params import NodeParams
 logger = logging.getLogger(__name__)
 
 
+@functools.lru_cache(maxsize=1)
 def list_nodes() -> List[Type]:
     """
     Gather a list of all available nodes in the goofi.nodes module.
