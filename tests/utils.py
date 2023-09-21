@@ -1,9 +1,6 @@
-import importlib
 import inspect
-import pkgutil
 from typing import Callable, Dict, List, Type
 
-import goofi.nodes
 from goofi import params
 from goofi.connection import Connection
 from goofi.data import DataType

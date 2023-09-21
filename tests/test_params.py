@@ -112,7 +112,7 @@ def test_node_params_getitem():
 
 def test_param_group_getitem():
     p = NodeParams(DEFAULT_PARAMS)
-    assert p.common["autotrigger"].value == False, "NodeParams group 'common' should have the correct value for 'autotrigger'."
+    assert p.common["autotrigger"].value is False, "NodeParams group 'common' should have the correct value for 'autotrigger'."
 
 
 def test_param_group_keys():

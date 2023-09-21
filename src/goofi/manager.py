@@ -2,7 +2,6 @@ import importlib
 import logging
 from typing import Dict
 
-from goofi.connection import MultiprocessingConnection
 from goofi.gui.window import Window
 from goofi.message import Message, MessageType
 from goofi.node_helpers import NodeRef
