@@ -19,9 +19,10 @@ class LempelZiv(Node):
         if data is None:
             return None
 
+        # TODO: implement different types of binarization (e.g. median)
+        # binarize the data
         binarized = data.data > np.mean(data.data, axis=self.params.lempel_ziv.axis.value, keepdims=True)
+        # compute normalized Lempel-Ziv complexity
         lzc = np.apply_along_axis(lziv_complexity, self.params.lempel_ziv.axis.value, binarized, normalize=True)
 
-        print(lzc.shape)
-
-        return {"lzc": (lzc, {})}
+        return {"lzc": (lzc, data.meta)}
