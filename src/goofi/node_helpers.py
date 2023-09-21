@@ -51,10 +51,6 @@ def list_nodes() -> List[Type]:
     return _list_nodes_recursive()
 
 
-# call list_nodes once to initialize the cache
-list_nodes()
-
-
 @dataclass
 class InputSlot:
     """
@@ -217,3 +213,7 @@ class NodeRef:
                     {"slot_name_out": name, "slot_name_in": name, "node_connection": None},
                 )
             )
+
+
+# call list_nodes once to initialize the cache
+list_nodes()
