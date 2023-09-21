@@ -51,7 +51,7 @@ class GUINode:
     node_ref: NodeRef
 
 
-def draw_data(node: NodeRef, data: Message, plot: List[int], minmax: List[int], margin: float = 0.1, shrinking: float = 0.001):
+def draw_data(node: NodeRef, data: Message, plot: List[int], minmax: List[int], margin: float = 0.1, shrinking: float = 0.005):
     """
     This function handles drawing numerical data to a plot. Array shapes are handled as follows:
     - 0D (single number): the data is drawn as a horizontal line.
@@ -242,7 +242,7 @@ class Window:
                     plot = dpg.add_plot(
                         label=name,
                         width=175,
-                        height=100,
+                        height=130,
                         no_menus=True,
                         no_box_select=True,
                         no_mouse_pos=True,
