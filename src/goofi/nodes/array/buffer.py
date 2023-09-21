@@ -29,7 +29,11 @@ class Buffer(Node):
             # extend the buffer
             maxlen = self.params.buffer.size.value
             axis = self.params.buffer.axis.value
-            self.buffer = np.concatenate((self.buffer, val.data), axis=axis)
+            try:
+                self.buffer = np.concatenate((self.buffer, val.data), axis=axis)
+            except ValueError:
+                # data shape changed, reset buffer
+                self.buffer = np.array(val.data)
 
             # remove old data
             if self.buffer.shape[axis] > maxlen:
