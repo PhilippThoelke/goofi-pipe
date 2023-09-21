@@ -21,9 +21,9 @@ class LSLClient(Node):
 
     def client_thread(self):
         """Start the client and wait until running is set to False."""
-        client = MNE_LSLClient(host=self.params.lsl_stream.stream_name.value, wait_max=0.5, verbose=False)
+        self.client = MNE_LSLClient(host=self.params.lsl_stream.stream_name.value, wait_max=0.5, verbose=False)
         try:
-            client.start()
+            self.client.start()
         except RuntimeError:
             self.running = False
             return
@@ -32,12 +32,12 @@ class LSLClient(Node):
             raise RuntimeError("Data iterator already exists. The previous client was not stopped properly.")
 
         # grab the data iterator
-        self.data_iterator = client.iter_raw_buffers()
+        self.data_iterator = self.client.iter_raw_buffers()
 
         while self.running:
             time.sleep(0.1)
 
-        client.stop()
+        self.client.stop()
 
     def setup(self, init: bool = True):
         """
@@ -82,8 +82,9 @@ class LSLClient(Node):
         if data.size == 0:
             return None
 
-        # TODO: return relevant metadata from self.client.info
-        return {"out": (data, {})}
+        # TODO: add all relevant metadata from self.client.info
+        meta = {"sfreq": self.client.info["sfreq"], "dim0": self.client.info["ch_names"]}
+        return {"out": (data, meta)}
 
     def lsl_stream_stream_name_changed(self, value: str) -> None:
         assert value != "", "Stream name cannot be empty."
