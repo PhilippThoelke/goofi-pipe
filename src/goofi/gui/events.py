@@ -102,7 +102,7 @@ def escape(win):
 # the key handler map maps key press events to functions that handle them
 KEY_HANDLER_MAP = {
     dpg.mvKey_Delete: delete_selected_item,
-    dpg.mvKey_X: delete_selected_item,
+    # dpg.mvKey_X: delete_selected_item, # TODO: filter out when editing some text field
     dpg.mvKey_Tab: create_node,
     dpg.mvKey_Escape: escape,
 }
