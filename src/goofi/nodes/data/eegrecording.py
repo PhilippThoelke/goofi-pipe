@@ -1,4 +1,3 @@
-import logging
 import threading
 import time
 from typing import Any, Dict, Tuple
@@ -8,8 +7,6 @@ from mne.datasets import eegbci
 from mne_realtime import MockLSLStream
 
 from goofi.node import Node
-
-logger = logging.getLogger(__name__)
 
 
 class EEGRecording(Node):
@@ -52,7 +49,8 @@ class EEGRecording(Node):
         if self.params.recording.use_example_data.value:
             if self.params.recording.file_path.value != "":
                 # both use_example_data and file_path are set
-                logger.warning("Both 'use_example_data' and 'file_path' are set. Using example data.")
+                # TODO: add proper logging
+                print("Both 'use_example_data' and 'file_path' are set. Using example data.")
         elif self.params.recording.file_path.value == "":
             # either use example data or a file path must be set
             raise ValueError("File path cannot be empty if 'Use Example Data' is False.")

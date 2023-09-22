@@ -1,22 +1,17 @@
 import importlib
-import logging
 from typing import Dict
 
 from goofi.gui.window import Window
 from goofi.message import Message, MessageType
 from goofi.node_helpers import NodeRef
 
-logging.basicConfig(
-    level=logging.INFO,
-    style="{",
-    format="{asctime} | {levelname:^8} | {name:^20} | {message}",
-    datefmt="%Y-%m-%d %H:%M:%S",
-)
-
-logger = logging.getLogger(__name__)
-
 
 class NodeContainer:
+    """
+    The node container keeps track of all nodes in the manager. It provides methods to add and remove nodes,
+    and to access them by name.
+    """
+
     def __init__(self) -> None:
         self._nodes: Dict[str, NodeRef] = {}
 
@@ -65,7 +60,8 @@ class Manager:
     """
 
     def __init__(self, headless: bool = True) -> None:
-        logger.info("Initializing goofi-pipe manager.")
+        # TODO: add proper logging
+        print("Initializing goofi-pipe manager.")
 
         self._headless = headless
         self._running = True
@@ -86,7 +82,8 @@ class Manager:
         `notify_gui` : bool
             Whether to notify the gui to add the node.
         """
-        logger.info(f"Adding node '{name}' from category '{category}'.")
+        # TODO: add proper logging
+        print(f"Adding node '{name}' from category '{category}'.")
 
         # import the node
         mod = importlib.import_module(f"goofi.nodes.{category}.{name.lower()}")
@@ -111,7 +108,8 @@ class Manager:
         `notify_gui` : bool
             Whether to notify the gui to remove the node.
         """
-        logger.info(f"Removing node '{name}'.")
+        # TODO: add proper logging
+        print(f"Removing node '{name}'.")
 
         self.nodes.remove_node(name)
         if not self.headless and notify_gui:
@@ -182,7 +180,8 @@ class Manager:
             # terminate the gui, which calls manager.terminate() with notify_gui=False once it is closed
             Window().terminate()
         else:
-            logger.info("Shutting down goofi-pipe manager.")
+            # TODO: add proper logging
+            print("Shutting down goofi-pipe manager.")
             # terminate the manager
             self._running = False
             for node in self.nodes:

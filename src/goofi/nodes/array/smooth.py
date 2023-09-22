@@ -1,9 +1,6 @@
-import numpy as np
-from mne import pick_channels
-
 from goofi.data import Data, DataType
 from goofi.node import Node
-from goofi.params import IntParam, FloatParam, StringParam
+from goofi.params import IntParam, FloatParam
 from scipy.ndimage import gaussian_filter1d
 
 class Smooth(Node):

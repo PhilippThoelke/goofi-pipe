@@ -1,5 +1,5 @@
-import logging
 import time
+import traceback
 from abc import ABC, abstractmethod
 from copy import deepcopy
 from multiprocessing import Process
@@ -11,8 +11,6 @@ from goofi.data import Data, DataType
 from goofi.message import Message, MessageType
 from goofi.node_helpers import InputSlot, NodeRef, OutputSlot
 from goofi.params import NodeParams
-
-logger = logging.getLogger(__name__)
 
 
 def require_init(func: Callable) -> Callable:
@@ -247,10 +245,8 @@ class Node(ABC):
                 # process data
                 output_data = self.process(**input_data)
             except Exception as e:
-                print(e)
-                self.connection.try_send(Message(MessageType.PROCESSING_ERROR, {"error": str(e)}))
-                # TODO: we don't actually want to log this here, but sending errors seems to be broken
-                logger.error(f"Node {self.__class__.__name__} failed: {e}")
+                error_message = traceback.format_exc()
+                self.connection.try_send(Message(MessageType.PROCESSING_ERROR, {"error": error_message}))
                 continue
 
             if not self.alive:

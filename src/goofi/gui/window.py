@@ -1,4 +1,3 @@
-import logging
 import threading
 import time
 from dataclasses import dataclass
@@ -13,8 +12,6 @@ from goofi.gui import events
 from goofi.message import Message, MessageType
 from goofi.node_helpers import NodeRef, list_nodes
 from goofi.params import BoolParam, FloatParam, IntParam, Param, StringParam
-
-logger = logging.getLogger(__name__)
 
 DTYPE_SHAPE_MAP = {
     DataType.ARRAY: dpg.mvNode_PinShape_CircleFilled,
@@ -68,7 +65,8 @@ def handle_data(gui_node: GUINode, node: NodeRef, data: Message):
     try:
         gui_node.output_draw_handlers[data.content["slot_name"]](node, data)
     except ValueError as e:
-        logger.error(f"Output draw handler for slot {data.content['slot_name']} failed: {e}")
+        # TODO: add proper logging
+        print(f"Output draw handler for slot {data.content['slot_name']} failed: {e}")
 
 
 def draw_data(node: NodeRef, data: Message, plot: List[int], minmax: List[int], margin: float = 0.1, shrinking: float = 0.01):
@@ -225,7 +223,8 @@ class Window:
     def __new__(cls, manager=None):
         if cls._instance is None:
             # instantiate the window thread
-            logger.info("Starting graphical user interface.")
+            # TODO: add proper logging
+            print("Starting graphical user interface.")
             cls._instance = super(Window, cls).__new__(cls)
             threading.Thread(target=cls._instance._initialize, args=(manager,), daemon=True).start()
             # call list_nodes once to initialize the cache
@@ -294,7 +293,7 @@ class Window:
                     output_draw_handlers[name] = partial(draw_data, plot=[xax, yax], minmax=[None, None])
 
             # TODO: register PROCESSING_ERROR message handler and display error messages
-            node.set_message_handler(MessageType.PROCESSING_ERROR, lambda node, data: logger.error(data.content["error"]))
+            node.set_message_handler(MessageType.PROCESSING_ERROR, lambda node, data: print(data.content["error"]))
 
             # add node to node list
             self.nodes[node_name] = GUINode(node_id, in_slots, out_slots, output_draw_handlers, node)
@@ -551,7 +550,8 @@ class Window:
         dpg.start_dearpygui()
         dpg.destroy_context()
 
-        logger.info("Shutting down graphical user interface.")
+        # TODO: add proper logging
+        print("Shutting down graphical user interface.")
 
         # terminate manager
         manager.terminate(notify_gui=False)

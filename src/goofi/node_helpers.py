@@ -1,8 +1,8 @@
 import functools
 import importlib
 import inspect
-import logging
 import pkgutil
+import traceback
 from dataclasses import dataclass, field
 from multiprocessing import Process
 from threading import Thread
@@ -13,8 +13,6 @@ from goofi.connection import Connection
 from goofi.data import Data, DataType
 from goofi.message import Message, MessageType
 from goofi.params import NodeParams
-
-logger = logging.getLogger(__name__)
 
 
 @functools.lru_cache(maxsize=1)
@@ -187,7 +185,9 @@ class NodeRef:
                 try:
                     self.callbacks[msg.type](self, msg)
                 except Exception as e:
-                    logger.error(f"Message callback for {msg.type} failed: {e}")
+                    # TODO: add proper logging
+                    error_msg = traceback.format_exc()
+                    print(f"Message callback for {msg.type} failed: {error_msg}")
                 continue
 
             # built-in message handling
