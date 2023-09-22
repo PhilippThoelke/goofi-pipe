@@ -64,7 +64,7 @@ class Manager:
         # TODO: add proper logging
         print("Starting goofi-pipe...")
         # TODO: list_nodes can probably be more efficient
-        list_nodes()
+        list_nodes(verbose=True)
 
         # TODO: add proper logging
         print("Initializing goofi-pipe manager.")

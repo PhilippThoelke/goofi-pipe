@@ -16,17 +16,23 @@ from goofi.params import NodeParams
 
 
 @functools.lru_cache(maxsize=1)
-def list_nodes() -> List[Type]:
+def list_nodes(verbose: bool = False) -> List[Type]:
     """
     Gather a list of all available nodes in the goofi.nodes module.
+
+    ### Parameters
+    `verbose` : bool
+        If True, print the names of all available nodes to the console.
 
     ### Returns
     List[Type[None]]
         A list containing the classes of all available nodes.
     """
+    first_module = True
 
     def _list_nodes_recursive(nodes=None, parent_module=goofi_nodes):
         from goofi.node import Node
+        nonlocal first_module
 
         if nodes is None:
             # first call, initialize the list
@@ -36,6 +42,17 @@ def list_nodes() -> List[Type]:
         for info in pkgutil.walk_packages(parent_module.__path__):
             module = importlib.import_module(f"{parent_module.__name__}.{info.name}")
 
+            if verbose:
+                # print module name
+                parts = module.__name__.split(".")
+                if len(parts) == 3:
+                    if first_module:
+                        first_module = False
+                    else:
+                        print()
+                    # module is a node category
+                    print(f"- {parts[2]}:",end="")
+
             if info.ispkg:
                 # recursively list nodes in submodules
                 _list_nodes_recursive(nodes, module)
@@ -43,10 +60,23 @@ def list_nodes() -> List[Type]:
 
             # current module is a node, add it to the list
             members = inspect.getmembers(module, inspect.isclass)
-            nodes.extend([cls for _, cls in members if issubclass(cls, Node) and cls is not Node])
+            new_nodes = [cls for _, cls in members if issubclass(cls, Node) and cls is not Node]
+
+            if len(new_nodes) != 1:
+                raise ValueError(f"Expected exactly one node in module {module.__name__}, got {len(new_nodes)}")
+
+            if verbose:
+                print(f"  {new_nodes[0].__name__}", end="")
+
+            nodes.extend(new_nodes)
         return nodes
 
-    return _list_nodes_recursive()
+    if verbose:
+        print("Discovering goofi-pipe nodes...")
+    res = _list_nodes_recursive()
+    if verbose:
+        print("\n")
+    return res
 
 
 @dataclass
