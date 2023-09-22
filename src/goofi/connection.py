@@ -1,3 +1,4 @@
+import pickle
 from abc import ABC, abstractmethod
 from multiprocessing import Pipe
 from multiprocessing.connection import _ConnectionBase
@@ -108,7 +109,7 @@ class MultiprocessingConnection(Connection):
     def recv(self) -> object:
         try:
             return self.conn.recv()
-        except (OSError, EOFError, TypeError):
+        except (OSError, EOFError, TypeError, pickle.UnpicklingError):
             raise ConnectionError("Connection closed")
 
     def close(self) -> None:
