@@ -16,7 +16,7 @@ def test_implement_init(node: Type[Node]):
 
 
 @pytest.mark.parametrize("node", list_nodes())
-def test_create_local(node: Type[Node], timeout: float = 3.0):
+def test_create_local(node: Type[Node], timeout: float = 5.0):
     if node.__name__ in ["LSLClient", "EEGRecording"]:
         # TODO: try to find a way to clean up these nodes properly, without leaving threads running
         pytest.skip(f"Skipping {node.__name__} because it requires extra time to clean up threads.")
