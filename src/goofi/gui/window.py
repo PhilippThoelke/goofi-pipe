@@ -2,7 +2,7 @@ import threading
 import time
 from dataclasses import dataclass
 from functools import partial
-from typing import Dict, List, Optional, Tuple
+from typing import Callable, Dict, List, Optional, Tuple
 
 import dearpygui.dearpygui as dpg
 import numpy as np
@@ -10,7 +10,7 @@ import numpy as np
 from goofi.data import DataType
 from goofi.gui import events
 from goofi.message import Message, MessageType
-from goofi.node_helpers import NodeRef, list_nodes
+from goofi.node_helpers import NodeRef
 from goofi.params import BoolParam, FloatParam, IntParam, Param, StringParam
 
 DTYPE_SHAPE_MAP = {
@@ -206,6 +206,92 @@ def add_param(parent: int, group: str, name: str, param: Param, node: NodeRef) -
             raise NotImplementedError(f"Parameter type {type(param)} not implemented.")
 
 
+def add_output_slot(parent: int, name: str, closed: bool = False, size: Tuple[int, int] = (175, 100)) -> Tuple[int, int]:
+    """
+    Add an output slot to the GUI, which consists of a collapsable header and a plot.
+
+    ### Parameters
+    `parent` : int
+        The parent item (the node attribute).
+    `name` : str
+        The name of the output slot.
+    `closed` : bool
+        Whether the headers should be closed initially.
+    `size` : Tuple[int, int]
+        The size of the plot.
+
+    ### Returns
+    `xax` : int
+        The x-axis item.
+    `yax` : int
+        The y-axis item.
+    """
+
+    def header_callback(_1, _2, items: List[int]):
+        """
+        Event callback for the collapsable header, both for general clicks, and for toggle_open events.
+        This is a workaround for the fact that toggle_close events don't exist. As toggle_open is always
+        called after click, clicking on the header always closes it, so the toggle_open callback is used
+        reopen it if the internal header state is open.
+
+        ### Parameters
+        `items` : List[int]
+            A list of four items: a bool indicating to close the header, the header, the window, and the plot.
+        """
+        close, header, window, plot = items
+        header_height = dpg.get_item_state(header)["rect_size"][1]
+
+        if close:
+            # header was closed, shrink window to header size
+            dpg.set_item_height(window, header_height)
+        else:
+            # header was opened, expand window to header size plus plot size
+            plot_height = dpg.get_item_state(plot)["rect_size"][1]
+            dpg.set_item_height(window, header_height + plot_height + 4)  # magic + 4 to avoid scroll bar
+
+    # NOTE: The user_data lists are used to pass data to the callbacks. The first element is a bool, which
+    # is used to indicate whether the header was closed or opened. The remaining elements are the header,
+    # window, and plot items. Due to the way DearPyGui registers callbacks we can not use partials here.
+    user_data_open, user_data_close = [False], [True]
+    # register handlers
+    with dpg.item_handler_registry() as reg:
+        dpg.add_item_clicked_handler(callback=header_callback, user_data=user_data_close)
+        dpg.add_item_toggled_open_handler(callback=header_callback, user_data=user_data_open)
+
+    # NOTE: we initially set the height to 1 to avoid the node reaching out of the window, which would break the
+    # initial header_callback call as the header and plot sizes according to DearPyGui would be 0.
+    # The child window is needed, because otherwise the header will expand to fill the entire node editor window.
+    with dpg.child_window(width=size[0], height=1, parent=parent) as window:
+        with dpg.collapsing_header(
+            label=name, default_open=not closed, open_on_double_click=False, open_on_arrow=False, closable=False
+        ) as header:
+            # create plot
+            plot = dpg.add_plot(
+                width=size[0],
+                height=size[1],
+                no_menus=True,
+                no_box_select=True,
+                no_mouse_pos=True,
+                no_highlight=True,
+                no_child=True,
+            )
+            # add x and y axis
+            axis_kwargs = dict(parent=plot, no_gridlines=True, no_tick_marks=True, lock_min=True, lock_max=True)
+            xax = dpg.add_plot_axis(dpg.mvXAxis, no_tick_labels=True, **axis_kwargs)
+            yax = dpg.add_plot_axis(dpg.mvYAxis, no_tick_labels=False, **axis_kwargs)
+
+            # store header, window and plot in user_data for the two callbacks
+            user_data_open.extend([header, window, plot])
+            user_data_close.extend([header, window, plot])
+            # bind the two callbacks to the header
+            dpg.bind_item_handler_registry(header, reg)
+
+            # schedule the header callback to set up the window sizes
+            initial_args = user_data_close if closed else user_data_open
+            threading.Timer(0.1, header_callback, [None, None, initial_args]).start()
+    return xax, yax
+
+
 class Window:
     """
     The graphical user interface window, implemented as a threaded singleton. The window is created
@@ -257,37 +343,7 @@ class Window:
                 slot_kwargs = dict(label=name, attribute_type=dpg.mvNode_Attr_Output, shape=DTYPE_SHAPE_MAP[dtype])
                 with dpg.node_attribute(**slot_kwargs) as attr:
                     out_slots[name] = attr
-
-                    # create plot
-                    plot = dpg.add_plot(
-                        label=name,
-                        width=175,
-                        height=130,
-                        no_menus=True,
-                        no_box_select=True,
-                        no_mouse_pos=True,
-                        no_highlight=True,
-                        no_child=True,
-                    )
-                    # x-axis
-                    xax = dpg.add_plot_axis(
-                        dpg.mvXAxis,
-                        parent=plot,
-                        no_gridlines=True,
-                        no_tick_marks=True,
-                        no_tick_labels=True,
-                        lock_min=True,
-                        lock_max=True,
-                    )
-                    # y-axis
-                    yax = dpg.add_plot_axis(
-                        dpg.mvYAxis,
-                        parent=plot,
-                        no_gridlines=True,
-                        no_tick_marks=True,
-                        lock_min=True,
-                        lock_max=True,
-                    )
+                    xax, yax = add_output_slot(attr, name, closed = len(node.output_slots) > 2)
                     output_draw_handlers[name] = partial(draw_data, plot=[xax, yax], minmax=[None, None])
 
             # TODO: register PROCESSING_ERROR message handler and display error messages
