@@ -51,7 +51,7 @@ class GUINode:
     node_ref: NodeRef
 
 
-def draw_data(node: NodeRef, data: Message, plot: List[int], minmax: List[int], margin: float = 0.1, shrinking: float = 0.005):
+def draw_data(node: NodeRef, data: Message, plot: List[int], minmax: List[int], margin: float = 0.1, shrinking: float = 0.01):
     """
     This function handles drawing numerical data to a plot. Array shapes are handled as follows:
     - 0D (single number): the data is drawn as a horizontal line.
@@ -100,7 +100,7 @@ def draw_data(node: NodeRef, data: Message, plot: List[int], minmax: List[int], 
             # autoscale x-axis
             dpg.set_axis_limits(plot[0], xs.min(), xs.max())
             # set y-axis limits
-            dpg.set_axis_limits(plot[1], minmax[0] - minmax[0] * margin, minmax[1] + minmax[1] * margin)
+            dpg.set_axis_limits(plot[1], minmax[0] - abs(minmax[0]) * margin, minmax[1] + abs(minmax[1]) * margin)
         elif value.ndim == 2:
             # remove extra data series
             while len(plot) > value.shape[0] + 2:
