@@ -38,22 +38,59 @@ class Biotuner(Node):
         data.data = np.squeeze(data.data)
         if data.data.ndim > 1:
             raise ValueError("Data must be 1D")
+        
+        (peaks,
+        extended_peaks,
+        metrics,
+        tuning,
+        harm_tuning,
+        amps,
+    ) = biotuner_realtime(
+        data.data,
+        1000,
+        n_peaks=self.params["biotuner"]["n_peaks"].value,
+        peaks_function=self.params["biotuner"]["peaks_function"].value,
+        min_freq=self.params["biotuner"]["f_min"].value,
+        max_freq=self.params["biotuner"]["f_max"].value,
+        precision=self.params["biotuner"]["precision"].value,)
 
-        (
-            peaks,
-            extended_peaks,
-            metrics,
-            tuning,
-            harm_tuning,
-            amps,
-        ) = biotuner_realtime(
-            data.data,
-            data.meta["sfreq"],
-            n_peaks=self.params["biotuner"]["n_peaks"].value,
-            peaks_function=self.params["biotuner"]["peaks_function"].value,
-            min_freq=self.params["biotuner"]["f_min"].value,
-            max_freq=self.params["biotuner"]["f_max"].value,
+        print(metrics['harmsim'])
+        return {"harmsim": (np.array([metrics['harmsim']]), data.meta),
+                "tenney": (np.array([metrics['tenney']]), data.meta),
+                "subharm_tension": (np.array([metrics['subharm_tension'][0]]), data.meta),
+                "cons": (np.array([metrics['cons']]), data.meta),
+                "peaks_ratios_tuning": (np.array(tuning), data.meta),
+                "harm_tuning": (np.array(harm_tuning), data.meta),
+                "peaks": (np.array(peaks), data.meta),
+                "amps": (np.array(amps), data.meta),
+                "extended_peaks": (np.array(extended_peaks), data.meta)}
+
+
+
+def biotuner_realtime(
+        data, Fs, n_peaks=5, peaks_function="EMD", min_freq=1, max_freq=65, precision=0.1
+    ):
+        bt_plant = compute_biotuner(peaks_function=peaks_function, sf=Fs)
+        bt_plant.peaks_extraction(
+            np.array(data),
+            graph=False,
+            min_freq=min_freq,
+            max_freq=max_freq,
+            precision=precision,
+            nIMFs=5,
+            n_peaks=n_peaks,
+            smooth_fft=2,
         )
+        bt_plant.peaks_extension(method="harmonic_fit")
+        bt_plant.compute_peaks_metrics(n_harm=3, delta_lim=250)
+        if hasattr(bt_plant, "all_harmonics"):
+            harm_tuning = harmonic_tuning(bt_plant.all_harmonics)
+        else:
+            harm_tuning = [0, 1]
+        peaks = bt_plant.peaks
+        amps = bt_plant.amps
+        extended_peaks = bt_plant.extended_peaks
+        metrics = bt_plant.peaks_metrics
 
         return {
             "harmsim": (np.array([metrics["harmsim"]]), data.meta),
