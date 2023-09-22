@@ -99,12 +99,14 @@ class NodeParams:
 
         # convert values to Param objects
         for group, params in data.items():
+            if not isinstance(params, dict):
+                raise TypeError(f"Expected dict, got {type(params)}.")
             for param_name, param in params.items():
                 if not isinstance(param, Param):
                     if type(param) not in TYPE_PARAM_MAP:
                         raise TypeError(
                             f"Invalid parameter type {type(param).__name__}. Must be one of "
-                            f"{list(map(lambda x:x.__name__,TYPE_PARAM_MAP.keys()))}"
+                            f"{list(map(lambda x:x.__name__,TYPE_PARAM_MAP.keys()))}."
                         )
                     data[group][param_name] = TYPE_PARAM_MAP[type(param)](param)
 
