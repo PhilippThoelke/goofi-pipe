@@ -31,7 +31,7 @@ class Select(Node):
 
         idxs = pick_channels(chs, include=include, exclude=exclude, ordered=False)
 
-        selected = data.data[idxs]
+        selected = np.squeeze(data.data[idxs])
         data.meta[f"dim{axis}"] = [chs[i] for i in idxs]
 
         return {"out": (selected, data.meta)}
