@@ -1,5 +1,4 @@
 import numpy as np
-from biotuner.harmonic_connectivity import harmonic_connectivity
 
 from goofi.data import Data, DataType
 from goofi.node import Node
@@ -49,11 +48,29 @@ class Connectivity(Node):
         return {"matrix": (harm_conn, data.meta)}
 
 
+connectivity_fn = None
+
+
 def compute_conn_matrix_single(
-    data, sf, peaks_function="EMD", min_freq=2, max_freq=45, precision=0.1, n_peaks=5, metric="harmsim"
+    data: np.ndarray,
+    sfreq: float,
+    peaks_function: str = "EMD",
+    min_freq: float = 2.0,
+    max_freq: float = 45.0,
+    precision=0.1,
+    n_peaks: int = 5,
+    metric: str = "harmsim",
 ):
+    # import the connectivity function here to avoid loading it on startup
+    global connectivity_fn
+    if connectivity_fn is None:
+        from biotuner.harmonic_connectivity import harmonic_connectivity
+
+        connectivity_fn = harmonic_connectivity
+
+    # compute connectivity matrix
     bt_conn = harmonic_connectivity(
-        sf=sf,
+        sf=sfreq,
         data=data,
         peaks_function=peaks_function,
         precision=precision,

@@ -1,5 +1,4 @@
 import numpy as np
-from biotuner.biotuner_object import compute_biotuner, harmonic_tuning
 
 from goofi.data import Data, DataType
 from goofi.node import Node
@@ -66,8 +65,20 @@ class Biotuner(Node):
         }
 
 
-def biotuner_realtime(data, Fs, n_peaks=5, peaks_function="EMD", min_freq=1, max_freq=65, precision=0.1):
-    bt = compute_biotuner(peaks_function=peaks_function, sf=Fs)
+compute_biotuner_fn, harmonic_tuning_fn = None, None
+
+
+def biotuner_realtime(data, sfreq, n_peaks=5, peaks_function="EMD", min_freq=1, max_freq=65, precision=0.1):
+    # import the biotuner function here to avoid loading it on startup
+    global compute_biotuner_fn, harmonic_tuning_fn
+    if compute_biotuner_fn is None or harmonic_tuning_fn is None:
+        from biotuner.biotuner_object import compute_biotuner, harmonic_tuning
+
+        compute_biotuner_fn = compute_biotuner
+        harmonic_tuning_fn = harmonic_tuning
+
+    # run biotuner peak extraction
+    bt = compute_biotuner_fn(peaks_function=peaks_function, sf=sfreq)
     try:
         bt.peaks_extraction(
             np.array(data),
@@ -90,7 +101,7 @@ def biotuner_realtime(data, Fs, n_peaks=5, peaks_function="EMD", min_freq=1, max
 
     bt.compute_peaks_metrics(n_harm=3, delta_lim=250)
     if hasattr(bt, "all_harmonics"):
-        harm_tuning = harmonic_tuning(bt.all_harmonics)
+        harm_tuning = harmonic_tuning_fn(bt.all_harmonics)
     else:
         harm_tuning = [0, 1]
     peaks = bt.peaks
