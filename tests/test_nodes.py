@@ -1,9 +1,10 @@
+import time
 from typing import Type
 
 import pytest
 
-from goofi.node_helpers import list_nodes
 from goofi.node import Node
+from goofi.node_helpers import list_nodes
 
 
 @pytest.mark.parametrize("node", list_nodes())
@@ -15,12 +16,18 @@ def test_implement_init(node: Type[Node]):
 
 
 @pytest.mark.parametrize("node", list_nodes())
-def test_create_local(node: Type[Node]):
+def test_create_local(node: Type[Node], timeout: float = 3.0):
     if node.__name__ in ["LSLClient", "EEGRecording"]:
         # TODO: try to find a way to clean up these nodes properly, without leaving threads running
         pytest.skip(f"Skipping {node.__name__} because it requires extra time to clean up threads.")
 
-    node.create_local()[0].terminate()
+    ref, n = node.create_local()
+    ref.terminate()
+
+    start = time.time()
+    while time.time() - start < timeout and n.alive:
+        time.sleep(0.01)
+    assert not n.alive, f"Node {node.__name__} needed more than {timeout}s to terminate."
 
 
 @pytest.mark.parametrize("node", list_nodes())
