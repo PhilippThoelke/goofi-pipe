@@ -24,14 +24,12 @@ class Biotuner(Node):
         }
 
     def config_params():
-        return {
-            "biotuner": {
-                "n_peaks": IntParam(5, 1, 10),
-                "f_min": FloatParam(2.0, 0.1, 50.0),
-                "f_max": FloatParam(30.0, 1.0, 100.0),
-                "peaks_function": "EMD",
-            }
-        }
+        return {"biotuner": {"n_peaks": IntParam(5, 1, 10),
+                             "f_min": FloatParam(2.0, 0.1, 50.0),
+                             "f_max": FloatParam(30.0, 1.0, 100.0),
+                             "precision": FloatParam(0.1, 0.01, 10.0),
+                             "peaks_function": "EMD"}}
+                             
 
     def process(self, data: Data):
         if data is None:
