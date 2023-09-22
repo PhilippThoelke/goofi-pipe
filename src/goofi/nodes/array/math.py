@@ -15,14 +15,16 @@ class Math(Node):
     def config_params():
         return {
             "math": {
-                "add_value": FloatParam(0.0, -100.0, 100.0),
-                "mult_value": FloatParam(1.0, -10.0, 10.0),
-                "input_min": FloatParam(0.0, -100.0, 100.0),
-                "input_max": FloatParam(1.0, -100.0, 100.0),
-                "output_min": FloatParam(0.0, -100.0, 100.0),
-                "output_max": FloatParam(1.0, -100.0, 100.0),
-                "add_before_mult": True,
-            }
+                "pre_add": FloatParam(0.0, -10.0, 10.0),
+                "multiply": FloatParam(1.0, -10.0, 10.0),
+                "post_add": FloatParam(0.0, -10.0, 10.0),
+            },
+            "map": {
+                "input_min": FloatParam(0.0, -10.0, 10.0),
+                "input_max": FloatParam(1.0, -10.0, 10.0),
+                "output_min": FloatParam(0.0, -10.0, 10.0),
+                "output_max": FloatParam(1.0, -10.0, 10.0),
+            },
         }
 
     def process(self, data: Data):
@@ -31,18 +33,18 @@ class Math(Node):
 
         signal = np.array(data.data)
 
-        if self.params.math.add_before_mult.value:
-            signal = (signal + self.params.math.add_value.value) * self.params.math.mult_value.value
-        else:
-            signal = signal * self.params.math.mult_value.value + self.params.math.add_value.value
+        # apply math operations
+        signal += self.params.math.pre_add.value
+        signal *= self.params.math.multiply.value
+        signal += self.params.math.post_add.value
 
         # rescale signal from input range to output range
         signal = self.rescale(
             signal,
-            self.params.math.input_min.value,
-            self.params.math.input_max.value,
-            self.params.math.output_min.value,
-            self.params.math.output_max.value,
+            self.params.map.input_min.value,
+            self.params.map.input_max.value,
+            self.params.map.output_min.value,
+            self.params.map.output_max.value,
         )
 
         return {"out": (signal, data.meta)}
