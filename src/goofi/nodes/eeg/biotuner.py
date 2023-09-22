@@ -42,14 +42,7 @@ class Biotuner(Node):
         if data.data.ndim > 1:
             raise ValueError("Data must be 1D")
 
-        (
-            peaks,
-            extended_peaks,
-            metrics,
-            tuning,
-            harm_tuning,
-            amps,
-        ) = biotuner_realtime(
+        result = biotuner_realtime(
             data.data,
             data.meta["sfreq"],
             n_peaks=self.params["biotuner"]["n_peaks"].value,
@@ -58,8 +51,8 @@ class Biotuner(Node):
             max_freq=self.params["biotuner"]["f_max"].value,
             precision=self.params["biotuner"]["precision"].value,
         )
+        peaks, extended_peaks, metrics, tuning, harm_tuning, amps = result
 
-        print(metrics["harmsim"])
         return {
             "harmsim": (np.array([metrics["harmsim"]]), data.meta),
             "tenney": (np.array([metrics["tenney"]]), data.meta),
@@ -73,36 +66,42 @@ class Biotuner(Node):
         }
 
 
-def biotuner_realtime(data, Fs, n_peaks=5, peaks_function="EMD", min_freq=1, max_freq=65):
-    bt_plant = compute_biotuner(peaks_function=peaks_function, sf=Fs)
-    bt_plant.peaks_extraction(
-        np.array(data),
-        graph=False,
-        min_freq=min_freq,
-        max_freq=max_freq,
-        precision=0.1,
-        nIMFs=5,
-        n_peaks=n_peaks,
-        smooth_fft=2,
-    )
-    bt_plant.peaks_extension(method="harmonic_fit")
-    bt_plant.compute_peaks_metrics(n_harm=3, delta_lim=250)
-    if hasattr(bt_plant, "all_harmonics"):
-        harm_tuning = harmonic_tuning(bt_plant.all_harmonics)
+def biotuner_realtime(data, Fs, n_peaks=5, peaks_function="EMD", min_freq=1, max_freq=65, precision=0.1):
+    bt = compute_biotuner(peaks_function=peaks_function, sf=Fs)
+    try:
+        bt.peaks_extraction(
+            np.array(data),
+            graph=False,
+            min_freq=min_freq,
+            max_freq=max_freq,
+            precision=precision,
+            nIMFs=5,
+            n_peaks=n_peaks,
+            smooth_fft=2,
+        )
+    except UnboundLocalError:
+        raise RuntimeError("No peaks found. Try increasing the length of the signal.")
+
+    try:
+        # try computing the extended peaks
+        bt.peaks_extension(method="harmonic_fit")
+    except TypeError:
+        raise RuntimeError("Detected only one peak. The largest peak might be below the minimum frequency.")
+
+    bt.compute_peaks_metrics(n_harm=3, delta_lim=250)
+    if hasattr(bt, "all_harmonics"):
+        harm_tuning = harmonic_tuning(bt.all_harmonics)
     else:
         harm_tuning = [0, 1]
-    # bt_plant.compute_diss_curve(plot=True, input_type='peaks')
-    # bt_plant.compute_spectromorph(comp_chords=True, graph=False)
-    peaks = bt_plant.peaks
-    amps = bt_plant.amps
-    extended_peaks = bt_plant.extended_peaks
-    metrics = bt_plant.peaks_metrics
+    peaks = bt.peaks
+    amps = bt.amps
+    extended_peaks = bt.extended_peaks
+    metrics = bt.peaks_metrics
 
     if not isinstance(metrics["subharm_tension"][0], float):
-        metrics["subharm_tension"] = -1
-    # print(metrics)
+        metrics["subharm_tension"] = [np.nan]
     metrics["harmsim"] = metrics["harmsim"] / 100
     # rescale tenney height from between 4 to 9 to between 0 and 1
     metrics["tenney"] = (metrics["tenney"] - 4) / 5
-    tuning = bt_plant.peaks_ratios
+    tuning = bt.peaks_ratios
     return peaks, extended_peaks, metrics, tuning, harm_tuning, amps
