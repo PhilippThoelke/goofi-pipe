@@ -3,7 +3,7 @@ from typing import Dict
 
 from goofi.gui.window import Window
 from goofi.message import Message, MessageType
-from goofi.node_helpers import NodeRef
+from goofi.node_helpers import NodeRef, list_nodes
 
 
 class NodeContainer:
@@ -60,6 +60,12 @@ class Manager:
     """
 
     def __init__(self, headless: bool = True) -> None:
+        # preload all nodes to avoid delays
+        # TODO: add proper logging
+        print("Starting goofi-pipe...")
+        # TODO: list_nodes can probably be more efficient
+        list_nodes()
+
         # TODO: add proper logging
         print("Initializing goofi-pipe manager.")
 
