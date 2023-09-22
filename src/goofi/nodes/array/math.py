@@ -1,7 +1,8 @@
 import numpy as np
+
 from goofi.data import Data, DataType
 from goofi.node import Node
-from goofi.params import FloatParam, BoolParam  # Imported BoolParam
+from goofi.params import FloatParam
 
 
 class Math(Node):
@@ -20,7 +21,7 @@ class Math(Node):
                 "input_max": FloatParam(1.0, -100.0, 100.0),
                 "output_min": FloatParam(0.0, -100.0, 100.0),
                 "output_max": FloatParam(1.0, -100.0, 100.0),
-                "add_before_mult": True,  # Used BoolParam instead of True
+                "add_before_mult": True,
             }
         }
 
@@ -35,7 +36,7 @@ class Math(Node):
         else:
             signal = signal * self.params.math.mult_value.value + self.params.math.add_value.value
 
-        # Rescale using custom rescale method
+        # rescale signal from input range to output range
         signal = self.rescale(
             signal,
             self.params.math.input_min.value,
@@ -48,5 +49,5 @@ class Math(Node):
 
     @staticmethod
     def rescale(signal, input_min, input_max, output_min, output_max):
-        # Added this custom rescale method
+        # rescale signal from input range to output range
         return ((signal - input_min) / (input_max - input_min)) * (output_max - output_min) + output_min

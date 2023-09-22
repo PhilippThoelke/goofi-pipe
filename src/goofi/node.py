@@ -244,7 +244,7 @@ class Node(ABC):
             try:
                 # process data
                 output_data = self.process(**input_data)
-            except Exception as e:
+            except Exception:
                 error_message = traceback.format_exc()
                 self.connection.try_send(Message(MessageType.PROCESSING_ERROR, {"error": error_message}))
                 continue

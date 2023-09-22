@@ -215,7 +215,7 @@ class NodeRef:
             if msg.type in self.callbacks:
                 try:
                     self.callbacks[msg.type](self, msg)
-                except Exception as e:
+                except Exception:
                     # TODO: add proper logging
                     error_msg = traceback.format_exc()
                     print(f"Message callback for {msg.type} failed: {error_msg}")

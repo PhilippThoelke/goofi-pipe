@@ -2,7 +2,7 @@ import threading
 import time
 from dataclasses import dataclass
 from functools import partial
-from typing import Callable, Dict, List, Optional, Tuple
+from typing import Dict, List, Optional, Tuple
 
 import dearpygui.dearpygui as dpg
 import numpy as np
