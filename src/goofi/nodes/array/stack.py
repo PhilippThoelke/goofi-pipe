@@ -18,4 +18,7 @@ class Stack(Node):
         if a is None or b is None:
             return None
 
-        return {"out": (np.stack([a.data, b.data], axis=self.params.stack.axis.value), {})}
+        # TODO: properly combine metadata from both inputs
+        # TODO: update metadata information after stack
+        # TODO: check if inputs are compatible
+        return {"out": (np.stack([a.data, b.data], axis=self.params.stack.axis.value), a.meta)}
