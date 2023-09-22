@@ -248,6 +248,8 @@ class Node(ABC):
                 output_data = self.process(**input_data)
             except Exception as e:
                 self.connection.try_send(Message(MessageType.PROCESSING_ERROR, {"error": str(e)}))
+                # TODO: we don't actually want to log this here, but sending errors seems to be broken
+                logger.error(f"Node {self.__class__.__name__} failed: {e}")
                 continue
 
             if not self.alive:
