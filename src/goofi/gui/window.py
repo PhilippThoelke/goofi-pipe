@@ -11,7 +11,7 @@ import numpy as np
 from goofi.data import DataType
 from goofi.gui import events
 from goofi.message import Message, MessageType
-from goofi.node_helpers import NodeRef,list_nodes
+from goofi.node_helpers import NodeRef, list_nodes
 from goofi.params import BoolParam, FloatParam, IntParam, Param, StringParam
 
 logger = logging.getLogger(__name__)
