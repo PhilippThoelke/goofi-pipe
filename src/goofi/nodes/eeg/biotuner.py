@@ -42,6 +42,8 @@ class Biotuner(Node):
         if data.data.ndim > 1:
             raise ValueError("Data must be 1D")
 
+<<<<<<< Updated upstream
+<<<<<<< Updated upstream
         (
             peaks,
             extended_peaks,
@@ -72,6 +74,23 @@ class Biotuner(Node):
             "extended_peaks": (np.array(extended_peaks), data.meta),
         }
 
+=======
+=======
+>>>>>>> Stashed changes
+        print(metrics['harmsim'])
+        return {"harmsim": (np.array([metrics['harmsim']]), data.meta),
+                "tenney": (np.array([metrics['tenney']]), data.meta),
+                "subharm_tension": (np.array([metrics['subharm_tension'][0]]), data.meta),
+                "cons": (np.array([metrics['cons']]), data.meta),
+                "peaks_ratios_tuning": (np.array(tuning), data.meta),
+                "harm_tuning": (np.array(harm_tuning), data.meta),
+                "peaks": (np.array(peaks), data.meta),
+                "amps": (np.array(amps), data.meta),
+                "extended_peaks": (np.array(extended_peaks), data.meta)}
+<<<<<<< Updated upstream
+>>>>>>> Stashed changes
+=======
+>>>>>>> Stashed changes
 
 def biotuner_realtime(data, Fs, n_peaks=5, peaks_function="EMD", min_freq=1, max_freq=65):
     bt_plant = compute_biotuner(peaks_function=peaks_function, sf=Fs)
