@@ -48,7 +48,24 @@ class GUINode:
     item: int
     input_slots: Dict[str, int]
     output_slots: Dict[str, int]
+    output_draw_handlers: Dict[str, int]
     node_ref: NodeRef
+
+
+def handle_data(gui_node: GUINode, node: NodeRef, data: Message):
+    """
+    Handle a data message from a node. This function is registered as a message handler for the
+    `MessageType.DATA` message type.
+
+    ### Parameters
+    `name` : str
+        The name of the node.
+    `node` : NodeRef
+        The node reference.
+    `data` : Message
+        The data message.
+    """
+    gui_node.output_draw_handlers[data.content["slot_name"]](node, data)
 
 
 def draw_data(node: NodeRef, data: Message, plot: List[int], minmax: List[int], margin: float = 0.1, shrinking: float = 0.01):
@@ -235,6 +252,7 @@ class Window:
 
             ############### output slots ###############
             out_slots = {}
+            output_draw_handlers = {}
             for name, dtype in node.output_slots.items():
                 slot_kwargs = dict(label=name, attribute_type=dpg.mvNode_Attr_Output, shape=DTYPE_SHAPE_MAP[dtype])
                 with dpg.node_attribute(**slot_kwargs) as attr:
@@ -270,13 +288,15 @@ class Window:
                         lock_min=True,
                         lock_max=True,
                     )
-                    node.set_message_handler(MessageType.DATA, partial(draw_data, plot=[xax, yax], minmax=[None, None]))
+                    output_draw_handlers[name] = partial(draw_data, plot=[xax, yax], minmax=[None, None])
 
             # TODO: register PROCESSING_ERROR message handler and display error messages
             node.set_message_handler(MessageType.PROCESSING_ERROR, lambda node, data: logger.error(data.content["error"]))
 
             # add node to node list
-            self.nodes[node_name] = GUINode(node_id, in_slots, out_slots, node)
+            self.nodes[node_name] = GUINode(node_id, in_slots, out_slots, output_draw_handlers, node)
+            # register node message handler
+            node.set_message_handler(MessageType.DATA, partial(handle_data, self.nodes[node_name]))
 
     @running
     def remove_node(self, name: str) -> None:
