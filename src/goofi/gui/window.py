@@ -95,9 +95,9 @@ def draw_data(node: NodeRef, data: Message, plot: List[int], minmax: List[int], 
             minmax[:] = minmax[0] * (1 - shrinking) + shrinking * minmax[1], minmax[1] * (1 - shrinking) + shrinking * minmax[0]
         # update minmax
         if minmax[0] is None or np.min(value) < minmax[0]:
-            minmax[0] = np.min(value)
+            minmax[0] = np.nanmin(value)
         if minmax[1] is None or np.max(value) > minmax[1]:
-            minmax[1] = np.max(value)
+            minmax[1] = np.nanmax(value)
 
         if value.ndim == 0:
             # extend value to have at least 2 elements
