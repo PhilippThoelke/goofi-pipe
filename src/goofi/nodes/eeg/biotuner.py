@@ -51,7 +51,7 @@ class Biotuner(Node):
             amps,
         ) = biotuner_realtime(
             data.data,
-            data.meta["sfreqq"],
+            data.meta["sfreq"],
             n_peaks=self.params["biotuner"]["n_peaks"].value,
             peaks_function=self.params["biotuner"]["peaks_function"].value,
             min_freq=self.params["biotuner"]["f_min"].value,
