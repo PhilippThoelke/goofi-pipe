@@ -343,7 +343,7 @@ class Window:
                 slot_kwargs = dict(label=name, attribute_type=dpg.mvNode_Attr_Output, shape=DTYPE_SHAPE_MAP[dtype])
                 with dpg.node_attribute(**slot_kwargs) as attr:
                     out_slots[name] = attr
-                    xax, yax = add_output_slot(attr, name, closed = len(node.output_slots) > 2)
+                    xax, yax = add_output_slot(attr, name, closed=len(node.output_slots) > 2)
                     output_draw_handlers[name] = partial(draw_data, plot=[xax, yax], minmax=[None, None])
 
             # TODO: register PROCESSING_ERROR message handler and display error messages

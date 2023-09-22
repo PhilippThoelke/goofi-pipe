@@ -12,7 +12,7 @@ class SerialStream(Node):
     def config_params():
         return {
             "serial": {"sfreq": IntParam(1000, 128, 1000), "auto_select": BoolParam(True), "port": "COM4"},
-            "common": {"buffer_seconds": IntParam(5)}
+            "common": {"buffer_seconds": IntParam(5)},
         }
 
     def config_output_slots():
@@ -28,7 +28,7 @@ class SerialStream(Node):
             ser = serial.Serial(self.detect_serial_port(), 115200, timeout=1)
         else:
             ser = serial.Serial(self.params.serial.port.value, 115200, timeout=1)
-        print('SERIAL PORT OPENED', ser.name)
+        print("SERIAL PORT OPENED", ser.name)
         ESC = b"\xDB"
         END = b"\xC0"
         ESC_END = b"\xDC"
@@ -65,7 +65,7 @@ class SerialStream(Node):
         data = np.array(data)
         times = np.array(times)
         # Additional logic and processing.
-        
+
         meta = {"sfreq": self.params.serial.sfreq.value, "dim0": ["serial"]}
         return {"out": (data, meta)}  # Here, data is your processed data, modify as needed.
 
@@ -75,4 +75,3 @@ class SerialStream(Node):
             if name in port.description or "Serial" in port.description:
                 return port.device
         return None
-

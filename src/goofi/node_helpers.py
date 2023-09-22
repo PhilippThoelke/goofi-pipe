@@ -32,6 +32,7 @@ def list_nodes(verbose: bool = False) -> List[Type]:
 
     def _list_nodes_recursive(nodes=None, parent_module=goofi_nodes):
         from goofi.node import Node
+
         nonlocal first_module
 
         if nodes is None:
@@ -51,7 +52,7 @@ def list_nodes(verbose: bool = False) -> List[Type]:
                     else:
                         print()
                     # module is a node category
-                    print(f"- {parts[2]}:",end="")
+                    print(f"- {parts[2]}:", end="")
 
             if info.ispkg:
                 # recursively list nodes in submodules

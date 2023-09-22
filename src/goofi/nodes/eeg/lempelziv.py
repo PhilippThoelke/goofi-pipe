@@ -5,7 +5,6 @@ from goofi.node import Node
 
 
 class LempelZiv(Node):
-
     def config_input_slots():
         return {"data": DataType.ARRAY}
 
@@ -17,6 +16,7 @@ class LempelZiv(Node):
 
     def setup(self):
         from antropy import lziv_complexity
+
         self.lzc_fn = lziv_complexity
 
     def process(self, data: Data):
