@@ -65,7 +65,10 @@ def handle_data(gui_node: GUINode, node: NodeRef, data: Message):
     `data` : Message
         The data message.
     """
-    gui_node.output_draw_handlers[data.content["slot_name"]](node, data)
+    try:
+        gui_node.output_draw_handlers[data.content["slot_name"]](node, data)
+    except ValueError as e:
+        logger.error(f"Output draw handler for slot {data.content['slot_name']} failed: {e}")
 
 
 def draw_data(node: NodeRef, data: Message, plot: List[int], minmax: List[int], margin: float = 0.1, shrinking: float = 0.01):
