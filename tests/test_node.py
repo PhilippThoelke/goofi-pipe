@@ -292,7 +292,7 @@ def test_serialize_yaml():
         nonlocal result
         result = msg.content
 
-    ref, n = FullDummyNode.create_local()
+    ref, _ = FullDummyNode.create_local()
     ref.set_message_handler(MessageType.SERIALIZE_RESPONSE, callback)
 
     # serialize the node
