@@ -1,9 +1,30 @@
 import pytest
+import yaml
 
 from goofi import params
 from goofi.params import DEFAULT_PARAMS, NodeParams
 
 from .utils import list_param_types
+
+
+def full_node_params(n_groups: int = 2) -> NodeParams:
+    """
+    Returns a NodeParams object with all parameter types.
+
+    ### Parameters
+    `n_groups` : int
+        The number of parameter groups to create.
+
+    ### Returns
+    NodeParams
+        A NodeParams object with all parameter types.
+    """
+    params = {}
+    for i in range(n_groups):
+        params[f"group{i}"] = {}
+        for param_type in list_param_types():
+            params[f"group{i}"][f"param{param_type.__name__}"] = param_type.default()
+    return NodeParams(params)
 
 
 def test_default_members():
@@ -133,3 +154,18 @@ def test_param_group_values():
 def test_param_group_items():
     p = NodeParams(DEFAULT_PARAMS)
     assert p.common.items() == DEFAULT_PARAMS["common"].items(), "NodeParams group 'common' should have the correct items."
+
+
+def test_serialize():
+    p = full_node_params()
+
+    # make sure the serialized data can be converted to YAML
+    serialized = p.serialize()
+    serialized_str = yaml.dump(serialized)
+
+    # reconstruct from the serialized data
+    reconstructed = yaml.load(serialized_str, Loader=yaml.FullLoader)
+    p2 = NodeParams(reconstructed)
+
+    # make sure the reconstructed object is equal to the original
+    assert p == p2, "NodeParams should be equal after serialization and reconstruction."

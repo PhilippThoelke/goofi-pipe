@@ -215,6 +215,18 @@ class Node(ABC):
                                 {"error": f"Parameter callback for {group}.{param_name} failed: {e}"},
                             )
                         )
+            elif msg.type == MessageType.SERIALIZE_REQUEST:
+                # serialize input and output slots, as well as the node's parameters
+                in_slots = {name: slot.serialize() for name, slot in self.input_slots.items()}
+                out_slots = {name: slot.serialize() for name, slot in self.output_slots.items()}
+                params = self.params.serialize()
+                # return the serialized data
+                self.connection.try_send(
+                    Message(
+                        MessageType.SERIALIZE_RESPONSE,
+                        {"input_slots": in_slots, "output_slots": out_slots, "params": params},
+                    )
+                )
             else:
                 # TODO: handle the incoming message
                 raise NotImplementedError(f"Message type {msg.type} not implemented.")

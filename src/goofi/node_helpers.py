@@ -6,7 +6,7 @@ import traceback
 from dataclasses import dataclass, field
 from multiprocessing import Process
 from threading import Thread
-from typing import Callable, Dict, List, Optional, Tuple, Type
+from typing import Any, Callable, Dict, List, Optional, Tuple, Type
 
 from goofi import nodes as goofi_nodes
 from goofi.connection import Connection
@@ -100,6 +100,21 @@ class InputSlot:
     trigger_process: bool = True
     data: Optional[Data] = None
 
+    def serialize(self) -> Dict[str, Any]:
+        """
+        Serializes the input slot to a dict.
+
+        ### Returns
+        Dict[str, Any]
+            A dict containing the input slot's dtype and trigger_process flag.
+        """
+        return {"dtype": self.dtype.name, "trigger_process": self.trigger_process}
+
+    def __post_init__(self):
+        if isinstance(self.dtype, str):
+            # convert dtype from string to DataType
+            self.dtype = DataType[self.dtype]
+
 
 @dataclass
 class OutputSlot:
@@ -114,6 +129,21 @@ class OutputSlot:
 
     dtype: DataType
     connections: List[Tuple[str, Connection]] = field(default_factory=list)
+
+    def serialize(self) -> Dict[str, Any]:
+        """
+        Serializes the output slot to a dict.
+
+        ### Returns
+        Dict[str, Any]
+            A dict containing the output slot's dtype and connections.
+        """
+        return {"dtype": self.dtype.name, "connections": self.connections}
+
+    def __post_init__(self):
+        if isinstance(self.dtype, str):
+            # convert dtype from string to DataType
+            self.dtype = DataType[self.dtype]
 
 
 @dataclass

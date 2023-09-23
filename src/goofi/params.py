@@ -1,7 +1,7 @@
 from abc import ABC, abstractmethod
 from collections import namedtuple
 from copy import deepcopy
-from dataclasses import dataclass
+from dataclasses import asdict, dataclass
 from typing import Any, Dict, Union
 
 
@@ -103,6 +103,13 @@ class NodeParams:
                 raise TypeError(f"Expected dict, got {type(params)}.")
             for param_name, param in params.items():
                 if not isinstance(param, Param):
+                    if isinstance(param, dict):
+                        # reconstruct serialized param object
+                        param_type = param.pop("_type")
+                        data[group][param_name] = globals()[param_type](**param)
+                        continue
+
+                    # convert to Param object
                     if type(param) not in TYPE_PARAM_MAP:
                         raise TypeError(
                             f"Invalid parameter type {type(param).__name__}. Must be one of "
@@ -130,6 +137,25 @@ class NodeParams:
             )
 
             self._data[group] = NamedTupleClass(**params)
+
+    def serialize(self) -> Dict[str, Dict[str, Any]]:
+        """
+        Serialize the parameters to a dictionary.
+
+        ### Returns
+        `Dict[str, Dict[str, Any]]`
+            A dictionary of parameter groups, where each group is a dictionary of parameter names and values.
+        """
+        serialized_data = {}
+        for group, params in self._data.items():
+            serialized_params = {}
+            for name, param in params.items():
+                param_type = type(param).__name__
+                param = asdict(param)
+                param["_type"] = param_type
+                serialized_params[name] = param
+            serialized_data[group] = serialized_params
+        return serialized_data
 
     def __getattr__(self, group: str):
         # don't allow access to the _data attribute

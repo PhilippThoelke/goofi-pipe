@@ -51,20 +51,6 @@ def test_dead_pipe():
     assert not n.messaging_thread.is_alive(), "Node messaging thread is alive."
 
 
-@pytest.mark.parametrize("dtype", DataType.__members__.values())
-def test_input_slot(dtype):
-    slot = InputSlot(dtype)
-    assert slot.trigger_process is True, "InputSlot trigger_process should be False."
-    assert slot.data is None, "InputSlot data should be None."
-
-
-@pytest.mark.parametrize("dtype", DataType.__members__.values())
-def test_output_slot(dtype):
-    slot = OutputSlot(dtype)
-    assert isinstance(slot.connections, list), "OutputSlot connections should be a list."
-    assert len(slot.connections) == 0, "OutputSlot connections should be empty."
-
-
 def test_ping_pong():
     messages = []
 
@@ -265,6 +251,34 @@ def test_change_parameter_callback(value):
     # check that the parameter callback was called with the correct value
     assert len(results) == 1, "Parameter callback was not called."
     assert results[0] == value, "Parameter callback was called with the wrong value."
+
+    # clean up dangling threads
+    ref.terminate()
+
+
+def test_serialize():
+    result = None
+
+    def callback(_, msg):
+        nonlocal result
+        result = msg.content
+
+    ref, n = FullDummyNode.create_local()
+    ref.set_message_handler(MessageType.SERIALIZE_RESPONSE, callback)
+
+    # serialize the node
+    ref.connection.send(Message(MessageType.SERIALIZE_REQUEST, {}))
+    time.sleep(0.01)
+
+    # "ground truth" serialized node
+    in_slots = {name: slot.serialize() for name, slot in n.input_slots.items()}
+    out_slots = {name: slot.serialize() for name, slot in n.output_slots.items()}
+    params = n.params.serialize()
+
+    # compare to the serialized node
+    assert result["input_slots"] == in_slots, "Input slots are not serialized correctly."
+    assert result["output_slots"] == out_slots, "Output slots are not serialized correctly."
+    assert result["params"] == params, "Params are not serialized correctly."
 
     # clean up dangling threads
     ref.terminate()

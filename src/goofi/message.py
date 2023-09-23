@@ -31,6 +31,11 @@ class MessageType(Enum):
         - `group` (str): The name of the parameter group.
         - `param_name` (str): The name of the parameter.
         - `param_value` (Any): The new parameter value.
+    - `SERIALIZE_REQUEST`: An empty message that requests a node to serialize its state and send it back.
+    - `SERIALIZE_RESPONSE`: The response to a serialize request message.
+        - `input_slots` (Dict[str, Dict[str, Any]]): A dictionary of input slots, represented as dictionaries.
+        - `output_slots` (Dict[str, Dict[str, Any]]): A dictionary of output slots, represented as dictionaries.
+        - `params` (Dict[str, Any]): The NodeParams object, represented as a dictionary.
     """
 
     ADD_OUTPUT_PIPE = 1
@@ -42,6 +47,8 @@ class MessageType(Enum):
     TERMINATE = 7
     PROCESSING_ERROR = 8
     PARAMETER_UPDATE = 9
+    SERIALIZE_REQUEST = 10
+    SERIALIZE_RESPONSE = 11
 
 
 @dataclass
@@ -101,3 +108,5 @@ class Message:
             self.require_fields(error=str)
         elif self.type == MessageType.PARAMETER_UPDATE:
             self.require_fields(group=str, param_name=str, param_value=object)
+        elif self.type == MessageType.SERIALIZE_RESPONSE:
+            self.require_fields(input_slots=dict, output_slots=dict, params=dict)
