@@ -1,6 +1,7 @@
 import time
 
 import pytest
+import yaml
 
 from goofi.connection import MultiprocessingConnection
 from goofi.data import DataType
@@ -279,6 +280,31 @@ def test_serialize():
     assert result["input_slots"] == in_slots, "Input slots are not serialized correctly."
     assert result["output_slots"] == out_slots, "Output slots are not serialized correctly."
     assert result["params"] == params, "Params are not serialized correctly."
+
+    # clean up dangling threads
+    ref.terminate()
+
+
+def test_serialize_yaml():
+    result = None
+
+    def callback(_, msg):
+        nonlocal result
+        result = msg.content
+
+    ref, n = FullDummyNode.create_local()
+    ref.set_message_handler(MessageType.SERIALIZE_RESPONSE, callback)
+
+    # serialize the node
+    ref.connection.send(Message(MessageType.SERIALIZE_REQUEST, {}))
+    time.sleep(0.01)
+
+    # make sure the serialized data can be converted to YAML (with exception of the output slot connections)
+    for slot in result["output_slots"].values():
+        del slot["connections"]
+
+    serialized = yaml.dump(result)
+    yaml.load(serialized, Loader=yaml.FullLoader)
 
     # clean up dangling threads
     ref.terminate()
