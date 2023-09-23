@@ -171,8 +171,15 @@ class Node(ABC):
                     slot.connections.remove((msg.content["slot_name_in"], msg.content["node_connection"]))
                 except ValueError:
                     # connection doesn't exist
-                    # TODO: send error message to manager
-                    pass
+                    self.connection.try_send(
+                        Message(
+                            MessageType.PROCESSING_ERROR,
+                            {
+                                "error": f"Request to remove non-existent connection from "
+                                f"{msg.content['slot_name_out']} to {msg.content['slot_name_in']}."
+                            },
+                        )
+                    )
             elif msg.type == MessageType.DATA:
                 # received data from another node
                 if msg.content["slot_name"] not in self.input_slots:
