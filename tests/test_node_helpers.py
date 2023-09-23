@@ -1,7 +1,5 @@
 import pytest
-import yaml
 
-from goofi.connection import MultiprocessingConnection
 from goofi.data import DataType
 from goofi.node_helpers import InputSlot, OutputSlot
 

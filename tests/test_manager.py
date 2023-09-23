@@ -67,6 +67,7 @@ def test_simple():
     # clean up
     manager.terminate()
 
+
 def test_save_empty(tmpdir):
     manager = Manager()
 
@@ -76,6 +77,7 @@ def test_save_empty(tmpdir):
 
     # clean up
     manager.terminate()
+
 
 def test_save_extension(tmpdir):
     manager = create_simple_manager()
