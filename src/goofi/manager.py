@@ -1,12 +1,13 @@
 import importlib
 import time
 from os import path
-from typing import Dict, Optional
+from typing import Any, Dict, Optional
 
 import yaml
 
 from goofi.gui.window import Window
 from goofi.message import Message, MessageType
+from goofi.node import MultiprocessingForbiddenError
 from goofi.node_helpers import NodeRef, list_nodes
 
 
@@ -85,28 +86,71 @@ class Manager:
     It also interfaces with the GUI to display the nodes and links, and to handle user interaction.
 
     ### Parameters
+    `filepath` : Optional[str]
+        The path to the file to load from. If `None`, does not load a file.
     `headless` : bool
         Whether to run in headless mode. If `True`, the GUI will not be started.
+    `use_multiprocessing` : bool
+        Whether to use multiprocessing for nodes that support it. If `False`, all nodes will be created in the
+        same process as the manager.
     """
 
-    def __init__(self, headless: bool = True) -> None:
-        # preload all nodes to avoid delays
+    def __init__(self, filepath: Optional[str] = None, headless: bool = True, use_multiprocessing: bool = True) -> None:
         # TODO: add proper logging
         print("Starting goofi-pipe...")
-        # TODO: list_nodes can probably be more efficient
+        # preload all nodes to avoid delays
         list_nodes(verbose=True)
 
         # TODO: add proper logging
         print("Initializing goofi-pipe manager.")
 
         self._headless = headless
+        self._use_multiprocessing = use_multiprocessing
         self._running = True
         self.nodes = NodeContainer()
 
         if not self.headless:
             Window(self)
 
-    def add_node(self, node_type: str, category: str, notify_gui: bool = True, name: Optional[str] = None) -> str:
+        if filepath is not None:
+            # load the manager state from a file
+            self.load(filepath)
+
+    def load(self, filepath: str) -> None:
+        """
+        Loads the state of the manager from a file.
+
+        ### Parameters
+        `filepath` : str
+            The path to the file to load from.
+        """
+        # TODO: add proper logging
+        print(f"Loading manager state from '{filepath}'.")
+
+        if len(self.nodes) > 0:
+            # make sure the manager is empty
+            raise RuntimeError("This goofi-pipe already contains nodes.")
+
+        if not path.exists(filepath):
+            raise FileNotFoundError(f"File '{filepath}' does not exist.")
+
+        # load the yaml file
+        with open(filepath, "r") as f:
+            manager_yaml = yaml.load(f, Loader=yaml.FullLoader)
+
+        # create all nodes
+        for name, node in manager_yaml["nodes"].items():
+            # add the node to the manager
+            self.add_node(node["_type"], node["category"], name=name, params=node["params"])
+
+    def add_node(
+        self,
+        node_type: str,
+        category: str,
+        notify_gui: bool = True,
+        name: Optional[str] = None,
+        params: Optional[Dict[str, Dict[str, Any]]] = None,
+    ) -> str:
         """
         Adds a node to the container.
 
@@ -119,6 +163,8 @@ class Manager:
             Whether to notify the gui to add the node.
         `name` : Optional[str]
             Raises an error if the name is already taken. If `None`, a unique name is generated.
+        `params` : Optional[Dict[str, Dict[str, Any]]]
+            The parameters of the node. If `None`, the default parameters are used.
 
         ### Returns
         `name` : str
@@ -131,8 +177,20 @@ class Manager:
         mod = importlib.import_module(f"goofi.nodes.{category}.{node_type.lower()}")
         node = getattr(mod, node_type)
 
-        # instantiate the node and add it to the container
-        ref = node.create_local()[0]
+        # instantiate the node
+        ref = None
+        if self._use_multiprocessing:
+            # try to spawn the node in a separate process
+            try:
+                ref = node.create(initial_params=params)
+            except MultiprocessingForbiddenError:
+                # the node doesn't support multiprocessing, create it in the local process
+                pass
+        if ref is None:
+            # spawn the node in the local process
+            ref = node.create_local(initial_params=params)[0]
+
+        # add the node to the container
         name = self.nodes.add_node(node_type.lower(), ref)
 
         # add the node to the gui
@@ -348,11 +406,14 @@ def main(duration: float = 0, args=None):
 
     # parse arguments
     parser = argparse.ArgumentParser(description="goofi-pipe")
+    parser.add_argument("filepath", nargs="?", help="path to the file to load from")
     parser.add_argument("--headless", action="store_true", help="run in headless mode")
+    parser.add_argument("--no-multiprocessing", action="store_true", help="disable multiprocessing")
     args = parser.parse_args(args)
 
     # create manager
-    manager = Manager(headless=args.headless)
+    # TODO: fix multiprocessing and use the argument
+    manager = Manager(filepath=args.filepath, headless=args.headless, use_multiprocessing=False)
 
     if duration > 0:
         # run for a fixed duration

@@ -105,15 +105,15 @@ class NodeParams:
                 if not isinstance(param, Param):
                     if isinstance(param, dict):
                         # reconstruct serialized param object
-                        param_type = param.pop("_type")
-                        data[group][param_name] = globals()[param_type](**param)
+                        param_type = TYPE_PARAM_MAP[type(param["value"])]
+                        data[group][param_name] = param_type(**param)
                         continue
 
                     # convert to Param object
                     if type(param) not in TYPE_PARAM_MAP:
                         raise TypeError(
                             f"Invalid parameter type {type(param).__name__}. Must be one of "
-                            f"{list(map(lambda x:x.__name__,TYPE_PARAM_MAP.keys()))}."
+                            f"{list(map(lambda x: x.__name__, TYPE_PARAM_MAP.keys()))}."
                         )
                     data[group][param_name] = TYPE_PARAM_MAP[type(param)](param)
 
@@ -138,6 +138,37 @@ class NodeParams:
 
             self._data[group] = NamedTupleClass(**params)
 
+    def update(self, params: Dict[str, Dict[str, Any]]):
+        """
+        Update the parameters with new values.
+
+        ### Parameters
+        `params` : Dict[str, Dict[str, Any]]
+            A dictionary of parameter groups, where each group is a dictionary of parameter names and values.
+        """
+        for group, params in params.items():
+            for name, param in params.items():
+                if group not in self._data:
+                    raise ValueError(f"Parameter group '{group}' does not exist.")
+                if name not in self._data[group]._fields:
+                    raise ValueError(f"Parameter '{name}' does not exist in group '{group}'.")
+                if not isinstance(param, Param):
+                    if isinstance(param, dict):
+                        # reconstruct serialized param object
+                        param_type = TYPE_PARAM_MAP[type(param["value"])]
+                        self._data[group] = self._data[group]._replace(**{name: param_type(**param)})
+                        continue
+
+                    # convert to Param object
+                    if type(param) not in TYPE_PARAM_MAP:
+                        raise TypeError(
+                            f"Invalid parameter type {type(param).__name__}. Must be one of "
+                            f"{list(map(lambda x: x.__name__, TYPE_PARAM_MAP.keys()))}."
+                        )
+                    self._data[group] = self._data[group]._replace(**{name: TYPE_PARAM_MAP[type(param)](param)})
+                else:
+                    self._data[group] = self._data[group]._replace(**{name: param})
+
     def serialize(self) -> Dict[str, Dict[str, Any]]:
         """
         Serialize the parameters to a dictionary.
@@ -150,9 +181,7 @@ class NodeParams:
         for group, params in self._data.items():
             serialized_params = {}
             for name, param in params.items():
-                param_type = type(param).__name__
                 param = asdict(param)
-                param["_type"] = param_type
                 serialized_params[name] = param
             serialized_data[group] = serialized_params
         return serialized_data

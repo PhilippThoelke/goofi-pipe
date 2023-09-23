@@ -10,6 +10,10 @@ from goofi.node import Node
 
 
 class EEGRecording(Node):
+    # disable multiprocessing for this node as it needs to spawn a child process
+    # TODO: make sure this is actually necessary
+    NO_MULTIPROCESSING = True
+
     def config_params():
         return {"recording": {"use_example_data": True, "file_path": "", "stream_name": "goofi-stream"}}
 

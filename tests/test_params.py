@@ -2,7 +2,7 @@ import pytest
 import yaml
 
 from goofi import params
-from goofi.params import DEFAULT_PARAMS, NodeParams
+from goofi.params import DEFAULT_PARAMS, FloatParam, NodeParams
 
 from .utils import list_param_types
 
@@ -169,3 +169,18 @@ def test_serialize():
 
     # make sure the reconstructed object is equal to the original
     assert p == p2, "NodeParams should be equal after serialization and reconstruction."
+
+
+def test_update():
+    p = full_node_params()
+    p.update({"group0": {"paramFloatParam": 5.0}})
+    assert p.group0.paramFloatParam.value == 5.0, "NodeParams should update the value of a parameter."
+
+    p.update({"group0": {"paramFloatParam": FloatParam(-3.0)}})
+    assert p.group0.paramFloatParam.value == -3.0, "NodeParams should update the value of a parameter."
+
+
+@pytest.mark.parametrize("param_type", list_param_types())
+def test_update_types(param_type):
+    p = full_node_params()
+    p.update({"group0": {"param" + param_type.__name__: param_type.default()}})

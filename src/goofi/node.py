@@ -4,13 +4,17 @@ from abc import ABC, abstractmethod
 from copy import deepcopy
 from multiprocessing import Process
 from threading import Event, Thread
-from typing import Any, Callable, Dict, Tuple, Union
+from typing import Any, Callable, Dict, Optional, Tuple, Union
 
 from goofi.connection import Connection, MultiprocessingConnection
 from goofi.data import Data, DataType
 from goofi.message import Message, MessageType
 from goofi.node_helpers import InputSlot, NodeRef, OutputSlot
 from goofi.params import NodeParams
+
+
+class MultiprocessingForbiddenError(Exception):
+    pass
 
 
 def require_init(func: Callable) -> Callable:
@@ -55,7 +59,11 @@ class Node(ABC):
         are the output slots themselves.
     `params` : NodeParams
         An instance of the NodeParams class containing the parameters of the node.
+    `initial_params` : Optional[Dict[str, Dict[str, Any]]]
+        A dictionary of initial parameter values for the node. Defaults to None.
     """
+
+    NO_MULTIPROCESSING = False
 
     def __init__(
         self,
@@ -63,15 +71,22 @@ class Node(ABC):
         input_slots: Dict[str, InputSlot],
         output_slots: Dict[str, OutputSlot],
         params: NodeParams,
+        initial_params: Optional[Dict[str, Dict[str, Any]]] = None,
     ) -> None:
         # initialize the base class
         self._alive = True
+        self._node_ready = False
 
         # store the arguments and validate them
         self.connection = connection
         self._input_slots = input_slots
         self._output_slots = output_slots
         self._params = params
+
+        if initial_params is not None:
+            print(initial_params)
+            self._params.update(initial_params)
+            print(self._params)
 
         self._validate_attrs()
 
@@ -80,13 +95,13 @@ class Node(ABC):
         if self.params.common.autotrigger.value:
             self.process_flag.set()
 
-        # initialize message handling thread
-        self.messaging_thread = Thread(target=self._messaging_loop)
-        self.messaging_thread.start()
-
         # initialize data processing thread
         self.processing_thread = Thread(target=self._processing_loop, daemon=True)
         self.processing_thread.start()
+
+        # initialize message handling thread
+        self.messaging_thread = Thread(target=self._messaging_loop)
+        self.messaging_thread.start()
 
     @require_init
     def _validate_attrs(self):
@@ -121,6 +136,9 @@ class Node(ABC):
             self.setup()
         except Exception as e:
             self.connection.try_send(Message(MessageType.PROCESSING_ERROR, {"error": str(e)}))
+            return
+
+        self._node_ready = True
 
         # run the messaging loop
         while self.alive:
@@ -241,6 +259,10 @@ class Node(ABC):
         This method runs in a separate thread and handles the processing of input data and sending of
         output data to other nodes.
         """
+        # wait until the node's setup is complete
+        while not self._node_ready:
+            time.sleep(0.1)
+
         last_update = 0
         while self.alive:
             # wait for a trigger
@@ -324,19 +346,27 @@ class Node(ABC):
             self.process_flag.set()
 
     @classmethod
-    def create(cls) -> NodeRef:
+    def create(cls, initial_params: Optional[Dict[str, Dict[str, Any]]] = None) -> NodeRef:
         """
         Create a new node instance in a separate process and return a reference to the node.
+
+        ### Parameters
+        `initial_params` : Optional[Dict[str, Dict[str, Any]]]
+            A dictionary of parameter groups, where each group is a dictionary of parameter names and values.
+            Defaults to None.
 
         ### Returns
         `NodeRef`
             A reference to the node.
         """
+        if cls.NO_MULTIPROCESSING:
+            raise MultiprocessingForbiddenError("Multiprocessing is forbidden for this node.")
+
         # generate arguments for the node
         in_slots, out_slots, params = cls._configure(cls)
         conn1, conn2 = MultiprocessingConnection.create()
         # instantiate the node in a separate process
-        proc = Process(target=cls, args=(conn2, in_slots, out_slots, params), daemon=True)
+        proc = Process(target=cls, args=(conn2, in_slots, out_slots, params, initial_params), daemon=True)
         proc.start()
         # create the node reference
         return NodeRef(
@@ -348,10 +378,15 @@ class Node(ABC):
         )
 
     @classmethod
-    def create_local(cls) -> Tuple[NodeRef, "Node"]:
+    def create_local(cls, initial_params: Optional[Dict[str, Dict[str, Any]]] = None) -> Tuple[NodeRef, "Node"]:
         """
         Create a new node instance in the current process and return a reference to the node,
         as well as the node itself.
+
+        ### Parameters
+        `initial_params` : Optional[Dict[str, Dict[str, Any]]]
+            A dictionary of parameter groups, where each group is a dictionary of parameter names and values.
+            Defaults to None.
 
         ### Returns
         `Tuple[NodeRef, Node]`
@@ -361,7 +396,7 @@ class Node(ABC):
         in_slots, out_slots, params = cls._configure(cls)
         conn1, conn2 = MultiprocessingConnection.create()
         # instantiate the node in the current process
-        node = cls(conn2, in_slots, out_slots, params)
+        node = cls(conn2, in_slots, out_slots, params, initial_params)
         # create the node reference
         return (
             NodeRef(
