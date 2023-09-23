@@ -216,15 +216,14 @@ class Node(ABC):
                             )
                         )
             elif msg.type == MessageType.SERIALIZE_REQUEST:
-                # serialize input and output slots, as well as the node's parameters
-                in_slots = {name: slot.serialize() for name, slot in self.input_slots.items()}
-                out_slots = {name: slot.serialize() for name, slot in self.output_slots.items()}
+                # serialize output connections and the node's parameters
+                out_conns = {name: slot.connections for name, slot in self.output_slots.items()}
                 params = self.params.serialize()
                 # return the serialized data
                 self.connection.try_send(
                     Message(
                         MessageType.SERIALIZE_RESPONSE,
-                        {"input_slots": in_slots, "output_slots": out_slots, "params": params},
+                        {"_type": type(self).__name__, "category": self.category(), "out_conns": out_conns, "params": params},
                     )
                 )
             else:

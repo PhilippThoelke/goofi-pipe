@@ -100,16 +100,6 @@ class InputSlot:
     trigger_process: bool = True
     data: Optional[Data] = None
 
-    def serialize(self) -> Dict[str, Any]:
-        """
-        Serializes the input slot to a dict.
-
-        ### Returns
-        Dict[str, Any]
-            A dict containing the input slot's dtype and trigger_process flag.
-        """
-        return {"dtype": self.dtype.name, "trigger_process": self.trigger_process}
-
     def __post_init__(self):
         if isinstance(self.dtype, str):
             # convert dtype from string to DataType
@@ -129,16 +119,6 @@ class OutputSlot:
 
     dtype: DataType
     connections: List[Tuple[str, Connection]] = field(default_factory=list)
-
-    def serialize(self) -> Dict[str, Any]:
-        """
-        Serializes the output slot to a dict.
-
-        ### Returns
-        Dict[str, Any]
-            A dict containing the output slot's dtype and connections.
-        """
-        return {"dtype": self.dtype.name, "connections": self.connections}
 
     def __post_init__(self):
         if isinstance(self.dtype, str):
@@ -179,6 +159,7 @@ class NodeRef:
 
     process: Optional[Process] = None
     callbacks: Dict[MessageType, Callable] = field(default_factory=dict)
+    serialized_state: Optional[Dict[str, Any]] = None
 
     def set_message_handler(self, msg_type: MessageType, callback: Optional[Callable]) -> None:
         """
@@ -222,6 +203,16 @@ class NodeRef:
             )
         )
 
+    def serialize(self) -> None:
+        """
+        Clears the serialized state of the node ref and requests a new serialized state from the node.
+        The serialized state can be accessed through the `serialized_state` attribute.
+
+        Make sure to wait for the node's response as this is an asynchronous operation.
+        """
+        self.serialized_state = None
+        self.connection.send(Message(MessageType.SERIALIZE_REQUEST, {}))
+
     def terminate(self) -> None:
         """Terminates the node by closing the connection to it."""
         self.connection.try_send(Message(MessageType.TERMINATE, {}))
@@ -253,10 +244,15 @@ class NodeRef:
 
             # built-in message handling
             if msg.type == MessageType.PING:
+                # respond with PONG
                 self.connection.send(Message(MessageType.PONG, {}))
             elif msg.type == MessageType.TERMINATE:
+                # the node has terminated itself, consider it dead
                 self._alive = False
                 self.connection.close()
+            elif msg.type == MessageType.SERIALIZE_RESPONSE:
+                # store the serialized state
+                self.serialized_state = msg.content
 
     def __post_init__(self):
         if self.connection is None:

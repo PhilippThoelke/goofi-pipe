@@ -272,13 +272,15 @@ def test_serialize():
     time.sleep(0.01)
 
     # "ground truth" serialized node
-    in_slots = {name: slot.serialize() for name, slot in n.input_slots.items()}
-    out_slots = {name: slot.serialize() for name, slot in n.output_slots.items()}
+    node_type = "FullDummyNode"
+    category = "tests"
+    out_conns = {name: slot.connections for name, slot in n.output_slots.items()}
     params = n.params.serialize()
 
     # compare to the serialized node
-    assert result["input_slots"] == in_slots, "Input slots are not serialized correctly."
-    assert result["output_slots"] == out_slots, "Output slots are not serialized correctly."
+    assert result["_type"] == node_type, "Node type is not serialized correctly."
+    assert result["category"] == category, "Node category is not serialized correctly."
+    assert result["out_conns"] == out_conns, "Output slots are not serialized correctly."
     assert result["params"] == params, "Params are not serialized correctly."
 
     # clean up dangling threads
@@ -299,12 +301,12 @@ def test_serialize_yaml():
     ref.connection.send(Message(MessageType.SERIALIZE_REQUEST, {}))
     time.sleep(0.01)
 
-    # make sure the serialized data can be converted to YAML (with exception of the output slot connections)
-    for slot in result["output_slots"].values():
-        del slot["connections"]
-
+    # make sure the serialized parameters can be converted to YAML (except out_conns, which are removed in the manager)
+    result.pop("out_conns")
     serialized = yaml.dump(result)
-    yaml.load(serialized, Loader=yaml.FullLoader)
+    reconstructed = yaml.load(serialized, Loader=yaml.FullLoader)
+
+    assert reconstructed == result, "Serialized parameters are not valid YAML."
 
     # clean up dangling threads
     ref.terminate()

@@ -23,7 +23,7 @@ EXAMPLE_CONTENT = {
     MessageType.PROCESSING_ERROR: {"error": "test"},
     MessageType.PARAMETER_UPDATE: {"group": "common", "param_name": "test", "param_value": "test"},
     MessageType.SERIALIZE_REQUEST: {},
-    MessageType.SERIALIZE_RESPONSE: {"input_slots": {}, "output_slots": {}, "params": {}},
+    MessageType.SERIALIZE_RESPONSE: {"_type": "test", "category": "test", "out_conns": {}, "params": {}},
 }
 
 
