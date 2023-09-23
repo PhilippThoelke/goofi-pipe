@@ -101,7 +101,7 @@ def create_node(win):
             with dpg.tab(label=cat, tag=f"tab_{cat}"):
                 # create a button for each node in the category
                 for node in nodes:
-                    btn = dpg.add_button(label=node.__name__, callback=select_node_callback, user_data=(win, node))
+                    dpg.add_button(label=node.__name__, callback=select_node_callback, user_data=(win, node))
 
     # switch to the current tab
     dpg.set_value(tab_bar, f"tab_{list(categories.keys())[win.last_create_node_tab]}")
