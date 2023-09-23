@@ -219,16 +219,21 @@ class Manager:
             Whether to notify the gui to terminate.
         """
         if not self.headless and notify_gui:
-            # terminate the gui, which calls manager.terminate() with notify_gui=False once it is closed
-            Window().terminate()
-        else:
-            # TODO: add proper logging
-            print("Shutting down goofi-pipe manager.")
-            # terminate the manager
-            self._running = False
-            for node in self.nodes:
-                self.nodes[node].connection.send(Message(MessageType.TERMINATE, {}))
-                self.nodes[node].connection.close()
+            try:
+                # terminate the gui, which calls manager.terminate() with notify_gui=False once it is closed
+                Window().terminate()
+                return
+            except Exception:
+                # TODO: add proper logging
+                print("Closing the GUI failed.")
+
+        # TODO: add proper logging
+        print("Shutting down goofi-pipe manager.")
+        # terminate the manager
+        self._running = False
+        for node in self.nodes:
+            self.nodes[node].connection.send(Message(MessageType.TERMINATE, {}))
+            self.nodes[node].connection.close()
 
     def save(self, filepath: Optional[str] = None, overwrite: bool = False, timeout: float = 3.0) -> None:
         """
@@ -348,14 +353,6 @@ def main(duration: float = 0, args=None):
 
     # create manager
     manager = Manager(headless=args.headless)
-
-    # manager.add_node("Sine", "data")
-    # manager.add_node("Buffer", "array")
-    # manager.add_node("Buffer", "array")
-    # manager.add_link("sine0", "buffer0", "out", "val")
-    # manager.add_link("sine0", "buffer1", "out", "val")
-
-    # print(manager.save("untitled0.gfi"))
 
     if duration > 0:
         # run for a fixed duration
