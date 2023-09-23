@@ -564,6 +564,7 @@ class Window:
         self.links = {}
         self.selected_node = None
         self.create_node_window = None
+        self.last_create_node_tab=0
 
         # create window
         self.window = dpg.add_window(

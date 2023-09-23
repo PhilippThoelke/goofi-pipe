@@ -58,16 +58,7 @@ def select_node_callback(sender, data, user_data):
 
 
 def create_node(win):
-    """Opens the window for creating a node. If the window is already open, closes it."""
-    if win.create_node_window is not None:
-        # close the existing window instance
-        dpg.delete_item(win.create_node_window)
-        win.create_node_window = None
-
-    # create a new window instance
-    win.create_node_window = dpg.add_window(
-        label="Create Node", pos=dpg.get_mouse_pos(local=False), no_collapse=True, autosize=True
-    )
+    """Opens the window for creating a node. If the window is already open, switch to the next tab."""
 
     # create a dictionary of nodes by category
     categories = {}
@@ -77,13 +68,45 @@ def create_node(win):
             categories[cat] = []
         categories[cat].append(node)
 
+    if win.create_node_window is not None:
+        if dpg.is_item_focused(win.create_node_window):
+            # the window is open and focused, switch to the next tab
+            tab_bar = dpg.get_item_user_data(win.create_node_window)
+            # increment tab index
+            if dpg.is_key_down(dpg.mvKey_Shift):
+                win.last_create_node_tab = (win.last_create_node_tab - 1) % len(categories)
+            else:
+                win.last_create_node_tab = (win.last_create_node_tab + 1) % len(categories)
+            # switch to the next tab
+            tab = f"tab_{list(categories.keys())[win.last_create_node_tab]}"
+            dpg.set_value(tab_bar, tab)
+            return
+
+        # the window is open but not focused, close it to reopen later in this function
+        dpg.delete_item(win.create_node_window)
+        win.create_node_window = None
+
+    if not dpg.is_item_hovered(win.node_editor):
+        # the node editor is not hovered, do not open the window
+        return
+
+    # create a new window instance
+    win.create_node_window = dpg.add_window(
+        label="Create Node", pos=dpg.get_mouse_pos(local=False), no_collapse=True, autosize=True
+    )
+
     # create a tab bar with a tab for each category
-    with dpg.tab_bar(parent=win.create_node_window):
+    with dpg.tab_bar(parent=win.create_node_window) as tab_bar:
         for cat, nodes in categories.items():
-            with dpg.tab(label=cat):
+            with dpg.tab(label=cat, tag=f"tab_{cat}"):
                 # create a button for each node in the category
                 for node in nodes:
-                    dpg.add_button(label=node.__name__, callback=select_node_callback, user_data=(win, node))
+                    btn = dpg.add_button(label=node.__name__, callback=select_node_callback, user_data=(win, node))
+
+    # switch to the current tab
+    dpg.set_value(tab_bar, f"tab_{list(categories.keys())[win.last_create_node_tab]}")
+    # store the tab bar for switching tabs later
+    dpg.set_item_user_data(win.create_node_window, tab_bar)
 
 
 def escape(win):
