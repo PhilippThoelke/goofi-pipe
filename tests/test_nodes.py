@@ -30,7 +30,7 @@ def test_create_local(node: Type[Node], timeout: float = 5.0):
     assert not n.alive, f"Node {node.__name__} needed more than {timeout}s to terminate."
 
 
-@pytest.mark.parametrize("node", list_nodes())
+@pytest.mark.parametrize("node", [n for n in list_nodes() if not n.NO_MULTIPROCESSING])
 def test_create(node: Type[Node]):
     node.create().terminate()
 
