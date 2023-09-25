@@ -18,7 +18,7 @@ def mark_unsaved_changes(func):
 
     def wrapper(self, *args, **kwargs):
         res = func(self, *args, **kwargs)
-        self._unsaved_changes = True
+        self.unsaved_changes = True
         return res
 
     return wrapper
@@ -142,15 +142,15 @@ class Manager:
         `filepath` : str
             The path to the file to load from.
         """
-        # TODO: add proper logging
-        print(f"Loading manager state from '{filepath}'.")
-
         if len(self.nodes) > 0:
             # make sure the manager is empty
             raise RuntimeError("This goofi-pipe already contains nodes.")
 
         if not path.exists(filepath):
             raise FileNotFoundError(f"File '{filepath}' does not exist.")
+
+        # TODO: add proper logging
+        print(f"Loading manager state from '{filepath}'.")
 
         # load the yaml file
         with open(filepath, "r") as f:
@@ -166,8 +166,8 @@ class Manager:
             self.add_link(link["node_out"], link["node_in"], link["slot_out"], link["slot_in"])
 
         # store the save path
-        self._save_path = filepath
-        self._unsaved_changes = False
+        self.save_path = filepath
+        self.unsaved_changes = False
 
     @mark_unsaved_changes
     def add_node(
@@ -425,8 +425,8 @@ class Manager:
             f.write(manager_yaml)
 
         # store the save path
-        self._save_path = filepath
-        self._unsaved_changes = False
+        self.save_path = filepath
+        self.unsaved_changes = False
 
     @property
     def save_path(self) -> Optional[str]:
@@ -436,9 +436,21 @@ class Manager:
     def save_path(self, filepath: str) -> None:
         self._save_path = filepath
 
+        # update the window title
+        if not self.headless:
+            Window().update_title()
+
     @property
     def unsaved_changes(self) -> bool:
         return self._unsaved_changes
+
+    @unsaved_changes.setter
+    def unsaved_changes(self, value: bool) -> None:
+        self._unsaved_changes = value
+
+        # update the window title
+        if not self.headless:
+            Window().update_title()
 
     @property
     def running(self) -> bool:

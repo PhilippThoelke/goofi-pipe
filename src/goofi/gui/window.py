@@ -1,8 +1,9 @@
+import os
 import threading
 import time
 from dataclasses import dataclass
 from functools import partial
-from typing import Dict, List, Optional, Tuple
+from typing import Callable, Dict, List, Optional, Tuple
 
 import dearpygui.dearpygui as dpg
 import numpy as np
@@ -506,7 +507,56 @@ class Window:
         # delete link from gui
         dpg.delete_item(item)
 
-    def save(self, path: Optional[str] = None, overwrite: bool = True) -> None:
+    def load(self, path: Optional[str] = None) -> None:
+        """
+        Load a goofi-pipe from a file.
+
+        ### Parameters
+        `path` : Optional[str]
+            Optional path to load the GUI state from. If None, opens a file dialog.
+        """
+
+        def file_callback(_, info):
+            self.load(path=info["file_path_name"])
+
+        if path is None:
+            # no save path set, open save dialog
+            self.get_file(file_callback, message="Select a file to load from.")
+            return
+
+        try:
+            # try loading the manager
+            self.manager.load(filepath=path)
+        except FileNotFoundError:
+            # file does not exist, open error dialog
+            w, h = dpg.get_viewport_width(), dpg.get_viewport_height()
+            pos = (w / 2 - w / 8, h / 2 - h / 12)
+            with dpg.window(label="Error", width=w / 4, height=h / 6, pos=pos) as win:
+                dpg.add_text("The file does not exist.")
+
+                dpg.add_separator()
+                dpg.add_text(path)
+                dpg.add_separator()
+
+                # add button
+                dpg.add_button(label="Ok", callback=lambda _, __: dpg.delete_item(win))
+        except RuntimeError:
+            # file does not exist, open error dialog
+            w, h = dpg.get_viewport_width(), dpg.get_viewport_height()
+            pos = (w / 2 - w / 8, h / 2 - h / 12)
+            with dpg.window(label="Error", width=w / 4, height=h / 6, pos=pos) as win:
+                dpg.add_text("The current pipeline is not empty.")
+
+                # add button
+                dpg.add_button(label="Ok", callback=lambda _, __: dpg.delete_item(win))
+
+    def save(
+        self,
+        path: Optional[str] = None,
+        overwrite: bool = True,
+        save_as: bool = False,
+        callback: Optional[Callable] = None,
+    ) -> None:
         """
         Save the current state of the GUI.
 
@@ -515,22 +565,33 @@ class Window:
             Optional path to save the GUI state to. If None, uses the current save path.
         `overwrite` : bool
             Whether to overwrite the current save path.
+        `save_as` : bool
+            Whether to open a file dialog to select a save path.
+        `callback` : Optional[Callable]
+            Optional callback function to call when the save is complete.
         """
-        if self.manager.save_path is None and path is None:
+
+        def file_callback(_, info):
+            self.save(path=info["file_path_name"], overwrite=False, callback=callback)
+
+        if save_as or (self.manager.save_path is None and path is None):
             # no save path set, open save dialog
-            self.save_as(overwrite=False)
+            self.get_file(file_callback, message="Select a file to save to.")
             return
 
         try:
             # try saving the manager
             self.manager.save(filepath=path, overwrite=overwrite)
+
+            if callback is not None:
+                callback()
         except FileExistsError:
 
             def confirm_callback(_1, _2, data):
                 """Callback for the overwrite confirmation dialog."""
                 win, confirm = data
                 if confirm:
-                    self.save(path=path, overwrite=True)
+                    self.save(path=path, overwrite=True, callback=callback)
                 # close the confirmation dialog
                 dpg.delete_item(win)
 
@@ -550,19 +611,16 @@ class Window:
                     dpg.add_button(label="Yes", callback=confirm_callback, user_data=(win, True))
                     dpg.add_button(label="Cancel", callback=confirm_callback, user_data=(win, False))
 
-    def save_as(self, message: Optional[str] = None, overwrite: bool = False) -> None:
+    def get_file(self, callback: Callable, message: Optional[str] = None) -> None:
         """
-        Open a save dialog to save the current state of the GUI.
+        Open a file dialog (e.g. for loading or saving a file).
 
         ### Parameters
+        `callback` : Callable
+            The callback function to call when the file is selected.
         `message` : Optional[str]
             Optional message to display in the save dialog.
-        `overwrite` : bool
-            Whether to overwrite the current save path.
         """
-
-        def callback(_, info):
-            self.save(path=info["file_path_name"], overwrite=overwrite)
 
         # open file selection dialog
         width, height = dpg.get_viewport_width() / 2, dpg.get_viewport_height() / 2
@@ -633,9 +691,46 @@ class Window:
             # node selected, resize node editor to fill viewport minus parameters window
             dpg.configure_item(self.node_editor, width=size[0] - PARAM_WINDOW_WIDTH)
 
+    def update_title(self) -> None:
+        """Update the window title."""
+        unsaved_changes = "*" if self.manager.unsaved_changes else ""
+        if self.manager.save_path is None:
+            dpg.set_viewport_title("goofi-pipe")
+        else:
+            dpg.set_viewport_title(f"goofi-pipe | {unsaved_changes}{self.manager.save_path.split(os.sep)[-1]}")
+
     def exit_callback(self, value):
         """Callback from DearPyGui that the close button was pressed."""
-        # TODO: open a popup to confirm exit, if state was modified after save
+        if self.manager.unsaved_changes and not self.unsaved_changes_dialog_open:
+
+            def callback(_1, _2, data):
+                """Callback for the unsaved changes dialog."""
+                win, save = data
+                # close the confirmation dialog
+                dpg.delete_item(win)
+                self.unsaved_changes_dialog_open = False
+
+                if save:
+                    # save changes first
+                    self.save(callback=self.terminate)
+                else:
+                    # close without saving
+                    self.terminate()
+
+            # unsaved changes, open confirm dialog
+            self.unsaved_changes_dialog_open = True
+            w, h = dpg.get_viewport_width(), dpg.get_viewport_height()
+            pos = (w / 2 - w / 8, h / 2 - h / 12)
+            with dpg.window(label="Save before closing?", width=w / 4, height=h / 6, pos=pos) as win:
+                dpg.add_text("There are unsaved changes.\nDo you want to save before closing?")
+
+                # add buttons
+                with dpg.group(horizontal=True):
+                    dpg.add_button(label="Save", callback=callback, user_data=(win, True))
+                    dpg.add_button(label="Close without saving", callback=callback, user_data=(win, False))
+            return
+
+        # no unsaved changes, close window
         self.terminate()
 
     def _initialize(self, manager, width=1280, height=720):
@@ -650,6 +745,7 @@ class Window:
         self.create_node_window = None
         self.last_create_node_tab = 0
         self.file_selection_window = None
+        self.unsaved_changes_dialog_open = False
 
         # create window
         self.window = dpg.add_window(
@@ -662,6 +758,13 @@ class Window:
             no_close=True,
             no_collapse=True,
         )
+
+        # create menu bar
+        with dpg.menu_bar(parent=self.window):
+            dpg.add_menu_item(label="Load", callback=lambda: self.load())
+            dpg.add_menu_item(label="Save As", callback=lambda: self.save(save_as=True))
+            dpg.add_menu_item(label="Save", callback=lambda: self.save())
+
         with dpg.group(horizontal=True, parent=self.window):
             # create node editor
             self.node_editor = dpg.add_node_editor(callback=self.link_callback, delink_callback=self.delink_callback)
