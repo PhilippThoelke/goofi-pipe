@@ -49,12 +49,13 @@ def delete_selected_item(win):
 def select_node_callback(sender, data, user_data):
     """Callback for when a node is selected in the create node window."""
     win, node = user_data
+    pos =dpg.get_item_pos(win.create_node_window)
     # clean up the state of the GUI
     escape(win)
     dpg.clear_selected_nodes(win.node_editor)
     dpg.clear_selected_links(win.node_editor)
     # create the node inside the manager, which will notify the window
-    win.manager.add_node(node.__name__, node.category())
+    win.manager.add_node(node.__name__, node.category(),pos=pos)
 
 
 def create_node(win):

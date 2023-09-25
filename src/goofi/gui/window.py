@@ -316,7 +316,7 @@ class Window:
         return cls._instance
 
     @running
-    def add_node(self, node_name: str, node: NodeRef) -> None:
+    def add_node(self, node_name: str, node: NodeRef, pos: Optional[Tuple[int, int]] = None) -> None:
         """
         Outward facing method to add a node to the GUI.
 
@@ -325,8 +325,12 @@ class Window:
             The name of the node.
         `node` : NodeRef
             The node reference.
+        `pos` : Optional[Tuple[int, int]]
+            Optional position for the node. If None, the node is created at the center of the editor.
         """
-        pos = dpg.get_mouse_pos(local=False)
+        if pos is None:
+            pos = (0, 0)
+
         with dpg.node(parent=self.node_editor, label=node_name, pos=pos) as node_id:
             ############### input slots ###############
             in_slots = {}

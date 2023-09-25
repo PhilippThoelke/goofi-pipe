@@ -154,6 +154,7 @@ class Manager:
         notify_gui: bool = True,
         name: Optional[str] = None,
         params: Optional[Dict[str, Dict[str, Any]]] = None,
+        **gui_kwargs,
     ) -> str:
         """
         Adds a node to the container.
@@ -169,6 +170,8 @@ class Manager:
             Raises an error if the name is already taken. If `None`, a unique name is generated.
         `params` : Optional[Dict[str, Dict[str, Any]]]
             The parameters of the node. If `None`, the default parameters are used.
+        `gui_kwargs` : dict
+            Additional keyword arguments to pass to the gui.
 
         ### Returns
         `name` : str
@@ -199,10 +202,10 @@ class Manager:
 
         # add the node to the gui
         if not self.headless and notify_gui:
-            Window().add_node(name, ref)
+            Window().add_node(name, ref, **gui_kwargs)
         return name
 
-    def remove_node(self, name: str, notify_gui: bool = True) -> None:
+    def remove_node(self, name: str, notify_gui: bool = True, **gui_kwargs) -> None:
         """
         Removes a node from the container.
 
@@ -211,15 +214,17 @@ class Manager:
             The name of the node.
         `notify_gui` : bool
             Whether to notify the gui to remove the node.
+        `gui_kwargs` : dict
+            Additional keyword arguments to pass to the gui.
         """
         # TODO: add proper logging
         print(f"Removing node '{name}'.")
 
         self.nodes.remove_node(name)
         if not self.headless and notify_gui:
-            Window().remove_node(name)
+            Window().remove_node(name, **gui_kwargs)
 
-    def add_link(self, node_out: str, node_in: str, slot_out: str, slot_in: str, notify_gui: bool = True) -> None:
+    def add_link(self, node_out: str, node_in: str, slot_out: str, slot_in: str, notify_gui: bool = True, **gui_kwargs) -> None:
         """
         Adds a link between two nodes.
 
@@ -234,6 +239,8 @@ class Manager:
             The input slot name of `node_in`.
         `notify_gui` : bool
             Whether to notify the gui to add the link.
+        `gui_kwargs` : dict
+            Additional keyword arguments to pass to the gui.
         """
         # TODO: Prevent multiple links to the same input slot. The GUI already prevents this, but the manager should too.
         self.nodes[node_out].connection.send(
@@ -244,9 +251,11 @@ class Manager:
         )
 
         if not self.headless and notify_gui:
-            Window().add_link(node_out, node_in, slot_out, slot_in)
+            Window().add_link(node_out, node_in, slot_out, slot_in, **gui_kwargs)
 
-    def remove_link(self, node_out: str, node_in: str, slot_out: str, slot_in: str, notify_gui: bool = True) -> None:
+    def remove_link(
+        self, node_out: str, node_in: str, slot_out: str, slot_in: str, notify_gui: bool = True, **gui_kwargs
+    ) -> None:
         """
         Removes a link between two nodes.
 
@@ -261,6 +270,8 @@ class Manager:
             The input slot name of `node_in`.
         `notify_gui` : bool
             Whether to notify the gui to remove the link.
+        `gui_kwargs` : dict
+            Additional keyword arguments to pass to the gui.
         """
         self.nodes[node_out].connection.send(
             Message(
@@ -270,7 +281,7 @@ class Manager:
         )
 
         if not self.headless and notify_gui:
-            Window().remove_link(node_out, node_in, slot_out, slot_in)
+            Window().remove_link(node_out, node_in, slot_out, slot_in, **gui_kwargs)
 
     def terminate(self, notify_gui: bool = True) -> None:
         """
