@@ -506,6 +506,78 @@ class Window:
         # delete link from gui
         dpg.delete_item(item)
 
+    def save(self, path: Optional[str] = None, overwrite: bool = True) -> None:
+        """
+        Save the current state of the GUI.
+
+        ### Parameters
+        `path` : Optional[str]
+            Optional path to save the GUI state to. If None, uses the current save path.
+        `overwrite` : bool
+            Whether to overwrite the current save path.
+        """
+        if self.manager.save_path is None and path is None:
+            # no save path set, open save dialog
+            self.save_as(overwrite=False)
+            return
+
+        try:
+            # try saving the manager
+            self.manager.save(filepath=path, overwrite=overwrite)
+        except FileExistsError:
+
+            def confirm_callback(_1, _2, data):
+                """Callback for the overwrite confirmation dialog."""
+                win, confirm = data
+                if confirm:
+                    self.save(path=path, overwrite=True)
+                # close the confirmation dialog
+                dpg.delete_item(win)
+
+            # file already exists, open overwrite dialog
+            w, h = dpg.get_viewport_width(), dpg.get_viewport_height()
+            pos = (w / 2 - w / 8, h / 2 - h / 12)
+            with dpg.window(label="Overwrite?", width=w / 4, height=h / 6, pos=pos) as win:
+                dpg.add_text("The file already exists. Overwrite?")
+
+                if path is not None:
+                    dpg.add_separator()
+                    dpg.add_text(path)
+                    dpg.add_separator()
+
+                # add buttons
+                with dpg.group(horizontal=True):
+                    dpg.add_button(label="Yes", callback=confirm_callback, user_data=(win, True))
+                    dpg.add_button(label="Cancel", callback=confirm_callback, user_data=(win, False))
+
+    def save_as(self, message: Optional[str] = None, overwrite: bool = False) -> None:
+        """
+        Open a save dialog to save the current state of the GUI.
+
+        ### Parameters
+        `message` : Optional[str]
+            Optional message to display in the save dialog.
+        `overwrite` : bool
+            Whether to overwrite the current save path.
+        """
+
+        def callback(_, info):
+            self.save(path=info["file_path_name"], overwrite=overwrite)
+
+        # open file selection dialog
+        width, height = dpg.get_viewport_width() / 2, dpg.get_viewport_height() / 2
+        with dpg.file_dialog(
+            label=message,
+            callback=callback,
+            default_path=".",
+            default_filename="",
+            modal=True,
+            width=width,
+            height=height,
+        ) as self.file_selection_window:
+            dpg.add_file_extension(".gfi", label="goofi-pipes")
+            dpg.add_file_extension(".*", label="All Files")
+
     def _select_node(self, item: Optional[int]) -> None:
         """
         Register or unregister a node as selected. If a new node is selected, the parameters window is
@@ -577,6 +649,7 @@ class Window:
         self.selected_node = None
         self.create_node_window = None
         self.last_create_node_tab = 0
+        self.file_selection_window = None
 
         # create window
         self.window = dpg.add_window(

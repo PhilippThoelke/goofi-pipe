@@ -11,6 +11,19 @@ from goofi.node import MultiprocessingForbiddenError
 from goofi.node_helpers import NodeRef, list_nodes
 
 
+def mark_unsaved_changes(func):
+    """
+    Decorator that marks the manager as having unsaved changes after the function is called.
+    """
+
+    def wrapper(self, *args, **kwargs):
+        res = func(self, *args, **kwargs)
+        self._unsaved_changes = True
+        return res
+
+    return wrapper
+
+
 class NodeContainer:
     """
     The node container keeps track of all nodes in the manager. It provides methods to add and remove nodes,
@@ -109,11 +122,16 @@ class Manager:
         self._running = True
         self.nodes = NodeContainer()
 
+        # store attributes related to loading and saving
+        self._save_path = None
+        self._unsaved_changes = False
+
+        # initialize the GUI
         if not self.headless:
             Window(self)
 
+        # load the manager state from a file
         if filepath is not None:
-            # load the manager state from a file
             self.load(filepath)
 
     def load(self, filepath: str) -> None:
@@ -147,6 +165,11 @@ class Manager:
         for link in manager_yaml["links"]:
             self.add_link(link["node_out"], link["node_in"], link["slot_out"], link["slot_in"])
 
+        # store the save path
+        self._save_path = filepath
+        self._unsaved_changes = False
+
+    @mark_unsaved_changes
     def add_node(
         self,
         node_type: str,
@@ -205,6 +228,7 @@ class Manager:
             Window().add_node(name, ref, **gui_kwargs)
         return name
 
+    @mark_unsaved_changes
     def remove_node(self, name: str, notify_gui: bool = True, **gui_kwargs) -> None:
         """
         Removes a node from the container.
@@ -224,6 +248,7 @@ class Manager:
         if not self.headless and notify_gui:
             Window().remove_node(name, **gui_kwargs)
 
+    @mark_unsaved_changes
     def add_link(self, node_out: str, node_in: str, slot_out: str, slot_in: str, notify_gui: bool = True, **gui_kwargs) -> None:
         """
         Adds a link between two nodes.
@@ -253,6 +278,7 @@ class Manager:
         if not self.headless and notify_gui:
             Window().add_link(node_out, node_in, slot_out, slot_in, **gui_kwargs)
 
+    @mark_unsaved_changes
     def remove_link(
         self, node_out: str, node_in: str, slot_out: str, slot_in: str, notify_gui: bool = True, **gui_kwargs
     ) -> None:
@@ -321,7 +347,9 @@ class Manager:
             The timeout in seconds for waiting for a response from each node.
         """
         # if no filepath was given, use a default filename in the current directory
-        if not filepath:
+        if not filepath and self._save_path:
+            filepath = self._save_path
+        elif not filepath:
             filepath = "."
 
         # make sure we get a string
@@ -395,6 +423,22 @@ class Manager:
         # write the yaml to the file
         with open(filepath, "w") as f:
             f.write(manager_yaml)
+
+        # store the save path
+        self._save_path = filepath
+        self._unsaved_changes = False
+
+    @property
+    def save_path(self) -> Optional[str]:
+        return self._save_path
+
+    @save_path.setter
+    def save_path(self, filepath: str) -> None:
+        self._save_path = filepath
+
+    @property
+    def unsaved_changes(self) -> bool:
+        return self._unsaved_changes
 
     @property
     def running(self) -> bool:

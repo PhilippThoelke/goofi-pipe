@@ -7,6 +7,19 @@ from goofi.node_helpers import list_nodes
 ################################
 
 
+def is_click_inside(item):
+    """Check if the mouse click was inside the given item."""
+    mouse_pos = dpg.get_mouse_pos(local=False)
+    item_pos = dpg.get_item_pos(item)
+    item_size = dpg.get_item_rect_size(item)
+    return (
+        mouse_pos[0] >= item_pos[0]
+        and mouse_pos[1] >= item_pos[1]
+        and mouse_pos[0] <= item_pos[0] + item_size[0]
+        and mouse_pos[1] <= item_pos[1] + item_size[1]
+    )
+
+
 def click_callback(_, btn, win):
     """Update node selection after a click event."""
     selected = dpg.get_selected_nodes(win.node_editor)
@@ -14,6 +27,12 @@ def click_callback(_, btn, win):
         win._select_node(selected[0])
     else:
         win._select_node(None)
+
+    if win.create_node_window is not None and not is_click_inside(win.create_node_window):
+        # the create node window is open but the click was outside of it, close it
+        escape(win)
+
+    # TODO: do the same thing for the file selection window, which has a broken get_item_pos
 
 
 def double_click_callback(_, btn, win):
@@ -49,13 +68,13 @@ def delete_selected_item(win):
 def select_node_callback(sender, data, user_data):
     """Callback for when a node is selected in the create node window."""
     win, node = user_data
-    pos =dpg.get_item_pos(win.create_node_window)
+    pos = dpg.get_item_pos(win.create_node_window)
     # clean up the state of the GUI
     escape(win)
     dpg.clear_selected_nodes(win.node_editor)
     dpg.clear_selected_links(win.node_editor)
     # create the node inside the manager, which will notify the window
-    win.manager.add_node(node.__name__, node.category(),pos=pos)
+    win.manager.add_node(node.__name__, node.category(), pos=pos)
 
 
 def create_node(win):
@@ -118,9 +137,18 @@ def escape(win):
     if win.create_node_window is not None:
         dpg.delete_item(win.create_node_window)
         win.create_node_window = None
+    elif win.file_selection_window is not None:
+        dpg.delete_item(win.file_selection_window)
+        win.file_selection_window = None
     else:
         dpg.clear_selected_nodes(win.node_editor)
         dpg.clear_selected_links(win.node_editor)
+
+
+def save_manager(win):
+    """Save the manager to a file. We go through the Window to potentially open a file selection dialog."""
+    if dpg.is_key_down(dpg.mvKey_Control):
+        win.save()
 
 
 # the key handler map maps key press events to functions that handle them
@@ -129,4 +157,5 @@ KEY_HANDLER_MAP = {
     # dpg.mvKey_X: delete_selected_item, # TODO: filter out when editing some text field
     dpg.mvKey_Tab: create_node,
     dpg.mvKey_Escape: escape,
+    dpg.mvKey_S: save_manager,
 }
