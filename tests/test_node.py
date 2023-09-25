@@ -110,7 +110,7 @@ def test_processing_error():
 
     # manually trigger processing once
     n.process_flag.set()
-    time.sleep(0.01)
+    time.sleep(0.1)
 
     # the processing thread should be alive as the node is expected to handle the error
     assert n.processing_thread.is_alive(), "Processing thread should still be alive."
