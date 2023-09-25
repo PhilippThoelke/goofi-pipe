@@ -693,10 +693,18 @@ class Window:
 
     def update_title(self) -> None:
         """Update the window title."""
-        unsaved_changes = "*" if self.manager.unsaved_changes else ""
+        start = time.time()
+        while not hasattr(self, "manager"):
+            # wait until the manager is initialized
+            if time.time() - start > 1:
+                raise RuntimeError("Timeout while waiting for manager to initialize.")
+            time.sleep(0.01)
+
+        # update window title
         if self.manager.save_path is None:
             dpg.set_viewport_title("goofi-pipe")
         else:
+            unsaved_changes = "*" if self.manager.unsaved_changes else ""
             dpg.set_viewport_title(f"goofi-pipe | {unsaved_changes}{self.manager.save_path.split(os.sep)[-1]}")
 
     def exit_callback(self, value):
