@@ -21,7 +21,7 @@ class LSLClient(Node):
 
     def client_thread(self):
         """Start the client and wait until running is set to False."""
-        self.client = MNE_LSLClient(host=self.params.lsl_stream.stream_name.value, wait_max=0.5, verbose=False)
+        self.client = MNE_LSLClient(host=self.params.lsl_stream.stream_name.value, wait_max=1.5, verbose=False)
         try:
             self.client.start()
         except RuntimeError:
