@@ -84,9 +84,7 @@ class Node(ABC):
         self._params = params
 
         if initial_params is not None:
-            print(initial_params)
             self._params.update(initial_params)
-            print(self._params)
 
         self._validate_attrs()
 
