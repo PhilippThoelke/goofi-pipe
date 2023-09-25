@@ -69,7 +69,7 @@ def compute_conn_matrix_single(
         connectivity_fn = harmonic_connectivity
 
     # compute connectivity matrix
-    bt_conn = harmonic_connectivity(
+    bt_conn = connectivity_fn(
         sf=sfreq,
         data=data,
         peaks_function=peaks_function,
