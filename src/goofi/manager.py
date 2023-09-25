@@ -143,6 +143,10 @@ class Manager:
             # add the node to the manager
             self.add_node(node["_type"], node["category"], name=name, params=node["params"])
 
+        # add links
+        for link in manager_yaml["links"]:
+            self.add_link(link["node_out"], link["node_in"], link["slot_out"], link["slot_in"])
+
     def add_node(
         self,
         node_type: str,
