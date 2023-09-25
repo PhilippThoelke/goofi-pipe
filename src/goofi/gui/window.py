@@ -241,12 +241,20 @@ def add_output_slot(parent: int, name: str, closed: bool = False, size: Tuple[in
         close, header, window, plot = items
         header_height = dpg.get_item_state(header)["rect_size"][1]
 
+        if header_height == 0:
+            # this happens when the header is off screen, set to default height
+            header_height = 15
+
         if close:
             # header was closed, shrink window to header size
             dpg.set_item_height(window, header_height)
         else:
             # header was opened, expand window to header size plus plot size
             plot_height = dpg.get_item_state(plot)["rect_size"][1]
+            if plot_height == 0:
+                # this happens when the plot is off screen, set to default height
+                plot_height = size[1]
+
             dpg.set_item_height(window, header_height + plot_height + 4)  # magic + 4 to avoid scroll bar
 
     # NOTE: The user_data lists are used to pass data to the callbacks. The first element is a bool, which
