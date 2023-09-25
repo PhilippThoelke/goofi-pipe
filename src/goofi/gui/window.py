@@ -548,7 +548,7 @@ class Window:
 
         if self.selected_node is None:
             # no node selected, resize node editor to fill viewport
-            dpg.configure_item(self.node_editor, width=size[0])
+            dpg.configure_item(self.node_editor, width=0)
         else:
             # node selected, resize node editor to fill viewport minus parameters window
             dpg.configure_item(self.node_editor, width=size[0] - PARAM_WINDOW_WIDTH)
