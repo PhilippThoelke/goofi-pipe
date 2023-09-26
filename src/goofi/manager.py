@@ -115,7 +115,8 @@ class Manager:
         list_nodes(verbose=True)
 
         # TODO: add proper logging
-        print("Initializing goofi-pipe manager.")
+        mp_state = "enabled" if use_multiprocessing else "disabled"
+        print(f"Initializing goofi-pipe manager (multiprocessing {mp_state}).")
 
         self._headless = headless
         self._use_multiprocessing = use_multiprocessing
@@ -478,7 +479,7 @@ def main(duration: float = 0, args=None):
     parser = argparse.ArgumentParser(description="goofi-pipe")
     parser.add_argument("filepath", nargs="?", help="path to the file to load from")
     parser.add_argument("--headless", action="store_true", help="run in headless mode")
-    parser.add_argument("--no-multiprocessing", action="store_true", help="disable multiprocessing")
+    parser.add_argument("-nm", "--no-multiprocessing", action="store_true", help="disable multiprocessing")
     args = parser.parse_args(args)
 
     # create manager
