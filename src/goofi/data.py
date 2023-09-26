@@ -12,10 +12,12 @@ class DataType(Enum):
 
     - `ARRAY`: An n-dimensional numpy array.
     - `STRING`: A string.
+    - `TABLE`: A named map of data objects (i.e. a dict of str keys and Data values).
     """
 
     ARRAY = 0
     STRING = 1
+    TABLE = 2
 
     def empty(self) -> Any:
         """
@@ -25,6 +27,8 @@ class DataType(Enum):
             return np.zeros(0)
         elif self == DataType.STRING:
             return ""
+        elif self == DataType.TABLE:
+            return dict()
         else:
             raise ValueError(f"Unknown data type {self}")
 
@@ -57,9 +61,9 @@ class Data:
         """
         # general checks
         if self.dtype is None or not isinstance(self.dtype, DataType):
-            raise ValueError(f"Expected dtype of type DataType, got {type(self.dtype)}")
+            raise ValueError(f"Expected dtype of type DataType, got {type(self.dtype)}.")
         if self.meta is None or not isinstance(self.meta, dict):
-            raise ValueError(f"Expected meta of type dict, got {type(self.meta)}")
+            raise ValueError(f"Expected meta of type dict, got {type(self.meta)}.")
 
         # validate data type
         if isinstance(self.dtype, DataType) and self.dtype not in DTYPE_TO_TYPE:
@@ -68,10 +72,19 @@ class Data:
                 "Please report this bug at https://github.com/PhilippThoelke/goofi-pipe/issues."
             )
         if not isinstance(self.data, DTYPE_TO_TYPE[self.dtype]):
-            raise ValueError(f"Expected data of type {DTYPE_TO_TYPE[self.dtype]}, got {type(self.data)}")
+            raise ValueError(f"Expected data of type {DTYPE_TO_TYPE[self.dtype]}, got {type(self.data)}.")
 
         if self.dtype == DataType.ARRAY and self.data.ndim == 0:
+            # make sure that arrays are at least 1-dimensional
             self.data = np.array([self.data])
+        elif self.dtype == DataType.TABLE:
+            for key, value in self.data.items():
+                # make sure that table keys are strings
+                if not isinstance(key, str):
+                    raise ValueError(f"Expected table keys of type str, got {type(key)}.")
+                # make sure that table values are Data objects
+                if not isinstance(value, Data):
+                    raise ValueError(f"Expected table values of type Data, got {type(value)}.")
 
         # TODO: add better metadata checks
 
@@ -79,4 +92,5 @@ class Data:
 DTYPE_TO_TYPE = {
     DataType.ARRAY: np.ndarray,
     DataType.STRING: str,
+    DataType.TABLE: dict,
 }

@@ -17,6 +17,7 @@ from goofi.params import BoolParam, FloatParam, IntParam, Param, StringParam
 DTYPE_SHAPE_MAP = {
     DataType.ARRAY: dpg.mvNode_PinShape_CircleFilled,
     DataType.STRING: dpg.mvNode_PinShape_TriangleFilled,
+    DataType.TABLE: dpg.mvNode_PinShape_QuadFilled,
 }
 
 PARAM_WINDOW_WIDTH = 400
