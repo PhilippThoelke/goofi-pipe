@@ -331,8 +331,7 @@ class Manager:
         # terminate the manager
         self._running = False
         for node in self.nodes:
-            self.nodes[node].connection.send(Message(MessageType.TERMINATE, {}))
-            self.nodes[node].connection.close()
+            self.nodes[node].terminate()
 
     def save(self, filepath: Optional[str] = None, overwrite: bool = False, timeout: float = 3.0) -> None:
         """
