@@ -572,6 +572,7 @@ class Window:
         """
 
         def file_callback(_, info):
+            # save the manager to the selected path
             self.save(path=info["file_path_name"], overwrite=False, callback=callback)
 
         if save_as or (self.manager.save_path is None and path is None):
