@@ -118,7 +118,22 @@ class NodeParams:
                     data[group][param_name] = TYPE_PARAM_MAP[type(param)](param)
 
         # convert to named tuples
-        self._data = {}
+        self._data = self._generate_data_dict(data)
+
+    def _generate_data_dict(self, data: Dict[str, Dict[str, Any]]) -> Dict[str, Dict[str, Any]]:
+        """
+        Convert the parameter dictionary to a dictionary of named tuples.
+
+        ### Parameters
+        `data` : Dict[str, Dict[str, Any]]
+            A dictionary of parameter groups, where each group is a dictionary of parameter names and values.
+
+        ### Returns
+        `Dict[str, Dict[str, Any]]`
+            A dictionary of parameter groups, where each group is a dictionary of parameter names and values.
+        """
+        # convert to named tuples
+        result = {}
         for group, params in data.items():
             # create the named tuple class for the current group
             NamedTupleClass = namedtuple(group.capitalize(), params.keys())
@@ -136,7 +151,8 @@ class NodeParams:
                 },
             )
 
-            self._data[group] = NamedTupleClass(**params)
+            result[group] = NamedTupleClass(**params)
+        return result
 
     def update(self, params: Dict[str, Dict[str, Any]]):
         """
@@ -215,3 +231,9 @@ class NodeParams:
 
     def __len__(self) -> int:
         return len(self._data)
+
+    def __getstate__(self):
+        return {"_data": {k: v._asdict() for k, v in self._data.items()}}
+
+    def __setstate__(self, state):
+        self._data = self._generate_data_dict(state["_data"])
