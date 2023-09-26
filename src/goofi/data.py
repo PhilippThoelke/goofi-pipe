@@ -62,19 +62,21 @@ class Data:
             raise ValueError(f"Expected meta of type dict, got {type(self.meta)}")
 
         # validate data type
-        expected = None
-        if self.dtype == DataType.STRING:
-            expected = str
-        elif self.dtype == DataType.ARRAY:
-            expected = np.ndarray
-            if self.data.ndim == 0:
-                self.data = np.array([self.data])
-        elif isinstance(self.dtype, DataType):
+        if isinstance(self.dtype, DataType) and self.dtype not in DTYPE_TO_TYPE:
             raise RuntimeError(
                 f"Data type {self.dtype} is defined but not handled in check_data. "
-                "Please report this in an issue: https://github.com/PhilippThoelke/goofi-pipe/issues."
+                "Please report this bug at https://github.com/PhilippThoelke/goofi-pipe/issues."
             )
-        if not isinstance(self.data, expected):
-            raise ValueError(f"Expected data of type {expected}, got {type(self.data)}")
+        if not isinstance(self.data, DTYPE_TO_TYPE[self.dtype]):
+            raise ValueError(f"Expected data of type {DTYPE_TO_TYPE[self.dtype]}, got {type(self.data)}")
+
+        if self.dtype == DataType.ARRAY and self.data.ndim == 0:
+            self.data = np.array([self.data])
 
         # TODO: add better metadata checks
+
+
+DTYPE_TO_TYPE = {
+    DataType.ARRAY: np.ndarray,
+    DataType.STRING: str,
+}

@@ -1,6 +1,6 @@
 import pytest
 
-from goofi.data import Data
+from goofi.data import DTYPE_TO_TYPE, Data
 
 from .utils import list_data_types
 
@@ -28,3 +28,8 @@ def test_create_data(dtype):
             continue
         with pytest.raises(ValueError):
             Data(dtype, other_dtype.empty(), {})
+
+
+@pytest.mark.parametrize("dtype", list_data_types())
+def test_dtype_map(dtype):
+    assert dtype in DTYPE_TO_TYPE, f"Missing entry in DTYPE_TO_TYPE for dtype {dtype}."
