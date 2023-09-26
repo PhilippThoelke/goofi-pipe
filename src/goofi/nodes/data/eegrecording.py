@@ -20,7 +20,10 @@ class EEGRecording(Node):
     def stream_thread(self):
         """Load the appropriate data and start the stream. Then wait until running is set to False."""
         if self.params.recording.use_example_data.value:
-            raw = mne.concatenate_raws([mne.io.read_raw(p) for p in eegbci.load_data(1, [1, 2])])
+            raw = mne.concatenate_raws(
+                [mne.io.read_raw(p, verbose=False) for p in eegbci.load_data(1, [1, 2])],
+                verbose=False,
+            )
             eegbci.standardize(raw)
         else:
             # load data from file
