@@ -31,7 +31,7 @@ class Math(Node):
         if data is None or data.data is None:
             return None
 
-        signal = np.array(data.data)
+        signal = data.data
 
         # apply math operations
         signal += self.params.math.pre_add.value
