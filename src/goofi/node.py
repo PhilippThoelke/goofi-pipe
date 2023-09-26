@@ -306,7 +306,10 @@ class Node(ABC):
 
             # check that the process method returned a dict
             if not isinstance(output_data, dict):
-                raise TypeError(f"The process method didn't return a dict. Got {type(output_data)}.")
+                raise TypeError(
+                    f"The process method should return a dictionary with one entry per output slot. "
+                    f"Got {type(output_data)}."
+                )
 
             # check that the output data contains the correct fields
             if missing := set(self.output_slots.keys()) - set(output_data.keys()):
