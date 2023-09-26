@@ -98,7 +98,7 @@ def test_multiproc():
     assert not ref.process.is_alive(), "Process should be dead."
 
 
-def test_processing_error():
+def test_processing_error(timeout: float = 1.5):
     messages = []
 
     def error_callback(ref: NodeRef, msg: Message):
@@ -110,7 +110,15 @@ def test_processing_error():
 
     # manually trigger processing once
     n.process_flag.set()
-    time.sleep(0.1)
+
+    start = time.time()
+    while len(messages) == 0:
+        if time.time() - start > timeout:
+            raise TimeoutError("Timeout while waiting for error message.")
+        time.sleep(0.01)
+
+    # make sure we received the error message
+    assert len(messages) == 1, "Node should have received one message."
 
     # the processing thread should be alive as the node is expected to handle the error
     assert n.processing_thread.is_alive(), "Processing thread should still be alive."
@@ -118,9 +126,6 @@ def test_processing_error():
     # the node and messaging thread should be alive
     assert n.alive, "Node should be alive."
     assert n.messaging_thread.is_alive(), "Messaging thread should be alive."
-
-    # make sure we received the error message
-    assert len(messages) == 1, "Node should have received one message."
 
     # clean up dangling threads
     ref.terminate()

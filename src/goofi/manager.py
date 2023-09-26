@@ -483,8 +483,7 @@ def main(duration: float = 0, args=None):
     args = parser.parse_args(args)
 
     # create manager
-    # TODO: fix multiprocessing and use the argument
-    manager = Manager(filepath=args.filepath, headless=args.headless, use_multiprocessing=False)
+    manager = Manager(filepath=args.filepath, headless=args.headless, use_multiprocessing=not args.no_multiprocessing)
 
     if duration > 0:
         # run for a fixed duration

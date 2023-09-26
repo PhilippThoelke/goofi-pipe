@@ -59,6 +59,8 @@ class Node(ABC):
         are the output slots themselves.
     `params` : NodeParams
         An instance of the NodeParams class containing the parameters of the node.
+    `is_local` : bool
+        Whether the node is running in the same process as the manager.
     `initial_params` : Optional[Dict[str, Dict[str, Any]]]
         A dictionary of initial parameter values for the node. Defaults to None.
     """
@@ -71,6 +73,7 @@ class Node(ABC):
         input_slots: Dict[str, InputSlot],
         output_slots: Dict[str, OutputSlot],
         params: NodeParams,
+        is_local: bool,
         initial_params: Optional[Dict[str, Dict[str, Any]]] = None,
     ) -> None:
         # initialize the base class
@@ -97,9 +100,14 @@ class Node(ABC):
         self.processing_thread = Thread(target=self._processing_loop, daemon=True)
         self.processing_thread.start()
 
-        # initialize message handling thread
-        self.messaging_thread = Thread(target=self._messaging_loop)
-        self.messaging_thread.start()
+        if is_local:
+            # this is the main process, create a new thread to not block it
+            self.messaging_thread = Thread(target=self._messaging_loop, daemon=True)
+            self.messaging_thread.start()
+        else:
+            # this is a separate process, run the messaging loop in the current thread
+            # NOTE: if we don't block the current thread, the node's process will die
+            self._messaging_loop()
 
     @require_init
     def _validate_attrs(self):
@@ -364,7 +372,7 @@ class Node(ABC):
         in_slots, out_slots, params = cls._configure(cls)
         conn1, conn2 = MultiprocessingConnection.create()
         # instantiate the node in a separate process
-        proc = Process(target=cls, args=(conn2, in_slots, out_slots, params, initial_params), daemon=True)
+        proc = Process(target=cls, args=(conn2, in_slots, out_slots, params, False, initial_params), daemon=True)
         proc.start()
         # create the node reference
         return NodeRef(
@@ -394,7 +402,7 @@ class Node(ABC):
         in_slots, out_slots, params = cls._configure(cls)
         conn1, conn2 = MultiprocessingConnection.create()
         # instantiate the node in the current process
-        node = cls(conn2, in_slots, out_slots, params, initial_params)
+        node = cls(conn2, in_slots, out_slots, params, True, initial_params)
         # create the node reference
         return (
             NodeRef(
