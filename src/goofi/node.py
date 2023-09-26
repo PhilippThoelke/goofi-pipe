@@ -321,11 +321,14 @@ class Node(ABC):
             # send output data
             for name in self.output_slots.keys():
                 data = output_data[name]
-                if not isinstance(data, tuple) or len(data) != 2:
+                try:
+                    data = Data(self.output_slots[name].dtype, data[0], data[1])
+                except ValueError as e:
                     raise ValueError(
-                        f"Expected {self.__class__.__name__}.process() to return a tuple of data and metadata but got {data}."
-                    )
-                data = Data(self.output_slots[name].dtype, data[0], data[1])
+                        f"The return value of {self.__class__.__name__}.process() is misformed for output "
+                        f"slot {name}. Expected a tuple of result (instance of one of the DataTypes) and "
+                        f"metadata (dict) but got {data}."
+                    ) from e
 
                 # send the data to all connected nodes
                 for target_slot, conn in self.output_slots[name].connections:
