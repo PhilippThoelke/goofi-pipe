@@ -702,10 +702,10 @@ class Window:
             time.sleep(0.01)
 
         # update window title
+        unsaved_changes = "*" if self.manager.unsaved_changes else ""
         if self.manager.save_path is None:
-            dpg.set_viewport_title("goofi-pipe")
+            dpg.set_viewport_title(f"{unsaved_changes}goofi-pipe")
         else:
-            unsaved_changes = "*" if self.manager.unsaved_changes else ""
             dpg.set_viewport_title(f"goofi-pipe | {unsaved_changes}{self.manager.save_path.split(os.sep)[-1]}")
 
     def exit_callback(self, value):
