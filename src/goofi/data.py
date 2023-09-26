@@ -67,6 +67,8 @@ class Data:
             expected = str
         elif self.dtype == DataType.ARRAY:
             expected = np.ndarray
+            if self.data.ndim == 0:
+                self.data = np.array([self.data])
         elif isinstance(self.dtype, DataType):
             raise RuntimeError(
                 f"Data type {self.dtype} is defined but not handled in check_data. "
