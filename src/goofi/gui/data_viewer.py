@@ -69,9 +69,8 @@ class ArrayViewer(DataViewer):
         ### Parameters
         `data` : Data
             The data message.
-        `plot` : List[int]
-            A list of at least two item tags: x-axis, y-axis, and optional data series tags.
         """
+        # convert data to numpy array and copy to C order (otherwise DPG will crash for some arrays)
         array = np.squeeze(data.data).copy(order="C")
 
         if self.vmin is not None and self.vmax is not None:
@@ -140,13 +139,57 @@ class StringViewer(DataViewer):
         ### Parameters
         `data` : Data
             The data message.
-        `text` : int
-            The item tag of the text item.
         """
         dpg.set_value(self.text, data.data)
+
+
+class TableViewer(DataViewer):
+    def __init__(self, content_window: int) -> None:
+        super().__init__(DataType.TABLE, content_window)
+
+        # create table
+        self.table = dpg.add_table(parent=self.content_window, header_row=False, policy=dpg.mvTable_SizingFixedFit)
+        dpg.add_table_column(parent=self.table)
+        dpg.add_table_column(parent=self.table)
+
+        # row container
+        self.rows = []
+
+    def update(self, data: Data) -> None:
+        """
+        This function handles drawing table data to a table item.
+
+        ### Parameters
+        `data` : Data
+            The data message.
+        """
+        # remove extra rows
+        while len(self.rows) > len(data.data):
+            dpg.delete_item(self.rows.pop())
+        # add missing rows
+        while len(self.rows) < len(data.data):
+            with dpg.table_row(parent=self.table) as row:
+                key = dpg.add_text("")
+                val = dpg.add_text("")
+                dpg.set_item_user_data(row, (key, val))
+                # store row to populate later
+                self.rows.append(row)
+
+        # populate rows with data
+        for row, (key, val) in zip(self.rows, data.data.items()):
+            # truncate value text
+            val = str(val.data)
+            if len(val) > 20:
+                val = val[:20] + "..."
+
+            # update key and value cells
+            key_cell, val_cell = dpg.get_item_user_data(row)
+            dpg.set_value(key_cell, key)
+            dpg.set_value(val_cell, val)
 
 
 DTYPE_VIEWER_MAP = {
     DataType.ARRAY: ArrayViewer,
     DataType.STRING: StringViewer,
+    DataType.TABLE: TableViewer,
 }
