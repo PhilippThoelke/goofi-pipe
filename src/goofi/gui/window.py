@@ -6,10 +6,10 @@ from functools import partial
 from typing import Callable, Dict, List, Optional, Tuple
 
 import dearpygui.dearpygui as dpg
-import numpy as np
 
 from goofi.data import DataType
 from goofi.gui import events
+from goofi.gui.data_viewer import DTYPE_VIEWER_MAP
 from goofi.message import Message, MessageType
 from goofi.node_helpers import NodeRef
 from goofi.params import BoolParam, FloatParam, IntParam, Param, StringParam
@@ -51,101 +51,24 @@ class GUINode:
     node_ref: NodeRef
 
 
-def handle_data(gui_node: GUINode, node: NodeRef, data: Message):
+def handle_data(gui_node: GUINode, node: NodeRef, message: Message):
     """
     Handle a data message from a node. This function is registered as a message handler for the
     `MessageType.DATA` message type.
 
     ### Parameters
-    `name` : str
-        The name of the node.
+    `gui_node` : GUINode
+        The GUI node instance.
     `node` : NodeRef
         The node reference.
-    `data` : Message
+    `message` : Message
         The data message.
     """
     try:
-        gui_node.output_draw_handlers[data.content["slot_name"]](node, data)
+        gui_node.output_draw_handlers[message.content["slot_name"]](message)
     except ValueError as e:
         # TODO: add proper logging
-        print(f"Output draw handler for slot {data.content['slot_name']} failed: {e}")
-
-
-def draw_data(node: NodeRef, data: Message, plot: List[int], minmax: List[int], margin: float = 0.1, shrinking: float = 0.01):
-    """
-    This function handles drawing numerical data to a plot. Array shapes are handled as follows:
-    - 0D (single number): the data is drawn as a horizontal line.
-    - 1D: the data is drawn as a simple line plot.
-    - 2D: the array gets interpreted as (n_channels, n_samples), and each channel is drawn as a line plot.
-
-    ### Parameters
-    `node` : NodeRef
-        The node reference.
-    `data` : Message
-        The data message.
-    `plot` : List[int]
-        A list of at least two item tags: x-axis, y-axis, and optional data series tags.
-    `minmax` : List[int]
-        A list of two values: minimum and maximum values of the data.
-    """
-    dtype = data.content["data"].dtype
-    value = np.squeeze(data.content["data"].data).copy(order="C")
-
-    if dtype == DataType.ARRAY:
-        if minmax[0] is not None and minmax[1] is not None:
-            # apply shrinking to minmax
-            minmax[:] = minmax[0] * (1 - shrinking) + shrinking * minmax[1], minmax[1] * (1 - shrinking) + shrinking * minmax[0]
-        # update minmax
-        if minmax[0] is None or np.min(value) < minmax[0]:
-            minmax[0] = np.nanmin(value)
-        if minmax[1] is None or np.max(value) > minmax[1]:
-            minmax[1] = np.nanmax(value)
-
-        if value.ndim == 0:
-            # extend value to have at least 2 elements
-            value = np.array([value, value])
-        if value.ndim == 1:
-            # remove extra data series
-            while len(plot) > 3:
-                dpg.delete_item(plot.pop())
-
-            xs = np.arange(value.shape[0])
-            if len(plot) == 2:
-                # add new data series
-                plot.append(dpg.add_line_series(xs, value, parent=plot[1]))
-            else:
-                # update existing data series
-                dpg.set_value(plot[2], [xs, value])
-
-            # autoscale x-axis
-            dpg.set_axis_limits(plot[0], xs.min(), xs.max())
-            # set y-axis limits
-            dpg.set_axis_limits(plot[1], minmax[0] - abs(minmax[0]) * margin, minmax[1] + abs(minmax[1]) * margin)
-        elif value.ndim == 2:
-            # remove extra data series
-            while len(plot) > value.shape[0] + 2:
-                dpg.delete_item(plot.pop())
-
-            # add new data series
-            xs = np.arange(value.shape[1])
-
-            # iterate over channels (first dimension)
-            for i in range(value.shape[0]):
-                if len(plot) == i + 2:
-                    # add new data series
-                    plot.append(dpg.add_line_series(xs, value[i], parent=plot[1]))
-                else:
-                    # update existing data series
-                    dpg.set_value(plot[i + 2], [xs, value[i]])
-
-            # autoscale x-axis
-            dpg.set_axis_limits(plot[0], xs.min(), xs.max())
-            # set y-axis limits
-            dpg.set_axis_limits(plot[1], minmax[0] - minmax[0] * margin, minmax[1] + minmax[1] * margin)
-        else:
-            raise NotImplementedError("TODO: plot higher-dimensional data")
-    else:
-        raise NotImplementedError("TODO: plot non-array data")
+        print(f"Output draw handler for slot {message.content['slot_name']} failed: {e}")
 
 
 def param_updated(_, value, user_data):
@@ -208,9 +131,9 @@ def add_param(parent: int, group: str, name: str, param: Param, node: NodeRef) -
             raise NotImplementedError(f"Parameter type {type(param)} not implemented.")
 
 
-def add_output_slot(parent: int, name: str, closed: bool = False, size: Tuple[int, int] = (175, 100)) -> Tuple[int, int]:
+def add_output_slot(parent: int, name: str, closed: bool = False, size: Tuple[int, int] = (175, 100)) -> int:
     """
-    Add an output slot to the GUI, which consists of a collapsable header and a plot.
+    Add an output slot to the GUI, which consists of a collapsable header and a content window for the data viewer.
 
     ### Parameters
     `parent` : int
@@ -220,13 +143,11 @@ def add_output_slot(parent: int, name: str, closed: bool = False, size: Tuple[in
     `closed` : bool
         Whether the headers should be closed initially.
     `size` : Tuple[int, int]
-        The size of the plot.
+        The size of the content area.
 
     ### Returns
-    `xax` : int
-        The x-axis item.
-    `yax` : int
-        The y-axis item.
+    `content` : int
+        The content window item.
     """
 
     def header_callback(_1, _2, items: List[int]):
@@ -238,9 +159,9 @@ def add_output_slot(parent: int, name: str, closed: bool = False, size: Tuple[in
 
         ### Parameters
         `items` : List[int]
-            A list of four items: a bool indicating to close the header, the header, the window, and the plot.
+            A list of four items: a bool indicating to close the header, the header, the window, and the content window.
         """
-        close, header, window, plot = items
+        close, header, window, content = items
         header_height = dpg.get_item_state(header)["rect_size"][1]
 
         if header_height == 0:
@@ -251,17 +172,17 @@ def add_output_slot(parent: int, name: str, closed: bool = False, size: Tuple[in
             # header was closed, shrink window to header size
             dpg.set_item_height(window, header_height)
         else:
-            # header was opened, expand window to header size plus plot size
-            plot_height = dpg.get_item_state(plot)["rect_size"][1]
-            if plot_height == 0:
-                # this happens when the plot is off screen, set to default height
-                plot_height = size[1]
+            # header was opened, expand window to header size plus cotent size
+            content_height = dpg.get_item_state(content)["rect_size"][1]
+            if content_height == 0:
+                # this happens when the content window is off screen, set to default height
+                content_height = size[1]
 
-            dpg.set_item_height(window, header_height + plot_height + 4)  # magic + 4 to avoid scroll bar
+            dpg.set_item_height(window, header_height + content_height + 4)  # magic + 4 to avoid scroll bar
 
     # NOTE: The user_data lists are used to pass data to the callbacks. The first element is a bool, which
     # is used to indicate whether the header was closed or opened. The remaining elements are the header,
-    # window, and plot items. Due to the way DearPyGui registers callbacks we can not use partials here.
+    # window, and content window items. Due to the way DearPyGui registers callbacks we can not use partials here.
     user_data_open, user_data_close = [False], [True]
     # register handlers
     with dpg.item_handler_registry() as reg:
@@ -269,37 +190,23 @@ def add_output_slot(parent: int, name: str, closed: bool = False, size: Tuple[in
         dpg.add_item_toggled_open_handler(callback=header_callback, user_data=user_data_open)
 
     # NOTE: we initially set the height to 1 to avoid the node reaching out of the window, which would break the
-    # initial header_callback call as the header and plot sizes according to DearPyGui would be 0.
+    # initial header_callback call as the header and content sizes according to DearPyGui would be 0.
     # The child window is needed, because otherwise the header will expand to fill the entire node editor window.
     with dpg.child_window(width=size[0], height=1, parent=parent) as window:
-        with dpg.collapsing_header(
-            label=name, default_open=not closed, open_on_double_click=False, open_on_arrow=False, closable=False
-        ) as header:
-            # create plot
-            plot = dpg.add_plot(
-                width=size[0],
-                height=size[1],
-                no_menus=True,
-                no_box_select=True,
-                no_mouse_pos=True,
-                no_highlight=True,
-                no_child=True,
-            )
-            # add x and y axis
-            axis_kwargs = dict(parent=plot, no_gridlines=True, no_tick_marks=True, lock_min=True, lock_max=True)
-            xax = dpg.add_plot_axis(dpg.mvXAxis, no_tick_labels=True, **axis_kwargs)
-            yax = dpg.add_plot_axis(dpg.mvYAxis, no_tick_labels=False, **axis_kwargs)
+        # add collapsable content area for the data viewer
+        header = dpg.add_collapsing_header(label=name, default_open=not closed, open_on_arrow=False, closable=False)
+        content = dpg.add_child_window(width=size[0], height=size[1], user_data=size, parent=header)
 
-            # store header, window and plot in user_data for the two callbacks
-            user_data_open.extend([header, window, plot])
-            user_data_close.extend([header, window, plot])
-            # bind the two callbacks to the header
-            dpg.bind_item_handler_registry(header, reg)
+    # store header, window and content window in user_data for the two callbacks
+    user_data_open.extend([header, window, content])
+    user_data_close.extend([header, window, content])
+    # bind the two callbacks to the header
+    dpg.bind_item_handler_registry(header, reg)
 
-            # schedule the header callback to set up the window sizes
-            initial_args = user_data_close if closed else user_data_open
-            threading.Timer(0.1, header_callback, [None, None, initial_args]).start()
-    return xax, yax
+    # schedule the header callback to set up the window sizes
+    initial_args = user_data_close if closed else user_data_open
+    threading.Timer(0.1, header_callback, [None, None, initial_args]).start()
+    return content
 
 
 class Window:
@@ -357,15 +264,17 @@ class Window:
                 slot_kwargs = dict(label=name, attribute_type=dpg.mvNode_Attr_Output, shape=DTYPE_SHAPE_MAP[dtype])
                 with dpg.node_attribute(**slot_kwargs) as attr:
                     out_slots[name] = attr
-                    xax, yax = add_output_slot(attr, name, closed=len(node.output_slots) > 2)
-                    output_draw_handlers[name] = partial(draw_data, plot=[xax, yax], minmax=[None, None])
+                    content = add_output_slot(attr, name, closed=len(node.output_slots) > 2)
+                    # create data viewer
+                    output_draw_handlers[name] = DTYPE_VIEWER_MAP[dtype](content)
+
+            # add node to node list
+            self.nodes[node_name] = GUINode(node_id, in_slots, out_slots, output_draw_handlers, node)
 
             # TODO: register PROCESSING_ERROR message handler and display error messages
             node.set_message_handler(MessageType.PROCESSING_ERROR, lambda node, data: print(data.content["error"]))
 
-            # add node to node list
-            self.nodes[node_name] = GUINode(node_id, in_slots, out_slots, output_draw_handlers, node)
-            # register node message handler
+            # register data message handler to update the data viewers
             node.set_message_handler(MessageType.DATA, partial(handle_data, self.nodes[node_name]))
 
     @running
