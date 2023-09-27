@@ -252,21 +252,25 @@ class Window:
             ############### input slots ###############
             in_slots = {}
             for name, dtype in node.input_slots.items():
-                slot_kwargs = dict(label=name, attribute_type=dpg.mvNode_Attr_Input, shape=DTYPE_SHAPE_MAP[dtype])
-                with dpg.node_attribute(**slot_kwargs) as attr:
-                    in_slots[name] = attr
-                    dpg.add_text(name)
+                # create input slot
+                in_slots[name] = dpg.add_node_attribute(
+                    label=name, attribute_type=dpg.mvNode_Attr_Input, shape=DTYPE_SHAPE_MAP[dtype], user_data=dtype
+                )
+                # simply add a text label
+                dpg.add_text(name, parent=in_slots[name])
 
             ############### output slots ###############
             out_slots = {}
             output_draw_handlers = {}
             for name, dtype in node.output_slots.items():
-                slot_kwargs = dict(label=name, attribute_type=dpg.mvNode_Attr_Output, shape=DTYPE_SHAPE_MAP[dtype])
-                with dpg.node_attribute(**slot_kwargs) as attr:
-                    out_slots[name] = attr
-                    content = add_output_slot(attr, name, closed=len(node.output_slots) > 2)
-                    # create data viewer
-                    output_draw_handlers[name] = DTYPE_VIEWER_MAP[dtype](content)
+                # create output slot
+                out_slots[name] = dpg.add_node_attribute(
+                    label=name, attribute_type=dpg.mvNode_Attr_Output, shape=DTYPE_SHAPE_MAP[dtype], user_data=dtype
+                )
+                # create content window for data viewer (initialize closed if more than two output slots)
+                content = add_output_slot(out_slots[name], name, closed=len(node.output_slots) > 2)
+                # create data viewer
+                output_draw_handlers[name] = DTYPE_VIEWER_MAP[dtype](content)
 
             # add node to node list
             self.nodes[node_name] = GUINode(node_id, in_slots, out_slots, output_draw_handlers, node)
@@ -361,6 +365,14 @@ class Window:
         # get node names
         node1 = dpg.get_item_label(dpg.get_item_parent(items[0]))
         node2 = dpg.get_item_label(dpg.get_item_parent(items[1]))
+
+        # make sure the data types match
+        dtype1 = dpg.get_item_user_data(items[0])
+        dtype2 = dpg.get_item_user_data(items[1])
+        if dtype1 != dtype2:
+            # TODO: add proper logging
+            print(f"Data types of slots {slot1} ({dtype1.name}) and {slot2} ({dtype2.name}) do not match.")
+            return
 
         # remove link first if the input slot already has a link
         for link in list(self.links.keys()):
