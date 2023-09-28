@@ -22,3 +22,13 @@ git checkout goofi2 # switch to the goofi-pipe 2.0 development branch
 pip install -e . # install goofi-pipe in development mode
 goofi-pipe # start the application to make sure the installation was successful
 ```
+
+TODO
+---
+### GUI
+- turn parameters into a DPG table for alignment/spacing of items
+- make parameters window resizable horizontally
+- implement parameter text field next to slider (e.g. float, int, ...)
+- categorical parameter type (dropdown menu)
+- copy and paste nodes (including links between all selected nodes
+- search functionality for adding nodes (QUESTION: global search over all nodes or only current category?)
