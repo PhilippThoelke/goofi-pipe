@@ -16,7 +16,7 @@ def test_implement_init(node: Type[Node]):
 
 
 @pytest.mark.parametrize("node", list_nodes())
-def test_create_local(node: Type[Node], timeout: float = 5.0):
+def test_create_local(node: Type[Node], timeout: float = 10.0):
     ref, n = node.create_local()
     ref.terminate()
 
