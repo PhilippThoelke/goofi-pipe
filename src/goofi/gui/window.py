@@ -152,11 +152,21 @@ def add_param(parent: int, group: str, name: str, param: Param, node: NodeRef) -
                     )
             elif isinstance(param, StringParam):
                 # parameter is a string
-                dpg.add_input_text(
-                    default_value=param.value,
-                    callback=param_updated,
-                    user_data=(group, name, node),
-                )
+                if param.options is None:
+                    # `options` is not set, use an unconstrained text input
+                    dpg.add_input_text(
+                        default_value=param.value,
+                        callback=param_updated,
+                        user_data=(group, name, node),
+                    )
+                else:
+                    # `options` is set, use a dropdown menu
+                    dpg.add_combo(
+                        default_value=param.value,
+                        items=param.options,
+                        callback=param_updated,
+                        user_data=(group, name, node),
+                    )
             else:
                 raise NotImplementedError(f"Parameter type {type(param)} not implemented.")
 

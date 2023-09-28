@@ -2,7 +2,7 @@ import numpy as np
 
 from goofi.data import Data, DataType
 from goofi.node import Node
-from goofi.params import FloatParam, IntParam
+from goofi.params import FloatParam, IntParam, StringParam
 
 
 class Biotuner(Node):
@@ -29,7 +29,7 @@ class Biotuner(Node):
                 "f_min": FloatParam(2.0, 0.1, 50.0),
                 "f_max": FloatParam(30.0, 1.0, 100.0),
                 "precision": FloatParam(0.1, 0.01, 10.0),
-                "peaks_function": "EMD",
+                "peaks_function": StringParam("EMD", options=["EMD", "fixed"]),
             }
         }
 

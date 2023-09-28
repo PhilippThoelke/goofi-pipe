@@ -2,7 +2,7 @@ from abc import ABC, abstractmethod
 from collections import namedtuple
 from copy import deepcopy
 from dataclasses import asdict, dataclass
-from typing import Any, Dict, Union
+from typing import Any, Dict, List, Union
 
 
 @dataclass
@@ -59,6 +59,9 @@ class IntParam(Param):
 
 @dataclass
 class StringParam(Param):
+    # if options is None, the string is free-form, otherwise it is a dropdown
+    options: List[str] = None
+
     @staticmethod
     def default() -> str:
         return ""
