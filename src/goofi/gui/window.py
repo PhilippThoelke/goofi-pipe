@@ -73,7 +73,19 @@ def handle_data(gui_node: GUINode, node: NodeRef, message: Message):
 
 def param_updated(_, value, user_data):
     """A callback function for updating a parameter value."""
-    user_data[2].update_param(user_data[0], user_data[1], value)
+    group, name, node = user_data[:3]
+
+    if len(user_data) == 5:
+        # the parameter includes multiple input widgets, update all of them
+        input_group, value_type = user_data[3:]
+        for child in dpg.get_item_children(input_group)[1]:
+            dpg.set_value(child, value_type(value))
+
+        # make sure the value has the correct type
+        value = value_type(value)
+
+    # send the updated parameter to the node
+    node.update_param(group, name, value)
 
 
 def add_param(parent: int, group: str, name: str, param: Param, node: NodeRef) -> None:
@@ -92,43 +104,61 @@ def add_param(parent: int, group: str, name: str, param: Param, node: NodeRef) -
     `node` : NodeRef
         The node reference.
     """
-    with dpg.group(horizontal=True, parent=parent):
-        dpg.add_text(format_name(name))
-        dpg.add_spacer(width=-1)
+    with dpg.table_row(parent=parent):
+        with dpg.table_cell():
+            dpg.add_text(format_name(name))
 
-        if isinstance(param, BoolParam):
-            # parameter is a bool
-            if param.toggle:
-                dpg.add_checkbox(default_value=param.value, callback=param_updated, user_data=(group, name, node))
+        with dpg.table_cell():
+            if isinstance(param, BoolParam):
+                # parameter is a bool
+                if param.toggle:
+                    dpg.add_checkbox(default_value=param.value, callback=param_updated, user_data=(group, name, node))
+                else:
+                    dpg.add_button(callback=param_updated, user_data=(group, name, node))
+            elif isinstance(param, FloatParam):
+                with dpg.group(horizontal=True) as input_group:
+                    # parameter is a float
+                    dpg.add_input_text(
+                        width=50,
+                        scientific=True,
+                        on_enter=True,
+                        default_value=str(param.value),
+                        callback=param_updated,
+                        user_data=(group, name, node, input_group, float),
+                    )
+                    dpg.add_slider_float(
+                        default_value=param.value,
+                        min_value=param.vmin,
+                        max_value=param.vmax,
+                        user_data=(group, name, node, input_group, float),
+                        callback=param_updated,
+                    )
+            elif isinstance(param, IntParam):
+                with dpg.group(horizontal=True) as input_group:
+                    # parameter is an integer
+                    dpg.add_input_text(
+                        width=50,
+                        on_enter=True,
+                        default_value=str(param.value),
+                        callback=param_updated,
+                        user_data=(group, name, node, input_group, int),
+                    )
+                    dpg.add_slider_int(
+                        default_value=param.value,
+                        min_value=param.vmin,
+                        max_value=param.vmax,
+                        callback=param_updated,
+                        user_data=(group, name, node, input_group, int),
+                    )
+            elif isinstance(param, StringParam):
+                # parameter is a string
+                dpg.add_input_text(
+                    default_value=param.value,
+                    callback=param_updated,
+                    user_data=(group, name, node),
+                )
             else:
-                dpg.add_button(callback=param_updated, user_data=(group, name, node))
-        elif isinstance(param, FloatParam):
-            # parameter is a float
-            dpg.add_slider_float(
-                default_value=param.value,
-                min_value=param.vmin,
-                max_value=param.vmax,
-                user_data=(group, name, node),
-                callback=param_updated,
-            )
-        elif isinstance(param, IntParam):
-            # parameter is an integer
-            dpg.add_slider_int(
-                default_value=param.value,
-                min_value=param.vmin,
-                max_value=param.vmax,
-                callback=param_updated,
-                user_data=(group, name, node),
-            )
-        elif isinstance(param, StringParam):
-            # parameter is a string
-            dpg.add_input_text(
-                default_value=param.value,
-                callback=param_updated,
-                user_data=(group, name, node),
-            )
-        else:
-            raise NotImplementedError(f"Parameter type {type(param)} not implemented.")
+                raise NotImplementedError(f"Parameter type {type(param)} not implemented.")
 
 
 def add_output_slot(parent: int, name: str, closed: bool = False, size: Tuple[int, int] = (175, 100)) -> int:
@@ -588,8 +618,12 @@ class Window:
         with dpg.tab_bar(parent=self.parameters):
             for group in node.params:
                 with dpg.tab(label=format_name(group)) as tab:
-                    for name, param in node.params[group].items():
-                        add_param(tab, group, name, param, node)
+                    with dpg.table(header_row=False, parent=tab, policy=dpg.mvTable_SizingStretchProp) as table:
+                        dpg.add_table_column()
+                        dpg.add_table_column()
+
+                        for name, param in node.params[group].items():
+                            add_param(table, group, name, param, node)
 
         # show parameters window
         dpg.configure_item(self.parameters, show=True)
