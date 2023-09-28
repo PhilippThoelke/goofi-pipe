@@ -7,6 +7,10 @@ from typing import Any, Dict, Union
 
 @dataclass
 class Param(ABC):
+    """
+    Parameter container that has a specific type and potentially constrains the range of allowed values.
+    """
+
     value: Any = None
 
     def __post_init__(self):
@@ -18,6 +22,9 @@ class Param(ABC):
     @staticmethod
     @abstractmethod
     def default() -> Any:
+        """
+        Return the default value for the parameter.
+        """
         pass
 
 
