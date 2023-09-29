@@ -1,3 +1,6 @@
+import time
+from copy import deepcopy
+
 import dearpygui.dearpygui as dpg
 
 from goofi.node_helpers import list_nodes
@@ -151,6 +154,55 @@ def save_manager(win):
         win.save()
 
 
+def copy_selected_nodes(win, timeout: float = 0.1):
+    """Copy the selected nodes to the clipboard."""
+    if not dpg.is_key_down(dpg.mvKey_Control):
+        return
+
+    # retrieve selected nodes and their positions
+    nodes, positions = [], []
+    for n in dpg.get_selected_nodes(win.node_editor):
+        nodes.append(dpg.get_item_user_data(n))
+        positions.append(dpg.get_item_state(n)["rect_min"])
+
+    # serialize the nodes
+    for n in nodes:
+        n.serialize()
+
+    # wait for all nodes to respond, i.e. their serialized_state is not None
+    start = time.time()
+    serialized_nodes = []
+    for node, pos in zip(nodes, positions):
+        while node.serialized_state is None and time.time() - start < timeout:
+            # wait for the node to respond or for the timeout to be reached
+            time.sleep(0.01)
+
+        # check if we got a response in time
+        if node.serialized_state is None:
+            # TODO: add proper logging
+            print(f"Node {node} did not respond to serialize request.")
+            return
+
+        # store the serialized state
+        ser = deepcopy(node.serialized_state)
+        del ser["out_conns"]
+        ser["pos"] = pos
+        serialized_nodes.append(ser)
+
+    # store the serialized nodes in the clipboard
+    win.node_clipboard = serialized_nodes
+
+
+def paste_nodes(win):
+    """Paste the nodes from the clipboard."""
+    if not dpg.is_key_down(dpg.mvKey_Control) or win.node_clipboard is None:
+        return
+
+    # add the nodes to the manager
+    for node in win.node_clipboard:
+        win.manager.add_node(node["_type"], node["category"], params=node["params"], pos=node["pos"])
+
+
 # the key handler map maps key press events to functions that handle them
 KEY_HANDLER_MAP = {
     dpg.mvKey_Delete: delete_selected_item,
@@ -158,4 +210,6 @@ KEY_HANDLER_MAP = {
     dpg.mvKey_Tab: create_node,
     dpg.mvKey_Escape: escape,
     dpg.mvKey_S: save_manager,
+    dpg.mvKey_C: copy_selected_nodes,
+    dpg.mvKey_V: paste_nodes,
 }

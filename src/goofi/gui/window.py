@@ -288,7 +288,7 @@ class Window:
         if pos is None:
             pos = (0, 0)
 
-        with dpg.node(parent=self.node_editor, label=node_name, pos=pos) as node_id:
+        with dpg.node(parent=self.node_editor, label=node_name, pos=pos, user_data=node) as node_id:
             ############### input slots ###############
             in_slots = {}
             for name, dtype in node.input_slots.items():
@@ -721,6 +721,7 @@ class Window:
         self.last_create_node_tab = 0
         self.file_selection_window = None
         self.unsaved_changes_dialog_open = False
+        self.node_clipboard = None
 
         # create window
         self.window = dpg.add_window(
