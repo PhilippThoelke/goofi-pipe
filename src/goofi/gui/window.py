@@ -121,7 +121,6 @@ def add_param(parent: int, group: str, name: str, param: Param, node: NodeRef) -
                     dpg.add_input_text(
                         width=50,
                         scientific=True,
-                        on_enter=True,
                         default_value=str(param.value),
                         callback=param_updated,
                         user_data=(group, name, node, input_group, float),
@@ -138,7 +137,6 @@ def add_param(parent: int, group: str, name: str, param: Param, node: NodeRef) -
                     # parameter is an integer
                     dpg.add_input_text(
                         width=50,
-                        on_enter=True,
                         default_value=str(param.value),
                         callback=param_updated,
                         user_data=(group, name, node, input_group, int),
