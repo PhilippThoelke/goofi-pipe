@@ -172,6 +172,7 @@ class NodeParams:
         `params` : Dict[str, Dict[str, Any]]
             A dictionary of parameter groups, where each group is a dictionary of parameter names and values.
         """
+        # TODO: avoid code duplication with __init__
         for group, params in params.items():
             for name, param in params.items():
                 if group not in self._data:

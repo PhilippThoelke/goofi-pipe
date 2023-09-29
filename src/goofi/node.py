@@ -61,8 +61,6 @@ class Node(ABC):
         An instance of the NodeParams class containing the parameters of the node.
     `is_local` : bool
         Whether the node is running in the same process as the manager.
-    `initial_params` : Optional[Dict[str, Dict[str, Any]]]
-        A dictionary of initial parameter values for the node. Defaults to None.
     """
 
     NO_MULTIPROCESSING = False
@@ -74,7 +72,6 @@ class Node(ABC):
         output_slots: Dict[str, OutputSlot],
         params: NodeParams,
         is_local: bool,
-        initial_params: Optional[Dict[str, Dict[str, Any]]] = None,
     ) -> None:
         # initialize the base class
         self._alive = True
@@ -85,9 +82,6 @@ class Node(ABC):
         self._input_slots = input_slots
         self._output_slots = output_slots
         self._params = params
-
-        if initial_params is not None:
-            self._params.update(initial_params)
 
         self._validate_attrs()
 
@@ -376,9 +370,12 @@ class Node(ABC):
 
         # generate arguments for the node
         in_slots, out_slots, params = cls._configure(cls)
+        # integrate initial parameters if they are provided
+        if initial_params is not None:
+            params.update(initial_params)
         conn1, conn2 = MultiprocessingConnection.create()
         # instantiate the node in a separate process
-        proc = Process(target=cls, args=(conn2, in_slots, out_slots, params, False, initial_params), daemon=True)
+        proc = Process(target=cls, args=(conn2, in_slots, out_slots, params, False), daemon=True)
         proc.start()
         # create the node reference
         return NodeRef(
@@ -406,6 +403,9 @@ class Node(ABC):
         """
         # generate arguments for the node
         in_slots, out_slots, params = cls._configure(cls)
+        # integrate initial parameters if they are provided
+        if initial_params is not None:
+            params.update(initial_params)
         conn1, conn2 = MultiprocessingConnection.create()
         # instantiate the node in the current process
         node = cls(conn2, in_slots, out_slots, params, True, initial_params)
