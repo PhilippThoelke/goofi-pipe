@@ -408,7 +408,7 @@ class Node(ABC):
             params.update(initial_params)
         conn1, conn2 = MultiprocessingConnection.create()
         # instantiate the node in the current process
-        node = cls(conn2, in_slots, out_slots, params, True, initial_params)
+        node = cls(conn2, in_slots, out_slots, params, True)
         # create the node reference
         return (
             NodeRef(
