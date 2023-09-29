@@ -35,6 +35,10 @@ class Resample(Node):
         signal1 = np.array(data1.data)
         signal2 = np.array(data2.data)
 
+        low_pass_cutoff = new_sfreq/2
+        # implement low-pass brickwall filter
+        #signal1 = 
+        
         # Resample the signals
         resampled_signal1 = resample_poly(signal1, up1, down1, padtype="line")
         resampled_signal2 = resample_poly(signal2, up2, down2, padtype="line")
