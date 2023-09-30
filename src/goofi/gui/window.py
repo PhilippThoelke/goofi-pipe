@@ -97,7 +97,7 @@ class GUINode:
             win.node_info_window = None
 
         # create new info window
-        size = (400, 300)
+        size = (500, 300)
         pos = dpg.get_mouse_pos(local=False)
         pos = (pos[0] - size[0] / 2, pos[1] - size[1] / 2)
 
