@@ -155,11 +155,16 @@ def param_updated(_, value, user_data):
     if len(user_data) == 5:
         # the parameter includes multiple input widgets, update all of them
         input_group, value_type = user_data[3:]
-        for child in dpg.get_item_children(input_group)[1]:
-            dpg.set_value(child, value_type(value))
 
         # make sure the value has the correct type
-        value = value_type(value)
+        try:
+            value = value_type(value)
+        except ValueError:
+            value = value_type()
+
+        # update all input widgets
+        for child in dpg.get_item_children(input_group)[1]:
+            dpg.set_value(child, value)
 
     # send the updated parameter to the node
     node.update_param(group, name, value)
