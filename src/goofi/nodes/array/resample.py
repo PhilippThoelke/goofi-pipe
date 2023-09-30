@@ -1,50 +1,63 @@
 import numpy as np
+from math import gcd
 from scipy.signal import resample_poly
 from goofi.data import Data, DataType
 from goofi.node import Node
-from goofi.params import FloatParam
+from goofi.params import FloatParam, IntParam
 
 
 class Resample(Node):
     def config_input_slots():
-        # Defining two input slots for two input signals
-        return {"data1": DataType.ARRAY, "data2": DataType.ARRAY}
+        # Defining one input slot for one input signal
+        return {"data": DataType.ARRAY}
 
     def config_output_slots():
-        # Defining two output slots for the resampled signals
-        return {"out1": DataType.ARRAY, "out2": DataType.ARRAY}
+        # Defining one output slot for the resampled signal
+        return {"out": DataType.ARRAY}
 
     def config_params():
-        return {"resample": {"scale": FloatParam(0.5, 0.0, 1.0)}}
+        return {
+            "resample": {
+                "new_sfreq": IntParam(1000, 10, 44100),  # New sampling frequency as a parameter
+            }
+        }
 
-    def process(self, data1: Data, data2: Data):
-        if data1 is None or data1.data is None or data2 is None or data2.data is None:
+    
+
+    def process(self, data: Data):
+        if data is None or data.data is None:
+            print("Data is None")
             return None
 
-        sf1 = data1.meta["sfreq"]
-        sf2 = data2.meta["sfreq"]
+        # Original sampling frequency from metadata
+        sf = data.meta["sfreq"]
 
-        # Find the new sampling frequency based on scale
-        scale = self.params.resample.scale.value
-        new_sfreq = scale * min(sf1, sf2) + (1 - scale) * max(sf1, sf2)
+        # Retrieve new sampling frequency parameter
+        new_sfreq = self.params.resample.new_sfreq.value
 
-        # Calculate the resampling factors
-        up1, down1 = int(new_sfreq), int(sf1)
-        up2, down2 = int(new_sfreq), int(sf2)
+        # Log the values for debugging
+        print(f"Original sfreq: {sf}, New sfreq: {new_sfreq}")
 
-        signal1 = np.array(data1.data)
-        signal2 = np.array(data2.data)
+        # Calculate up and down factors based on the gcd of sf and new_sfreq
+        factor = gcd(int(sf), int(new_sfreq))
+        up = new_sfreq // factor
+        down = sf // factor
 
-        low_pass_cutoff = new_sfreq/2
-        # implement low-pass brickwall filter
-        #signal1 = 
-        
-        # Resample the signals
-        resampled_signal1 = resample_poly(signal1, up1, down1, padtype="line")
-        resampled_signal2 = resample_poly(signal2, up2, down2, padtype="line")
+        # Log the up and down values for debugging
+        print(f"Up: {up}, Down: {down}")
+
+        signal = np.array(data.data)
+
+        # Check if the signal contains any NaN or inf values
+        if np.any(np.isnan(signal)) or np.any(np.isinf(signal)):
+            print("Signal contains NaN or inf values")
+
+        # Resample the signal
+        resampled_signal = resample_poly(signal, up, down, padtype="line")
 
         # Update the 'sfreq' metadata
-        data1.meta["sfreq"] = new_sfreq
-        data2.meta["sfreq"] = new_sfreq
+        data.meta["sfreq"] = new_sfreq
 
-        return {"out1": (resampled_signal1, data1.meta), "out2": (resampled_signal2, data2.meta)}
+        return {"out": (resampled_signal, data.meta)}
+
+

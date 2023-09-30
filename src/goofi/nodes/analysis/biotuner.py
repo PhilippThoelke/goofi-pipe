@@ -29,7 +29,7 @@ class Biotuner(Node):
                 "f_min": FloatParam(2.0, 0.1, 50.0),
                 "f_max": FloatParam(30.0, 1.0, 100.0),
                 "precision": FloatParam(0.1, 0.01, 10.0),
-                "peaks_function": StringParam("EMD", options=["EMD", "fixed", "harmonic_recurrence", "EIMC", "FOOOF", "PAC", "cepstrum"]),
+                "peaks_function": StringParam("EMD", options=["EMD", "fixed", "harmonic_recurrence", "EIMC"]),
             }
         }
 

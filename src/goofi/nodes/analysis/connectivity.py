@@ -23,10 +23,10 @@ class Connectivity(Node):
                 "f_min": FloatParam(2.0, 0.1, 50.0),
                 "f_max": FloatParam(30.0, 1.0, 100.0),
                 "precision": FloatParam(0.1, 0.01, 10.0),
-                "peaks_function": "EMD",
+                "peaks_function": StringParam("EMD", options=["EMD", "fixed", "harmonic_recurrence", "EIMC"]),
             },
             "classical": {
-                "method": StringParam("wPLI", options=["coherence", "wPLI", "PLI", "imag_coherence", "PLV"]),
+                "method": StringParam("wPLI", options=["coherence", "imag_coherence", "wPLI", "PLI", "PLV"]),
         }}
 
     def process(self, data: Data):

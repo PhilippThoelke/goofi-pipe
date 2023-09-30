@@ -59,13 +59,15 @@ class Filter(Node):
         
         if method == "Causal":
             if self.filter_state is None:
-                if data.data.ndim == 1:
-                    self.filter_state = lfilter_zi(b, a)
-                else:
-                    # Reshape zi to match the number of channels in data.data
-                    self.filter_state = np.repeat(lfilter_zi(b, a)[..., np.newaxis], data.data.shape[-2], axis=-1)  
+                # Creating the filter_state with the correct shape
+                n = max(len(a), len(b)) - 1
+                zi_shape = (data.data.shape[-2], n) if data.data.ndim > 1 else (n,)
+                self.filter_state = np.zeros(zi_shape)
+                
+            # Modify the calculation of initial_condition to accommodate the updated filter_state shape
+            initial_condition = self.filter_state * data.data.take(0, axis=-1)[..., np.newaxis]
+            
+            filtered_data, self.filter_state = lfilter(b, a, data.data, axis=-1, zi=initial_condition)
 
-            # Apply causal filter and update filter state
-            filtered_data, self.filter_state = lfilter(b, a, data.data, axis=-1, zi=self.filter_state * data.data[..., 0, np.newaxis])
 
         return {"filtered_data": (filtered_data, {**data.meta})}
