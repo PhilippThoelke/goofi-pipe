@@ -795,7 +795,7 @@ class Window:
 
         # register key-press handler
         with dpg.handler_registry():
-            dpg.add_key_press_handler(callback=events.key_press_callback, user_data=self)
+            dpg.add_key_release_handler(callback=events.key_release_callback, user_data=self)
             dpg.add_mouse_click_handler(callback=events.click_callback, user_data=self)
             dpg.add_mouse_double_click_handler(callback=events.double_click_callback, user_data=self)
 

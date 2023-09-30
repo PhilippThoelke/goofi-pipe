@@ -5,10 +5,6 @@ import dearpygui.dearpygui as dpg
 
 from goofi.node_helpers import list_nodes
 
-################################
-######### Mouse Events #########
-################################
-
 
 def is_click_inside(item):
     """Check if the mouse click was inside the given item."""
@@ -21,6 +17,11 @@ def is_click_inside(item):
         and mouse_pos[0] <= item_pos[0] + item_size[0]
         and mouse_pos[1] <= item_pos[1] + item_size[1]
     )
+
+
+################################
+######### Mouse Events #########
+################################
 
 
 def click_callback(_, btn, win):
@@ -49,7 +50,7 @@ def double_click_callback(_, btn, win):
 ################################
 
 
-def key_press_callback(_, data, win):
+def key_release_callback(_, data, win):
     """Handle key press events by calling the appropriate function from the key handler map."""
     if data in KEY_HANDLER_MAP:
         KEY_HANDLER_MAP[data](win)
