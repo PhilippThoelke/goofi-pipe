@@ -127,18 +127,20 @@ class Node(ABC):
         if not isinstance(self._params, NodeParams):
             raise TypeError(f"Expected NodeParams, got {type(self._params)}")
 
+    def _setup(self):
+        """This method calls the node's setup method and handles any exceptions that may occur."""
+        try:
+            self.setup()
+            self._node_ready = True
+        except Exception as e:
+            self.connection.try_send(Message(MessageType.PROCESSING_ERROR, {"error": str(e)}))
+
     def _messaging_loop(self):
         """
         This method runs in a separate thread and handles incoming messages from the manager, or other nodes.
         """
         # run the node's setup method
-        try:
-            self.setup()
-        except Exception as e:
-            self.connection.try_send(Message(MessageType.PROCESSING_ERROR, {"error": str(e)}))
-            return
-
-        self._node_ready = True
+        Thread(target=self._setup, daemon=True).start()
 
         # run the messaging loop
         while self.alive:
