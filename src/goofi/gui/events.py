@@ -9,7 +9,11 @@ from goofi.node_helpers import list_nodes
 def is_click_inside(item):
     """Check if the mouse click was inside the given item."""
     mouse_pos = dpg.get_mouse_pos(local=False)
-    item_pos = dpg.get_item_pos(item)
+    try:
+        item_pos = dpg.get_item_state(item)["rect_min"]
+    except KeyError:
+        item_pos = dpg.get_item_pos(item)
+
     item_size = dpg.get_item_rect_size(item)
     return (
         mouse_pos[0] >= item_pos[0]
@@ -34,9 +38,20 @@ def click_callback(_, btn, win):
 
     if win.create_node_window is not None and not is_click_inside(win.create_node_window):
         # the create node window is open but the click was outside of it, close it
-        escape(win)
-
+        dpg.delete_item(win.create_node_window)
+        win.create_node_window = None
+    if win.node_info_window is not None and not is_click_inside(win.node_info_window):
+        # the node info window is open but the click was outside of it, close it
+        dpg.delete_item(win.node_info_window)
+        win.node_info_window = None
     # TODO: do the same thing for the file selection window, which has a broken get_item_pos
+
+    if btn == 1:
+        for node in win.nodes.values():
+            if is_click_inside(node.item):
+                # right click on a node, open an information window
+                node.display_info(win)
+                break
 
 
 def double_click_callback(_, btn, win):
@@ -139,14 +154,22 @@ def escape(win):
     If it was already closed, clears the current node and link selection.
     """
     if win.create_node_window is not None:
+        # close the create node window
         dpg.delete_item(win.create_node_window)
         win.create_node_window = None
     elif win.file_selection_window is not None:
+        # close the file selection window
         dpg.delete_item(win.file_selection_window)
         win.file_selection_window = None
     else:
+        # clear the node and link selection
         dpg.clear_selected_nodes(win.node_editor)
         dpg.clear_selected_links(win.node_editor)
+
+    if win.node_info_window is not None:
+        # close the node info window
+        dpg.delete_item(win.node_info_window)
+        win.node_info_window = None
 
 
 def save_manager(win):

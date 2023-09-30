@@ -66,6 +66,64 @@ class GUINode:
     output_slots: Dict[str, int]
     output_draw_handlers: Dict[str, int]
     node_ref: NodeRef
+    _error_msg: str = None
+
+    def set_error(self, msg: str, win: "Window") -> None:
+        """Set the error message."""
+        if msg == self._error_msg:
+            # nothing changed
+            return
+
+        self._error_msg = msg
+
+        if msg is None:
+            # no error, reset theme
+            dpg.bind_item_theme(self.item, None)
+            return
+
+        # we have an error, set theme
+        dpg.bind_item_theme(self.item, win.node_error_theme)
+
+        # update the info window if it is open
+        info_win = win.node_info_window
+        if info_win is not None and dpg.get_item_user_data(info_win) == self.item:
+            dpg.set_value(dpg.get_item_children(info_win)[1][2], msg)
+
+    def display_info(self, win: "Window") -> None:
+        """Display information about the node."""
+        if win.node_info_window is not None:
+            # close the current info window
+            dpg.delete_item(win.node_info_window)
+            win.node_info_window = None
+
+        # create new info window
+        size = (400, 300)
+        pos = dpg.get_mouse_pos(local=False)
+        pos = (pos[0] - size[0] / 2, pos[1] - size[1] / 2)
+
+        with dpg.theme() as win_theme:
+            with dpg.theme_component():
+                dpg.add_theme_color(dpg.mvThemeCol_WindowBg, [200, 200, 200, 255], category=dpg.mvThemeCat_Core)
+                dpg.add_theme_color(dpg.mvThemeCol_Text, [0, 0, 0, 255], category=dpg.mvThemeCat_Core)
+
+        with dpg.window(
+            width=size[0],
+            height=size[1],
+            pos=pos,
+            no_move=True,
+            no_close=True,
+            no_collapse=True,
+            no_resize=True,
+            no_title_bar=True,
+            user_data=self.item,
+        ) as win.node_info_window:
+            dpg.add_text("Node Info")
+            dpg.add_separator()
+
+            txt = "All good!" if self._error_msg is None else self._error_msg
+            dpg.add_text(txt)
+
+            dpg.bind_item_theme(win.node_info_window, win_theme)
 
 
 def handle_data(gui_node: GUINode, node: NodeRef, message: Message):
@@ -83,6 +141,8 @@ def handle_data(gui_node: GUINode, node: NodeRef, message: Message):
     """
     try:
         gui_node.output_draw_handlers[message.content["slot_name"]](message)
+        gui_node._error_msg = None
+        dpg.bind_item_theme(gui_node.item, None)
     except ValueError as e:
         # TODO: add proper logging
         print(f"Output draw handler for slot {message.content['slot_name']} failed: {e}")
@@ -342,7 +402,9 @@ class Window:
             self.nodes[node_name] = GUINode(node_id, in_slots, out_slots, output_draw_handlers, node)
 
             # TODO: register PROCESSING_ERROR message handler and display error messages
-            node.set_message_handler(MessageType.PROCESSING_ERROR, lambda node, data: print(data.content["error"]))
+            node.set_message_handler(
+                MessageType.PROCESSING_ERROR, partial(self._processing_error_callback, node_name=node_name)
+            )
 
             # register data message handler to update the data viewers
             node.set_message_handler(MessageType.DATA, partial(handle_data, self.nodes[node_name]))
@@ -676,6 +738,8 @@ class Window:
 
         # get node reference
         node = self.nodes[dpg.get_item_label(item)].node_ref
+
+        # populate parameters window
         with dpg.tab_bar(parent=self.parameters):
             for group in node.params:
                 with dpg.tab(label=format_name(group)) as tab:
@@ -688,6 +752,11 @@ class Window:
 
         # show parameters window
         dpg.configure_item(self.parameters, show=True)
+
+    def _processing_error_callback(self, node: NodeRef, message: Message, node_name: str) -> None:
+        """Callback for the `MessageType.PROCESSING_ERROR` message type."""
+        error = message.content["error"]
+        self.nodes[node_name].set_error(error, self)
 
     def link_callback(self, sender: int, items: Tuple[int, int]) -> None:
         """Callback from DearPyGui that two nodes were connected."""
@@ -793,6 +862,7 @@ class Window:
         self.file_selection_window = None
         self.unsaved_changes_dialog_open = False
         self.node_clipboard = None
+        self.node_info_window = None
 
         # create window
         self.window = dpg.add_window(
@@ -817,6 +887,13 @@ class Window:
             self.node_editor = dpg.add_node_editor(callback=self.link_callback, delink_callback=self.delink_callback)
             # add parameters window
             self.parameters = dpg.add_child_window(label="Parameters", autosize_x=True)
+
+        # set up node error theme
+        with dpg.theme() as self.node_error_theme:
+            with dpg.theme_component():
+                dpg.add_theme_color(dpg.mvNodeCol_TitleBar, [80, 0, 0, 255], category=dpg.mvThemeCat_Nodes)
+                dpg.add_theme_color(dpg.mvNodeCol_TitleBarSelected, [150, 0, 0, 255], category=dpg.mvThemeCat_Nodes)
+                dpg.add_theme_color(dpg.mvNodeCol_TitleBarHovered, [200, 0, 0, 255], category=dpg.mvThemeCat_Nodes)
 
         # hide the reference node using themes
         with dpg.theme() as ref_theme:
