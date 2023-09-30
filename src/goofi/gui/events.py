@@ -77,7 +77,7 @@ def select_node_callback(sender, data, user_data):
     dpg.clear_selected_nodes(win.node_editor)
     dpg.clear_selected_links(win.node_editor)
     # create the node inside the manager, which will notify the window
-    win.manager.add_node(node.__name__, node.category(), pos=pos)
+    win.manager.add_node(node.__name__, node.category())
 
 
 def create_node(win):
@@ -160,19 +160,16 @@ def copy_selected_nodes(win, timeout: float = 0.1):
         return
 
     # retrieve selected nodes and their positions
-    nodes, positions = [], []
-    for n in dpg.get_selected_nodes(win.node_editor):
-        nodes.append(dpg.get_item_user_data(n))
-        positions.append(dpg.get_item_pos(n))
+    nodes = [dpg.get_item_user_data(n) for n in dpg.get_selected_nodes(win.node_editor)]
 
-    # serialize the nodes
-    for n in nodes:
-        n.serialize()
+    # request the serialized state from each node
+    for node in nodes:
+        node.serialize()
 
     # wait for all nodes to respond, i.e. their serialized_state is not None
     start = time.time()
     serialized_nodes = []
-    for node, pos in zip(nodes, positions):
+    for node in nodes:
         while node.serialized_state is None and time.time() - start < timeout:
             # wait for the node to respond or for the timeout to be reached
             time.sleep(0.01)
@@ -186,7 +183,6 @@ def copy_selected_nodes(win, timeout: float = 0.1):
         # store the serialized state
         ser = deepcopy(node.serialized_state)
         del ser["out_conns"]
-        ser["pos"] = pos
         serialized_nodes.append(ser)
 
     # store the serialized nodes in the clipboard
@@ -200,12 +196,7 @@ def paste_nodes(win):
 
     # add the nodes to the manager
     for node in win.node_clipboard:
-        # move node slightly to the bottom right
-        pos = node["pos"]
-        pos[0] += 30
-        pos[1] += 30
-        # add the node
-        win.manager.add_node(node["_type"], node["category"], params=node["params"], pos=pos)
+        win.manager.add_node(node["_type"], node["category"], params=node["params"])
 
 
 # the key handler map maps key press events to functions that handle them

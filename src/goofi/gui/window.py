@@ -281,10 +281,10 @@ class Window:
         `node` : NodeRef
             The node reference.
         `pos` : Optional[Tuple[int, int]]
-            Optional position for the node. If None, the node is created at the center of the editor.
+            Position of the node. If None, uses the mouse position.
         """
         if pos is None:
-            pos = (0, 0)
+            pos = self._node_editor_mouse_pos()
 
         with dpg.node(parent=self.node_editor, label=node_name, pos=pos, user_data=node) as node_id:
             ############### input slots ###############
@@ -728,6 +728,26 @@ class Window:
         # no unsaved changes, close window
         self.terminate()
 
+    def _to_node_editor_coords(self, pos: Tuple[int, int]) -> Tuple[int, int]:
+        """Convert a position from window space to node editor space."""
+        # get reference node position
+        orig_ref_pos = dpg.get_item_user_data("_ref")
+        curr_ref_pos = dpg.get_item_state("_ref")["rect_min"]
+        # calculate mouse position within node editor
+        return pos[0] - curr_ref_pos[0] + orig_ref_pos[0], pos[1] - curr_ref_pos[1] + orig_ref_pos[1]
+
+    def _to_window_coords(self, pos: Tuple[int, int]) -> Tuple[int, int]:
+        """Convert a position from node editor space to window space."""
+        # get reference node position
+        orig_ref_pos = dpg.get_item_user_data("_ref")
+        curr_ref_pos = dpg.get_item_state("_ref")["rect_min"]
+        # calculate mouse position within node editor
+        return pos[0] - curr_ref_pos[0] + orig_ref_pos[0], pos[1] - curr_ref_pos[1] + orig_ref_pos[1]
+
+    def _node_editor_mouse_pos(self) -> Tuple[int, int]:
+        """Get the mouse position within the node editor."""
+        return self._to_node_editor_coords(dpg.get_mouse_pos(local=False))
+
     def _initialize(self, manager, width=1280, height=720):
         """Initialize the window and launch the event loop (blocking)."""
         dpg.create_context()
@@ -766,6 +786,12 @@ class Window:
             self.node_editor = dpg.add_node_editor(callback=self.link_callback, delink_callback=self.delink_callback)
             # add parameters window
             self.parameters = dpg.add_child_window(label="Parameters", autosize_x=True)
+
+        # create a reference node to calculate the mouse position within the node editor
+        # NOTE: this is a workaround as DearPyGui doesn't provide access to the node editor coordinates
+        # NOTE: ideally we would set show=False in the ref node, but this causes a Segmentation Fault
+        pos = [-5000, -5000]
+        dpg.add_node(tag="_ref", parent=self.node_editor, pos=pos, user_data=pos)
 
         # register key-press handler
         with dpg.handler_registry():
