@@ -18,7 +18,9 @@ class Connectivity(Node):
     def config_params():
         return {
             "biotuner": {
-                "method": StringParam("None", options=["None", "harmsim", "euler", "subharm_tension", "RRCi", "wPLI_crossfreq"]),
+                "method": StringParam(
+                    "None", options=["None", "harmsim", "euler", "subharm_tension", "RRCi", "wPLI_crossfreq"]
+                ),
                 "n_peaks": IntParam(5, 1, 10),
                 "f_min": FloatParam(2.0, 0.1, 50.0),
                 "f_max": FloatParam(30.0, 1.0, 100.0),
@@ -27,7 +29,8 @@ class Connectivity(Node):
             },
             "classical": {
                 "method": StringParam("wPLI", options=["coherence", "wPLI", "PLI", "imag_coherence", "PLV"]),
-        }}
+            },
+        }
 
     def process(self, data: Data):
         if data is None:
@@ -36,7 +39,7 @@ class Connectivity(Node):
         data.data = np.squeeze(data.data)
         if data.data.ndim != 2:
             raise ValueError("Data must be 2D")
-        
+
         if self.params["biotuner"]["method"].value != "None":
             matrix = compute_conn_matrix_single(
                 data.data,
@@ -53,7 +56,6 @@ class Connectivity(Node):
             method = self.params["classical"]["method"].value
             matrix = compute_classical_connectivity(data.data, method)
 
-                
         return {"matrix": (matrix, data.meta)}
 
 
@@ -90,6 +92,7 @@ def compute_conn_matrix_single(
     bt_conn.compute_harm_connectivity(metric=metric, save=False, graph=False)
     return bt_conn.conn_matrix
 
+
 def compute_classical_connectivity(data, method):
     n_channels, n_samples = data.shape
     matrix = np.zeros((n_channels, n_channels))
@@ -104,24 +107,26 @@ def compute_classical_connectivity(data, method):
                 sig2 = hilbert(data[j, :])
                 imag_csd = np.imag(np.exp(1j * (np.angle(sig1) - np.angle(sig2))))
                 matrix[i, j] = matrix[j, i] = np.abs(np.mean(imag_csd)) / np.mean(np.abs(imag_csd))
-            
+
             elif method == "coherence":
                 f, Cxy = coherence(data[i, :], data[j, :])
                 matrix[i, j] = matrix[j, i] = np.mean(Cxy)
-            
+
             elif method == "PLI":
                 sig1 = hilbert(data[i, :])
                 sig2 = hilbert(data[j, :])
                 matrix[i, j] = matrix[j, i] = np.mean(np.sign(np.angle(sig1) - np.angle(sig2)))
-            
+
             elif method == "imag_coherence":
                 sig1 = hilbert(data[i, :])
                 sig2 = hilbert(data[j, :])
-                matrix[i, j] = matrix[j, i] = np.mean(np.imag(np.conj(sig1)*sig2)) / (np.sqrt(np.mean(np.imag(sig1)**2)) * np.sqrt(np.mean(np.imag(sig2)**2)))
-            
+                matrix[i, j] = matrix[j, i] = np.mean(np.imag(np.conj(sig1) * sig2)) / (
+                    np.sqrt(np.mean(np.imag(sig1) ** 2)) * np.sqrt(np.mean(np.imag(sig2) ** 2))
+                )
+
             elif method == "PLV":
                 sig1 = hilbert(data[i, :])
                 sig2 = hilbert(data[j, :])
                 matrix[i, j] = matrix[j, i] = np.abs(np.mean(np.exp(1j * (np.angle(sig1) - np.angle(sig2)))))
-    
+
     return matrix

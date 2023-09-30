@@ -3,13 +3,20 @@ from goofi.data import Data, DataType
 from goofi.node import Node
 import numpy as np
 
+
 class PowerBandEEG(Node):
     def config_input_slots():
         return {"data": DataType.ARRAY}
 
     def config_output_slots():
-        return {"delta": DataType.ARRAY, "theta": DataType.ARRAY, "alpha": DataType.ARRAY, 
-                "lowbeta": DataType.ARRAY, "highbeta": DataType.ARRAY, "gamma": DataType.ARRAY}
+        return {
+            "delta": DataType.ARRAY,
+            "theta": DataType.ARRAY,
+            "alpha": DataType.ARRAY,
+            "lowbeta": DataType.ARRAY,
+            "highbeta": DataType.ARRAY,
+            "gamma": DataType.ARRAY,
+        }
 
     def config_params():
         return {
@@ -25,9 +32,15 @@ class PowerBandEEG(Node):
         power_type = self.params["powerband"]["power_type"].value
         freq = data.meta["freq"]
 
-        bands = {"delta": (1, 3), "theta": (3, 7), "alpha": (7, 12), "lowbeta": (12, 20), 
-                 "highbeta": (20, 30), "gamma": (30, 50)}
-        
+        bands = {
+            "delta": (1, 3),
+            "theta": (3, 7),
+            "alpha": (7, 12),
+            "lowbeta": (12, 20),
+            "highbeta": (20, 30),
+            "gamma": (30, 50),
+        }
+
         output = {}
         for band, (f_min, f_max) in bands.items():
             valid_indices = np.where((freq >= f_min) & (freq <= f_max))[0]

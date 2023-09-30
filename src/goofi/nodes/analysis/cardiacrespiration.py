@@ -24,7 +24,7 @@ class CardiacRespiration(Node):
     def process(self, data: Data):
         if data is None or data.data is None:
             return None
-        
+
         if data.data.ndim > 1:
             raise ValueError("Data must be 1D")
 
@@ -33,15 +33,15 @@ class CardiacRespiration(Node):
             print(data.meta["sfreq"])
             signal, info = nk.ppg_process(data.data, sampling_rate=data.meta["sfreq"])
             hrv_df = nk.hrv(info, sampling_rate=data.meta["sfreq"])
-            
+
         elif self.params["cardiac"]["input_type"].value == "ecg":
             # Extract peaks
             rpeaks, info = nk.ecg_peaks(data.data, sampling_rate=data.meta["sfreq"])
             # Compute rate
-            ecg_rate = nk.ecg_rate(rpeaks, sampling_rate=data.meta['sfreq'], desired_length=len(data.data))
+            ecg_rate = nk.ecg_rate(rpeaks, sampling_rate=data.meta["sfreq"], desired_length=len(data.data))
             edr = nk.ecg_rsp(ecg_rate, sampling_rate=data.meta["sfreq"])
-            print(edr)      
-        
+            print(edr)
+
         # get array of all the features
-        
+
         return {"cardiac": (edr, data.meta)}
