@@ -3,6 +3,7 @@ from goofi.data import Data, DataType
 from goofi.node import Node
 import numpy as np
 
+
 class PowerBand(Node):
     def config_input_slots():
         return {"data": DataType.ARRAY}
@@ -28,14 +29,14 @@ class PowerBand(Node):
         power_type = self.params["powerband"]["power_type"].value
 
         freq = data.meta["freq"]
-        
+
         # Selecting the range of frequencies
         valid_indices = np.where((freq >= f_min) & (freq <= f_max))[0]
         if data.data.ndim == 1:
             selected_psd = data.data[valid_indices]
         else:  # if 2D
             selected_psd = data.data[:, valid_indices]
-        
+
         # Computing the power
         power = np.sum(selected_psd, axis=-1)
         if power_type == "relative":

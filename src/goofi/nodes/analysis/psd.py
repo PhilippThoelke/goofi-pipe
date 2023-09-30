@@ -18,7 +18,7 @@ class PSD(Node):
             "psd": {
                 "method": StringParam("welch", options=["fft", "welch"]),
                 "noverlap": IntParam(0, 0, 10000),
-                "precision": FloatParam(0.1,0.01, 10.0),
+                "precision": FloatParam(0.1, 0.01, 10.0),
                 "f_min": FloatParam(1.0, 0.01, 9999.0),  # added min frequency parameter
                 "f_max": FloatParam(60.0, 1.0, 10000.0),  # added max frequency parameter
                 "smooth_welch": IntParam(1, 1, 10),
@@ -28,7 +28,7 @@ class PSD(Node):
     def process(self, data: Data):
         if data is None or data.data is None:
             return None
-        
+
         if data.data.ndim not in [1, 2]:
             raise ValueError("Data must be 1D or 2D")
 
@@ -39,8 +39,8 @@ class PSD(Node):
         f_max = self.params["psd"]["f_max"].value  # Get the max frequency
         smooth = self.params["psd"]["smooth_welch"].value
         sfreq = data.meta["sfreq"]
-        nperseg=int(sfreq/precision)
-        nfft=nperseg/smooth
+        nperseg = int(sfreq / precision)
+        nfft = nperseg / smooth
         if method == "fft":
             freq = fftfreq(data.data.shape[-1], 1/sfreq)
             fft_result = fft(data.data, axis=-1)
@@ -48,7 +48,7 @@ class PSD(Node):
             phase = np.angle(fft_result)
         elif method == "welch":
             if data.data.ndim == 1:
-                freq, psd = welch(data.data, fs=sfreq, nperseg=nperseg,nfft=nfft, noverlap=noverlap)
+                freq, psd = welch(data.data, fs=sfreq, nperseg=nperseg, nfft=nfft, noverlap=noverlap)
             else:  # if 2D
                 psd = []
                 for row in data.data:
@@ -64,5 +64,5 @@ class PSD(Node):
             psd = psd[valid_indices]
         else:  # if 2D
             psd = psd[:, valid_indices]
-        
+
         return {"psd": (psd, {"freq": freq, **data.meta})}

@@ -3,16 +3,13 @@ import numpy as np
 from goofi.node import Node
 from goofi.data import DataType, Data
 
+
 class Hilbert(Node):
     def config_input_slots():
         return {"data": DataType.ARRAY}
 
     def config_output_slots():
-        return {
-            "inst_amplitude": DataType.ARRAY,
-            "inst_phase": DataType.ARRAY,
-            "inst_frequency": DataType.ARRAY
-        }
+        return {"inst_amplitude": DataType.ARRAY, "inst_phase": DataType.ARRAY, "inst_frequency": DataType.ARRAY}
 
     def process(self, data: Data):
         if data is None or data.data is None:
@@ -34,5 +31,5 @@ class Hilbert(Node):
         return {
             "inst_amplitude": (inst_amplitude, {**data.meta}),
             "inst_phase": (inst_phase, {**data.meta}),
-            "inst_frequency": (inst_frequency, {**data.meta})
+            "inst_frequency": (inst_frequency, {**data.meta}),
         }

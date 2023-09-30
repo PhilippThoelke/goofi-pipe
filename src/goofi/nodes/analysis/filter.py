@@ -4,6 +4,7 @@ from goofi.node import Node
 from goofi.params import StringParam, FloatParam
 from goofi.data import DataType, Data
 
+
 class Filter(Node):
     def config_input_slots():
         return {"data": DataType.ARRAY}
@@ -19,11 +20,13 @@ class Filter(Node):
                 "f_low": FloatParam(1.0, 0.01, 9999.0),
                 "f_high": FloatParam(60.0, 1.0, 10000.0),
                 "ripple": FloatParam(1.0, 0.1, 10.0),
-                "padding": FloatParam(0.1, 0.01, 1.0)  
+                "padding": FloatParam(0.1, 0.01, 1.0),
             }
         }
+
     def setup(self):
         self.filter_state = None
+
     def process(self, data: Data):
         if data is None or data.data is None:
             return None
@@ -40,15 +43,14 @@ class Filter(Node):
         high = f_high / nyq
 
         if filter_type == "butterworth":
-            b, a = butter(1, [low, high], btype='band')
+            b, a = butter(1, [low, high], btype="band")
         elif filter_type == "chebyshev":
-            b, a = cheby1(1, ripple, [low, high], btype='band')
+            b, a = cheby1(1, ripple, [low, high], btype="band")
         elif filter_type == "elliptic":
-            b, a = ellip(1, ripple, ripple, [low, high], btype='band')
-        
+            b, a = ellip(1, ripple, ripple, [low, high], btype="band")
 
         # Edge Padding 10% of data
-        
+
         if method == "Zero-phase":
             # Calculate the padlen as 10% of the signal length
             if data.data.ndim == 1:
@@ -56,7 +58,7 @@ class Filter(Node):
             else:  # if 2D, you will probably want to apply padding based on the time axis, usually the last axis.
                 padlen = int(padding * data.data.shape[-1])
             filtered_data = filtfilt(b, a, data.data, padlen=padlen)
-        
+
         if method == "Causal":
             if self.filter_state is None:
                 # Creating the filter_state with the correct shape
