@@ -25,10 +25,12 @@ class AudioStream(Node):
         return {"out": DataType.ARRAY}
     
     def setup(self):
-        self.sfreq = self.params.audio.sfreq.value
-        self.buffer_seconds = self.params.audio.buffer_seconds.value
-        self.channels = self.params.audio.channels.value
-        device = self.params.audio.device.value or None
+        self.sfreq = self.params["audio"]["sfreq"].value
+        self.buffer_seconds = self.params["audio"]["buffer_seconds"].value
+        self.channels = self.params["audio"]["channels"].value
+        device = self.params["audio"]["device"].value or None  # corrected the way to access parameters.
+        
+        print(f"Initializing stream with device={device}, sfreq={self.sfreq}, channels={self.channels}")  # Debug print
         
         self.buffer = np.zeros((self.channels, int(self.sfreq * self.buffer_seconds)))
         
@@ -67,14 +69,13 @@ class AudioStream(Node):
     
     @staticmethod
     def list_audio_devices():
-        devices = sd.query_devices(kind="input")
+        devices = sd.query_devices()
         device_names = []
         for device in devices:
-            if isinstance(device, dict) and 'name' in device:
+            if device['max_input_channels'] > 0:  # This condition will check if a device is an input device.
                 device_names.append(device['name'])
-            elif isinstance(device, str):
-                device_names.append(device)
-        print("Available Audio Devices:")
+        print("Available Audio Input Devices:")
         for name in device_names:
             print(name)
         return device_names
+
