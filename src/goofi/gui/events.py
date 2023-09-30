@@ -162,6 +162,8 @@ def copy_selected_nodes(win, timeout: float = 0.1):
 
     # retrieve selected nodes and their positions
     nodes = [dpg.get_item_user_data(n) for n in dpg.get_selected_nodes(win.node_editor)]
+    positions = [dpg.get_item_pos(n) for n in dpg.get_selected_nodes(win.node_editor)]
+    avg_pos = [sum(p[0] for p in positions) / len(positions), sum(p[1] for p in positions) / len(positions)]
 
     # request the serialized state from each node
     for node in nodes:
@@ -170,7 +172,7 @@ def copy_selected_nodes(win, timeout: float = 0.1):
     # wait for all nodes to respond, i.e. their serialized_state is not None
     start = time.time()
     serialized_nodes = []
-    for node in nodes:
+    for node, pos in zip(nodes, positions):
         while node.serialized_state is None and time.time() - start < timeout:
             # wait for the node to respond or for the timeout to be reached
             time.sleep(0.01)
@@ -183,6 +185,7 @@ def copy_selected_nodes(win, timeout: float = 0.1):
 
         # store the serialized state
         ser = deepcopy(node.serialized_state)
+        ser["gui_kwargs"] = {"offset": [pos[0] - avg_pos[0], pos[1] - avg_pos[1]]}
         del ser["out_conns"]
         serialized_nodes.append(ser)
 
@@ -197,7 +200,7 @@ def paste_nodes(win):
 
     # add the nodes to the manager
     for node in win.node_clipboard:
-        win.manager.add_node(node["_type"], node["category"], params=node["params"])
+        win.manager.add_node(node["_type"], node["category"], params=node["params"], **node["gui_kwargs"])
 
 
 # the key handler map maps key press events to functions that handle them

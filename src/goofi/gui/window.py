@@ -271,7 +271,13 @@ class Window:
         return cls._instance
 
     @running
-    def add_node(self, node_name: str, node: NodeRef, pos: Optional[Tuple[int, int]] = None) -> None:
+    def add_node(
+        self,
+        node_name: str,
+        node: NodeRef,
+        pos: Optional[Tuple[int, int]] = None,
+        offset: Optional[Tuple[int, int]] = None,
+    ) -> None:
         """
         Outward facing method to add a node to the GUI.
 
@@ -282,9 +288,13 @@ class Window:
             The node reference.
         `pos` : Optional[Tuple[int, int]]
             Position of the node. If None, uses the mouse position.
+        `offset` : Optional[Tuple[int, int]]
+            Offsets the node position by the given amount.
         """
         if pos is None:
             pos = self._node_editor_mouse_pos()
+        if offset is not None:
+            pos = (pos[0] + offset[0], pos[1] + offset[1])
 
         with dpg.node(parent=self.node_editor, label=node_name, pos=pos, user_data=node) as node_id:
             ############### input slots ###############
