@@ -803,7 +803,7 @@ class Window:
         pos = [-5000, -5000]
         dpg.add_node(tag="_ref", parent=self.node_editor, pos=pos, user_data=pos)
 
-        # register key-press handler
+        # register user interaction handlers
         with dpg.handler_registry():
             dpg.add_key_release_handler(callback=events.key_release_callback, user_data=self)
             dpg.add_mouse_click_handler(callback=events.click_callback, user_data=self)
