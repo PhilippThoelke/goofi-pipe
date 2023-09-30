@@ -163,7 +163,7 @@ def copy_selected_nodes(win, timeout: float = 0.1):
     nodes, positions = [], []
     for n in dpg.get_selected_nodes(win.node_editor):
         nodes.append(dpg.get_item_user_data(n))
-        positions.append(dpg.get_item_state(n)["rect_min"])
+        positions.append(dpg.get_item_pos(n))
 
     # serialize the nodes
     for n in nodes:
@@ -200,7 +200,12 @@ def paste_nodes(win):
 
     # add the nodes to the manager
     for node in win.node_clipboard:
-        win.manager.add_node(node["_type"], node["category"], params=node["params"], pos=node["pos"])
+        # move node slightly to the bottom right
+        pos = node["pos"]
+        pos[0] += 30
+        pos[1] += 30
+        # add the node
+        win.manager.add_node(node["_type"], node["category"], params=node["params"], pos=pos)
 
 
 # the key handler map maps key press events to functions that handle them
