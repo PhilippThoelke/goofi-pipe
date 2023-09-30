@@ -816,7 +816,7 @@ class Window:
         # create a reference node to calculate the mouse position within the node editor
         # NOTE: this is a workaround as DearPyGui doesn't provide access to the node editor coordinates
         # NOTE: ideally we would set show=False in the ref node, but this causes a Segmentation Fault
-        pos = [width / 2, height / 2]
+        pos = [0, 0]
         dpg.add_node(label=" ", tag="_ref", parent=self.node_editor, pos=pos, user_data=pos, draggable=False)
         dpg.bind_item_theme("_ref", ref_theme)
 
