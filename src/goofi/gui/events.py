@@ -87,7 +87,6 @@ def delete_selected_item(win):
 def select_node_callback(sender, data, user_data):
     """Callback for when a node is selected in the create node window."""
     win, node = user_data
-    pos = dpg.get_item_pos(win.create_node_window)
     # clean up the state of the GUI
     escape(win)
     dpg.clear_selected_nodes(win.node_editor)
