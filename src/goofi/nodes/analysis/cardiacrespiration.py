@@ -40,7 +40,7 @@ class CardiacRespiration(Node):
             # Compute rate
             ecg_rate = nk.ecg_rate(rpeaks, sampling_rate=data.meta['sfreq'], desired_length=len(data.data))
             edr = nk.ecg_rsp(ecg_rate, sampling_rate=data.meta["sfreq"])
-            print(edr)
+            print(edr)      
         
         # get array of all the features
         
