@@ -29,7 +29,7 @@ class Biotuner(Node):
                 "f_min": FloatParam(2.0, 0.1, 50.0),
                 "f_max": FloatParam(30.0, 1.0, 100.0),
                 "precision": FloatParam(0.1, 0.01, 10.0),
-                "peaks_function": StringParam("EMD", options=["EMD", "fixed"]),
+                "peaks_function": StringParam("EMD", options=["EMD", "fixed", "harmonic_recurrence", "EIMC", "FOOOF", "PAC", "cepstrum"]),
             }
         }
 
@@ -88,7 +88,7 @@ def biotuner_realtime(data, sfreq, n_peaks=5, peaks_function="EMD", min_freq=1, 
             precision=precision,
             nIMFs=5,
             n_peaks=n_peaks,
-            smooth_fft=2,
+            smooth_fft=1,
         )
     except UnboundLocalError:
         raise RuntimeError("No peaks found. Try increasing the length of the signal.")
