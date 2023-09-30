@@ -24,7 +24,12 @@ class AudioStream(Node):
     def config_output_slots():
         return {"out": DataType.ARRAY}
     
+    def audio_device_changed(self, value):
+        self.setup()
     def setup(self):
+        if hasattr(self, 'stream') and self.stream:
+            self.stream.stop()
+            self.stream.close()
         self.sfreq = self.params["audio"]["sfreq"].value
         self.buffer_seconds = self.params["audio"]["buffer_seconds"].value
         self.channels = self.params["audio"]["channels"].value
