@@ -161,18 +161,18 @@ def copy_selected_nodes(win, timeout: float = 0.1):
         return
 
     # retrieve selected nodes and their positions
-    nodes = [dpg.get_item_user_data(n) for n in dpg.get_selected_nodes(win.node_editor)]
+    nodes = {n: dpg.get_item_user_data(n) for n in dpg.get_selected_nodes(win.node_editor)}
     positions = [dpg.get_item_pos(n) for n in dpg.get_selected_nodes(win.node_editor)]
     avg_pos = [sum(p[0] for p in positions) / len(positions), sum(p[1] for p in positions) / len(positions)]
 
     # request the serialized state from each node
-    for node in nodes:
+    for node in nodes.values():
         node.serialize()
 
     # wait for all nodes to respond, i.e. their serialized_state is not None
     start = time.time()
     serialized_nodes = []
-    for node, pos in zip(nodes, positions):
+    for (item, node), pos in zip(nodes.items(), positions):
         while node.serialized_state is None and time.time() - start < timeout:
             # wait for the node to respond or for the timeout to be reached
             time.sleep(0.01)
@@ -183,9 +183,23 @@ def copy_selected_nodes(win, timeout: float = 0.1):
             print(f"Node {node} did not respond to serialize request.")
             return
 
+        # get node name
+        names = [name for name, gui_node in win.nodes.items() if gui_node.item == item]
+        assert len(names) == 1, f"The following nodes seem to be duplicates: {names}"
+        name = names[0]
+
+        # get links connected to input slots of the current node
+        input_links = []
+        for n1, n2, s1, s2 in win.links.keys():
+            if n2 == name:
+                input_links.append((n1, n2, s1, s2))
+
         # store the serialized state
         ser = deepcopy(node.serialized_state)
         ser["gui_kwargs"] = {"offset": [pos[0] - avg_pos[0], pos[1] - avg_pos[1]]}
+        ser["name"] = name
+        ser["input_links"] = input_links
+        # we don't need the output connections
         del ser["out_conns"]
         serialized_nodes.append(ser)
 
@@ -199,8 +213,17 @@ def paste_nodes(win):
         return
 
     # add the nodes to the manager
+    rename_nodes = {}
     for node in win.node_clipboard:
-        win.manager.add_node(node["_type"], node["category"], params=node["params"], **node["gui_kwargs"])
+        new_name = win.manager.add_node(node["_type"], node["category"], params=node["params"], **node["gui_kwargs"])
+        rename_nodes[node["name"]] = new_name
+
+    # add links between the nodes
+    for node in win.node_clipboard:
+        for n1, n2, s1, s2 in node["input_links"]:
+            n1 = rename_nodes[n1] if n1 in rename_nodes else n1
+            n2 = rename_nodes[n2] if n2 in rename_nodes else n2
+            win.manager.add_link(n1, n2, s1, s2)
 
 
 # the key handler map maps key press events to functions that handle them
