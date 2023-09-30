@@ -50,7 +50,6 @@ def update_minimap(func):
     def wrapper(*args, **kwargs):
         func(*args, **kwargs)
 
-        print(len(args[0].nodes))
         # update minimap state
         if len(args[0].nodes) > 0:
             dpg.configure_item(args[0].node_editor, minimap=True)
