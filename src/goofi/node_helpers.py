@@ -160,6 +160,7 @@ class NodeRef:
     process: Optional[Process] = None
     callbacks: Dict[MessageType, Callable] = field(default_factory=dict)
     serialized_state: Optional[Dict[str, Any]] = None
+    gui_kwargs: Dict[str, Any] = field(default_factory=dict)
 
     def set_message_handler(self, msg_type: MessageType, callback: Optional[Callable]) -> None:
         """

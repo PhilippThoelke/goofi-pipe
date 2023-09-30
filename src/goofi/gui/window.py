@@ -3,7 +3,7 @@ import threading
 import time
 from dataclasses import dataclass
 from functools import partial
-from typing import Callable, Dict, List, Optional, Tuple
+from typing import Any, Callable, Dict, List, Optional, Tuple
 
 import dearpygui.dearpygui as dpg
 
@@ -596,6 +596,28 @@ class Window:
         ) as self.file_selection_window:
             dpg.add_file_extension(".gfi", label="goofi-pipes")
             dpg.add_file_extension(".*", label="All Files")
+
+    def get_node_state(self, name: str) -> Dict[str, Any]:
+        """
+        Get the state of a node.
+
+        ### Parameters
+        `name` : str
+            The name of the node.
+
+        ### Returns
+        `state` : Dict[str, Any]
+            The state of the node.
+        """
+        if name not in self.nodes:
+            # TODO: add proper logging
+            print(f"Can't get state of node {name}. The node does not exist.")
+            return None
+
+        node = self.nodes[name]
+        return {
+            "pos": dpg.get_item_pos(node.item),
+        }
 
     def _select_node(self, item: Optional[int]) -> None:
         """

@@ -1,5 +1,6 @@
 import importlib
 import time
+from copy import deepcopy
 from os import path
 from typing import Any, Dict, Optional
 
@@ -160,7 +161,7 @@ class Manager:
         # create all nodes
         for name, node in manager_yaml["nodes"].items():
             # add the node to the manager
-            self.add_node(node["_type"], node["category"], name=name, params=node["params"])
+            self.add_node(node["_type"], node["category"], name=name, params=node["params"], **node["gui_kwargs"])
 
         # add links
         for link in manager_yaml["links"]:
@@ -389,7 +390,19 @@ class Manager:
             # check if we got a response in time
             if self.nodes[name].serialized_state is None:
                 raise TimeoutError(f"Node {name} did not respond to serialize request.")
-            serialized_nodes[name] = self.nodes[name].serialized_state
+
+            if not self.headless:
+                # retrieve the GUI state
+                gui_kwargs = Window().get_node_state(name)
+                if gui_kwargs is not None:
+                    self.nodes[name].gui_kwargs = gui_kwargs
+
+            # insert GUI state into the serialized node
+            state = deepcopy(self.nodes[name].serialized_state)
+            state["gui_kwargs"] = self.nodes[name].gui_kwargs
+
+            # store the serialized state
+            serialized_nodes[name] = state
 
         # generate a list of links from the serialized nodes
         links = []
