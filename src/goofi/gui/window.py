@@ -481,7 +481,7 @@ class Window:
 
         if path is None:
             # no save path set, open save dialog
-            self.get_file(file_callback, message="Select a file to load from.")
+            self._get_file(file_callback, message="Select a file to load from.")
             return
 
         try:
@@ -537,7 +537,7 @@ class Window:
 
         if save_as or (self.manager.save_path is None and path is None):
             # no save path set, open save dialog
-            self.get_file(file_callback, message="Select a file to save to.")
+            self._get_file(file_callback, message="Select a file to save to.")
             return
 
         try:
@@ -572,7 +572,7 @@ class Window:
                     dpg.add_button(label="Yes", callback=confirm_callback, user_data=(win, True))
                     dpg.add_button(label="Cancel", callback=confirm_callback, user_data=(win, False))
 
-    def get_file(self, callback: Callable, message: Optional[str] = None) -> None:
+    def _get_file(self, callback: Callable, message: Optional[str] = None) -> None:
         """
         Open a file dialog (e.g. for loading or saving a file).
 
