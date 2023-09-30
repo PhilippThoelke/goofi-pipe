@@ -29,6 +29,8 @@ def format_name(name: str) -> str:
 
 
 def running(func):
+    """Decorator to make sure the window is running before calling a function."""
+
     def wrapper(*args, **kwargs):
         # make sure DearPyGui is running
         n_tries = 5
@@ -38,6 +40,22 @@ def running(func):
         if n_tries == 0:
             raise RuntimeError("DearPyGui is not running.")
         return func(*args, **kwargs)
+
+    return wrapper
+
+
+def update_minimap(func):
+    """Decorator to update the minimap state after the node editor is updated."""
+
+    def wrapper(*args, **kwargs):
+        func(*args, **kwargs)
+
+        print(len(args[0].nodes))
+        # update minimap state
+        if len(args[0].nodes) > 0:
+            dpg.configure_item(args[0].node_editor, minimap=True)
+        else:
+            dpg.configure_item(args[0].node_editor, minimap=False)
 
     return wrapper
 
@@ -271,6 +289,7 @@ class Window:
         return cls._instance
 
     @running
+    @update_minimap
     def add_node(
         self,
         node_name: str,
@@ -341,6 +360,7 @@ class Window:
         self._remove_node(self.nodes[name], notify_manager=False)
 
     @running
+    @update_minimap
     def _remove_node(self, item: int, notify_manager: bool = True) -> None:
         """
         Remove a node from the GUI.
@@ -795,9 +815,7 @@ class Window:
 
         with dpg.group(horizontal=True, parent=self.window):
             # create node editor
-            self.node_editor = dpg.add_node_editor(
-                callback=self.link_callback, delink_callback=self.delink_callback, minimap=True
-            )
+            self.node_editor = dpg.add_node_editor(callback=self.link_callback, delink_callback=self.delink_callback)
             # add parameters window
             self.parameters = dpg.add_child_window(label="Parameters", autosize_x=True)
 
