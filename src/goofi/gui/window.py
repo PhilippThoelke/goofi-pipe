@@ -648,9 +648,11 @@ class Window:
         # clear parameters window
         dpg.delete_item(self.parameters, children_only=True)
 
-        if item is None:
-            # node deselected, hide parameters window
+        if item is None or dpg.get_item_label(item) not in self.nodes:
+            self.selected_node = None
+            # node deselected, hide parameters window and resize node editor
             dpg.configure_item(self.parameters, show=False)
+            self.resize_callback(None, [dpg.get_viewport_width(), dpg.get_viewport_height()])
             return
 
         # get node reference
@@ -793,15 +795,30 @@ class Window:
 
         with dpg.group(horizontal=True, parent=self.window):
             # create node editor
-            self.node_editor = dpg.add_node_editor(callback=self.link_callback, delink_callback=self.delink_callback)
+            self.node_editor = dpg.add_node_editor(
+                callback=self.link_callback, delink_callback=self.delink_callback, minimap=True
+            )
             # add parameters window
             self.parameters = dpg.add_child_window(label="Parameters", autosize_x=True)
+
+        # hide the reference node using themes
+        with dpg.theme() as ref_theme:
+            with dpg.theme_component():
+                dpg.add_theme_color(dpg.mvNodeCol_TitleBar, [0, 0, 0, 0], category=dpg.mvThemeCat_Nodes)
+                dpg.add_theme_color(dpg.mvNodeCol_TitleBarSelected, [0, 0, 0, 0], category=dpg.mvThemeCat_Nodes)
+                dpg.add_theme_color(dpg.mvNodeCol_TitleBarHovered, [0, 0, 0, 0], category=dpg.mvThemeCat_Nodes)
+                dpg.add_theme_color(dpg.mvNodeCol_NodeBackground, [0, 0, 0, 0], category=dpg.mvThemeCat_Nodes)
+                dpg.add_theme_color(dpg.mvNodeCol_NodeBackgroundHovered, [0, 0, 0, 0], category=dpg.mvThemeCat_Nodes)
+                dpg.add_theme_color(dpg.mvNodeCol_NodeBackgroundSelected, [0, 0, 0, 0], category=dpg.mvThemeCat_Nodes)
+                dpg.add_theme_color(dpg.mvNodeCol_NodeOutline, [0, 0, 0, 0], category=dpg.mvThemeCat_Nodes)
+                dpg.add_theme_style(dpg.mvNodeStyleVar_NodePadding, 0, 0, category=dpg.mvThemeCat_Nodes)
 
         # create a reference node to calculate the mouse position within the node editor
         # NOTE: this is a workaround as DearPyGui doesn't provide access to the node editor coordinates
         # NOTE: ideally we would set show=False in the ref node, but this causes a Segmentation Fault
-        pos = [-5000, -5000]
-        dpg.add_node(tag="_ref", parent=self.node_editor, pos=pos, user_data=pos)
+        pos = [width / 2, height / 2]
+        dpg.add_node(label=" ", tag="_ref", parent=self.node_editor, pos=pos, user_data=pos, draggable=False)
+        dpg.bind_item_theme("_ref", ref_theme)
 
         # register user interaction handlers
         with dpg.handler_registry():
