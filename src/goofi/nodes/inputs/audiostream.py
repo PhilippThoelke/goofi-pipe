@@ -69,7 +69,8 @@ class AudioStream(Node):
     def list_audio_devices():
         """Returns a list of available audio devices."""
         if sd is None:
-            return []
+            return ["None"]
+
         devices = sd.query_devices()
         device_names = []
         for device in devices:
