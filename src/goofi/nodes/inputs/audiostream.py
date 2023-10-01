@@ -8,16 +8,16 @@ except OSError:
 
 from goofi.data import DataType
 from goofi.node import Node
-from goofi.params import IntParam, StringParam
+from goofi.params import StringParam
 
 
 class AudioStream(Node):
     def config_params():
         return {
             "audio": {
-                "sfreq": IntParam(44100, 8000, 192000),
+                "sampling_frequency": StringParam("44100", options=["44100", "48000"]),
                 "device": StringParam(AudioStream.list_audio_devices()[0], options=AudioStream.list_audio_devices()),
-                "convert_to_mono": True,  # TODO: fix this
+                "convert_to_mono": True,
             },
             "common": {"autotrigger": True},
         }
@@ -33,7 +33,9 @@ class AudioStream(Node):
         self.buffer = None
 
         self.stream = sd.InputStream(
-            callback=self.audio_callback, samplerate=self.params.audio.sfreq.value, device=self.params.audio.device.value
+            callback=self.audio_callback,
+            samplerate=int(self.params.audio.sampling_frequency.value),
+            device=self.params.audio.device.value,
         )
         self.stream.start()
 
@@ -58,7 +60,10 @@ class AudioStream(Node):
         if self.params.audio.convert_to_mono.value and data.ndim > 1:
             data = np.mean(data, axis=0, keepdims=False)
 
-        return {"out": (data, {"sfreq": self.params.audio.sfreq.value, "dim0": ["audio"]})}
+        return {"out": (data, {"sfreq": self.params.audio.sampling_frequency.value, "dim0": ["audio"]})}
+
+    def audio_sampling_frequency_changed(self, value):
+        self.setup()
 
     @staticmethod
     def list_audio_devices():
