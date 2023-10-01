@@ -144,6 +144,15 @@ class Node(ABC):
         This method runs in a separate thread and handles incoming messages from the manager, or other nodes.
         """
         # run the node's setup method
+        if self._setup.__self__.__class__._setup is not Node._setup:
+            # the node implements _setup, which is not allowed
+            error = (
+                f"The {self.__class__.__name__} node implements the _setup() method, which is reserved for "
+                "internal use. Use setup() instead."
+            )
+            self.connection.try_send(Message(MessageType.PROCESSING_ERROR, {"error": error}))
+            raise RuntimeError(error)
+
         Thread(target=self._setup, daemon=True).start()
 
         # run the messaging loop
