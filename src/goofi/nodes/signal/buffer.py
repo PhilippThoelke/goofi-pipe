@@ -29,6 +29,14 @@ class Buffer(Node):
             # extend the buffer
             maxlen = self.params.buffer.size.value
             axis = self.params.buffer.axis.value
+
+            if self.buffer.ndim < (axis + 1):
+                # add missing dimensions
+                self.buffer = np.expand_dims(self.buffer, axis=axis)
+            if val.data.ndim < (axis + 1):
+                # add missing dimensions
+                val.data = np.expand_dims(val.data, axis=axis)
+
             try:
                 self.buffer = np.concatenate((self.buffer, val.data), axis=axis)
             except ValueError:
