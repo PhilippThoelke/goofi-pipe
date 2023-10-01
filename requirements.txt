@@ -8,3 +8,4 @@ oscpy
 sounddevice
 openai
 scikit-learn
+opencv-python
