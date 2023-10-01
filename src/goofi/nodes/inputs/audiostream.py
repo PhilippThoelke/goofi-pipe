@@ -1,11 +1,14 @@
-import time
-
 import numpy as np
-import sounddevice as sd
+
+try:
+    import sounddevice as sd
+except OSError:
+    print("Could not import sounddevice. AudioStream node will not be available.")
+    sd = None
 
 from goofi.data import DataType
 from goofi.node import Node
-from goofi.params import FloatParam, IntParam, StringParam
+from goofi.params import IntParam, StringParam
 
 
 class AudioStream(Node):
@@ -21,9 +24,6 @@ class AudioStream(Node):
 
     def config_output_slots():
         return {"out": DataType.ARRAY}
-
-    def audio_device_changed(self, value):
-        self.setup()
 
     def setup(self):
         if hasattr(self, "stream") and self.stream:
@@ -62,6 +62,9 @@ class AudioStream(Node):
 
     @staticmethod
     def list_audio_devices():
+        """Returns a list of available audio devices."""
+        if sd is None:
+            return []
         devices = sd.query_devices()
         device_names = []
         for device in devices:
