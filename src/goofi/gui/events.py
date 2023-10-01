@@ -106,7 +106,12 @@ def create_selected_node(win):
         return
 
     # get the selected node
-    top_btn=dpg.get_item_children(search_group)[1][0]
+    try:
+        top_btn = dpg.get_item_children(search_group)[1][0]
+    except IndexError:
+        # no node was selected
+        return
+
     # "click" the button
     user_data = dpg.get_item_user_data(top_btn)
     dpg.get_item_configuration(top_btn)["callback"](top_btn, None, user_data)
