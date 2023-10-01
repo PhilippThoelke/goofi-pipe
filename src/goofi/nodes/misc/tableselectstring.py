@@ -16,8 +16,8 @@ class TableSelectString(Node):
         }
 
     def process(self, input_table: Data):
-        if input_table is None or input_table.data is None:
-            raise ValueError("Input table is None.")
+        if input_table is None:
+            return None
         
         # Retrieve the selected key
         selected_key = self.params["selection"]["key"].value
