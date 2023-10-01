@@ -184,6 +184,9 @@ def copy_selected_nodes(win, timeout: float = 0.1):
 
     # retrieve selected nodes and their positions
     nodes = {n: dpg.get_item_user_data(n) for n in dpg.get_selected_nodes(win.node_editor)}
+    if len(nodes) == 0:
+        return
+
     positions = [dpg.get_item_pos(n) for n in dpg.get_selected_nodes(win.node_editor)]
     avg_pos = [sum(p[0] for p in positions) / len(positions), sum(p[1] for p in positions) / len(positions)]
 
