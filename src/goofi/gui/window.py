@@ -84,7 +84,11 @@ class GUINode:
         """Set the error message."""
         if msg is None:
             # no error, reset theme
-            dpg.bind_item_theme(self.item, win.node_themes[self.node_ref.category])
+            try:
+                dpg.bind_item_theme(self.item, win.node_themes[self.node_ref.category])
+            except SystemError:
+                # the node might have been deleted, ignore this error
+                pass
             return
 
         if msg == self._error_msg:
