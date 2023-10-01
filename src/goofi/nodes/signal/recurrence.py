@@ -1,9 +1,7 @@
-import numpy as np
 from sklearn.metrics import pairwise_distances
 
 from goofi.data import Data, DataType
 from goofi.node import Node
-from goofi.params import FloatParam
 
 
 class Recurrence(Node):
@@ -13,27 +11,15 @@ class Recurrence(Node):
     def config_output_slots():
         return {"recurrence_matrix": DataType.ARRAY}
 
-    def config_params():
-        return {
-            "recurrence": {
-                "threshold": FloatParam(0.1, 0.0, 10.0),  # You can adjust the bounds as per your needs
-            }
-        }
-
     def process(self, input_array: Data):
-        if input_array is None or input_array.data is None:
+        if input_array is None:
             return None
 
-        array = input_array.data
-
-        if array.shape[0] < 2:
-            print("Not enough data points to compute recurrence matrix.")
-            return None
-
-        threshold = self.params["recurrence"]["threshold"].value
+        if input_array.data.shape[0] < 2:
+            raise ValueError("Not enough data points to compute recurrence matrix.")
 
         # Compute pairwise distance
-        distance_matrix = pairwise_distances(array)
+        distance_matrix = pairwise_distances(input_array.data)
         # Handling potential NaN or Inf values
         # if np.any(np.isnan(distance_matrix)) or np.any(np.isinf(distance_matrix)):
         #    print("Warning: The distance matrix contains NaN or Inf values. They will be replaced with a large number.")
