@@ -17,7 +17,7 @@ class CardiacRespiration(Node):
             }
         }
 
-    def _setup(self):
+    def setup(self):
         import neurokit2 as nk
 
         self.neurokit = nk
