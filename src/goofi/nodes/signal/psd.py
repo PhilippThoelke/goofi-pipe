@@ -42,9 +42,9 @@ class PSD(Node):
         nperseg = int(sfreq / precision)
         nfft = nperseg / smooth
         if method == "fft":
-            freq = fftfreq(data.data.shape[-1], 1/sfreq)
+            freq = fftfreq(data.data.shape[-1], 1 / sfreq)
             fft_result = fft(data.data, axis=-1)
-            psd = np.abs(fft_result)**2
+            psd = np.abs(fft_result) ** 2
             phase = np.angle(fft_result)
         elif method == "welch":
             if data.data.ndim == 1:

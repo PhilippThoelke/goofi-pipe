@@ -2,6 +2,7 @@ from goofi.data import DataType
 from goofi.node import Node
 from goofi.params import StringParam
 
+
 class ConstantString(Node):
     def config_params():
         return {

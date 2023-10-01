@@ -38,9 +38,8 @@ class ExtendedTable(Node):
             }
         }
 
-
     def process(self, **inputs):
-        base = inputs.get('base', None)
+        base = inputs.get("base", None)
 
         if base is None:
             # if no base is given, use an empty table
@@ -48,18 +47,18 @@ class ExtendedTable(Node):
 
         # Initialize an empty list to store new_entries
         new_entries = []
-        
+
         # Loops to get the new entries from the inputs and store them in new_entries list
         for i in range(1, 6):
             array_key = f"array_input{i}"
             array_entry = inputs.get(array_key, None)
             new_entries.append(array_entry)
-            
+
         for j in range(1, 6):
             string_key = f"string_input{j}"
-            
+
             string_entry = inputs.get(string_key, None)
-            
+
             new_entries.append(string_entry)
 
         # if no new entries are given, return the base table
@@ -69,9 +68,8 @@ class ExtendedTable(Node):
         # add the new entries to the base table
         for i, entry in enumerate(new_entries):
             if entry is not None:
-                key = self.params['table'][f'param{i+1}'].value  # Note the change here to access the parameter by name
+                key = self.params["table"][f"param{i+1}"].value  # Note the change here to access the parameter by name
                 assert len(key) > 0, "New Entry Key cannot be empty."
                 base.data[key] = entry  # Updated to entry.data to store the actual data
 
         return {"table": (base.data, base.meta)}
-

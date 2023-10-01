@@ -22,8 +22,6 @@ class Resample(Node):
             }
         }
 
-    
-
     def process(self, data: Data):
         if data is None or data.data is None:
             print("Data is None")
@@ -36,7 +34,7 @@ class Resample(Node):
         new_sfreq = self.params.resample.new_sfreq.value
 
         # Log the values for debugging
-        #print(f"Original sfreq: {sf}, New sfreq: {new_sfreq}")
+        # print(f"Original sfreq: {sf}, New sfreq: {new_sfreq}")
 
         # Calculate up and down factors based on the gcd of sf and new_sfreq
         factor = gcd(int(sf), int(new_sfreq))
@@ -44,7 +42,7 @@ class Resample(Node):
         down = sf // factor
 
         # Log the up and down values for debugging
-        #print(f"Up: {up}, Down: {down}")
+        # print(f"Up: {up}, Down: {down}")
 
         signal = np.array(data.data)
 
@@ -59,5 +57,3 @@ class Resample(Node):
         data.meta["sfreq"] = new_sfreq
 
         return {"out": (resampled_signal, data.meta)}
-
-

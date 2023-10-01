@@ -64,27 +64,24 @@ class Filter(Node):
 
         if method == "Causal":
             n = max(len(a), len(b)) - 1  # Number of sections
-            
+
             # Handle initialization for 1D data
             if data.data.ndim == 1:
                 if self.filter_state is None or self.filter_state.ndim != 1:
                     self.filter_state = np.zeros(n)
-                initial_condition = self.filter_state * data.data[0] 
+                initial_condition = self.filter_state * data.data[0]
                 filtered_data, self.filter_state = lfilter(b, a, data.data, zi=initial_condition)
-                
+
             if data.data.ndim == 2:
                 num_sections, num_channels = max(len(a), len(b)) - 1, data.data.shape[0]
-                
+
                 if self.filter_state is None or self.filter_state.ndim != 2 or self.filter_state.shape[1] != num_channels:
                     self.filter_state = np.zeros((num_sections, num_channels))
-                    
-                initial_condition = self.filter_state * data.data[:, [0]]  # Assuming data.data is (num_channels, num_time_points)
+
+                initial_condition = (
+                    self.filter_state * data.data[:, [0]]
+                )  # Assuming data.data is (num_channels, num_time_points)
                 filtered_data, self.filter_state = lfilter(b, a, data.data.T, axis=0, zi=initial_condition)
                 filtered_data = filtered_data.T
-
-
-
-
-
 
         return {"filtered_data": (filtered_data, {**data.meta})}

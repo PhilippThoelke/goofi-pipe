@@ -4,6 +4,7 @@ from goofi.node import Node
 from goofi.params import FloatParam, IntParam, StringParam
 from goofi.data import Data, DataType
 
+
 class TextGeneration(Node):
     def config_input_slots():
         return {"prompt": DataType.STRING}
@@ -31,21 +32,21 @@ class TextGeneration(Node):
     def process(self, prompt: Data):
         if prompt.data is None:
             return None
-        
+
         model = self.params["text_generation"]["model"].value
         temperature = self.params["text_generation"]["temperature"].value
         max_tokens = self.params["text_generation"]["max_tokens"].value
         keep_conversation = self.params["text_generation"]["keep_conversation"].value
-        
+
         prompt_ = prompt.data
-        
+
         # Modify the process according to the value of keep_conversation
         if keep_conversation:
             # Here you would need to manage previous messages to keep the conversation.
             user_message = {"role": "user", "content": prompt_}
             self.messages.append(user_message)
         else:
-            self.messages = [{"role": 'user', "content": prompt_}]  # Reset conversation history
+            self.messages = [{"role": "user", "content": prompt_}]  # Reset conversation history
 
         try:
             response = openai.ChatCompletion.create(
@@ -57,8 +58,8 @@ class TextGeneration(Node):
         except Exception as e:
             print(f"OpenAI API call failed: {e}")
             return
-        
-        generated_text = response['choices'][0]["message"]["content"].strip()
+
+        generated_text = response["choices"][0]["message"]["content"].strip()
 
         if keep_conversation:
             # Store the latest response to maintain conversation

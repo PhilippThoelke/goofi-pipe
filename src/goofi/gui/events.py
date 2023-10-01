@@ -100,7 +100,7 @@ def create_selected_node(win):
     if win.create_node_window is None:
         return
 
-    tab_bar, search_group,searchbox = dpg.get_item_user_data(win.create_node_window)
+    tab_bar, search_group, searchbox = dpg.get_item_user_data(win.create_node_window)
     if dpg.get_item_configuration(tab_bar)["show"]:
         # the tab bar is visible, the user has not selected a node yet
         return
@@ -157,7 +157,7 @@ def create_node(win):
 
     def search_callback(_, data):
         """Callback for when the search bar changes."""
-        tab_bar, search_group,_ = dpg.get_item_user_data(win.create_node_window)
+        tab_bar, search_group, _ = dpg.get_item_user_data(win.create_node_window)
 
         if len(data) == 0:
             # no search query, show all nodes
@@ -196,7 +196,7 @@ def create_node(win):
     # switch to the current tab
     dpg.set_value(tab_bar, f"tab_{list(categories.keys())[win.last_create_node_tab]}")
     # store the tab bar and search group in the window user data
-    dpg.set_item_user_data(win.create_node_window, (tab_bar, search_group,searchbox))
+    dpg.set_item_user_data(win.create_node_window, (tab_bar, search_group, searchbox))
 
     # focus the search bar
     dpg.focus_item(searchbox)
