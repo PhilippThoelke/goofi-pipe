@@ -12,9 +12,7 @@ class Bioelements(Node):
 
     def config_output_slots():
         return {
-            "elements": DataType.TABLE,
-            "spec_regions": DataType.TABLE,
-            "types": DataType.TABLE,
+            "elements": DataType.TABLE
         }
 
     def config_params():
@@ -26,7 +24,7 @@ class Bioelements(Node):
 
     def setup(self):
         # load the dataframe here to avoid loading it on startup
-        self.air_elements = pd.read_csv(join(self.asset_path, "air_elements_filtered.csv"))
+        self.air_elements = pd.read_csv(join(self.assets_path, "air_elements_filtered.csv"))
     
     def process(self, data: Data):
         if data is None:
@@ -37,16 +35,21 @@ class Bioelements(Node):
             raise ValueError("Data must be 1D")
 
         tolerance = self.params["bioelements"]["tolerance"].value
-        elements, spec_regions, types = bioelements_realtime(
+        elems, spec_regions, types = bioelements_realtime(
                                                             data.data,
                                                             self.air_elements,
                                                             tolerance
                                                         )
-
+        
+        # combine the three lists into a dictionary
+        elements = {
+            "element": Data(DataType.STRING, elems[0], {}),
+            "spectral_region": Data(DataType.STRING, spec_regions[0], {}),
+            "type": Data(DataType.STRING, types[0], {})
+        }
+        #print(elements)
         return {
-            "elements": (elements, data.meta),
-            "spec_regions": (spec_regions, data.meta),
-            "types": (types, data.meta),
+            "elements": (elements, data.meta)
         }
 
 
@@ -54,26 +57,32 @@ hertz_to_nm_fn, find_matching_spectral_lines_fn = None, None
 
 
 def bioelements_realtime(data, df, tolerance):
-    # import the biotuner function here to avoid loading it on startup
-    global compute_biotuner_fn, harmonic_tuning_fn
-    if compute_biotuner_fn is None or harmonic_tuning_fn is None:
+    global hertz_to_nm_fn, find_matching_spectral_lines_fn
+    if hertz_to_nm_fn is None or find_matching_spectral_lines_fn is None:
         from biotuner.bioelements import find_matching_spectral_lines, hertz_to_nm
-
         hertz_to_nm_fn = hertz_to_nm
         find_matching_spectral_lines_fn = find_matching_spectral_lines
 
-    # run biotuner peak extraction
-    peaks_ang = [hertz_to_nm_fn(x) * 10 for x in data]  # convert to Angstrom
+    peaks_ang = [hertz_to_nm_fn(x) * 10 for x in data]
     res = find_matching_spectral_lines_fn(df, peaks_ang, tolerance=tolerance)
     elements_count = res["element"].value_counts()
-    elements_final = elements_count.index.tolist()
-    # take the three most common elements
-    elements_final = elements_final[:3]
+    elements_final = elements_count.index.tolist()[:3]  # take the three most common elements
 
-    # filter the res DataFrame for these three elements
-    res_filtered = res[res["element"].isin(elements_final)]
+    elements_mapped = []
+    spectrum_regions_mapped = []
+    types_mapped = []
 
-    # Get unique spectrum regions and types for these elements
-    spectrum_regions = res_filtered["spectrum_region"].unique().tolist()
-    types = res_filtered["type"].unique().tolist()
-    return elements_final, spectrum_regions, types
+    for element in elements_final:
+        res_filtered = res[res["element"] == element]
+        
+        # Here we are making sure to only get one spectrum region and type per element
+        spectrum_region = res_filtered["spectrum_region"].iloc[0]
+        type_ = res_filtered["type"].iloc[0]
+
+        elements_mapped.append(element)
+        spectrum_regions_mapped.append(spectrum_region)
+        types_mapped.append(type_)
+
+    return elements_mapped, spectrum_regions_mapped, types_mapped
+
+
