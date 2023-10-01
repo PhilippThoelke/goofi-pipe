@@ -2,7 +2,7 @@ import pytest
 import yaml
 
 from goofi import params
-from goofi.params import DEFAULT_PARAMS, FloatParam, NodeParams
+from goofi.params import DEFAULT_PARAMS, BoolParam, FloatParam, NodeParams
 
 from .utils import list_param_types
 
@@ -163,9 +163,13 @@ def test_serialize():
     serialized = p.serialize()
     serialized_str = yaml.dump(serialized)
 
+    print(p)
+    print()
+
     # reconstruct from the serialized data
     reconstructed = yaml.load(serialized_str, Loader=yaml.FullLoader)
     p2 = NodeParams(reconstructed)
+    print(p2)
 
     # make sure the reconstructed object is equal to the original
     assert p == p2, "NodeParams should be equal after serialization and reconstruction."
@@ -196,3 +200,10 @@ def test_doc(param_type):
 
     p = param_type(param_type.default(), doc="test")
     assert p.doc == "test", f"Param type {param_type.__name__} should have the correct doc string."
+
+
+@pytest.mark.parametrize("trigger", [True, False])
+def test_toggle_bool_param(trigger):
+    p = BoolParam(True, trigger=trigger)
+    assert p.value == True, "BoolParam should have the correct value."
+    assert p.value == (not trigger), "Accessing BoolParam should set the value to False if trigger is True."

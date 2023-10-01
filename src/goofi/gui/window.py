@@ -168,7 +168,10 @@ def param_updated(_, value, user_data):
     """A callback function for updating a parameter value."""
     group, name, node = user_data[:3]
 
-    if len(user_data) == 5:
+    if len(user_data) == 4:
+        # callback from a trigger button, value should be True
+        value = user_data[3]
+    elif len(user_data) == 5:
         # the parameter includes multiple input widgets, update all of them
         input_group, value_type = user_data[3:]
 
@@ -212,10 +215,10 @@ def add_param(parent: int, group: str, name: str, param: Param, node: NodeRef) -
         with dpg.table_cell():
             if isinstance(param, BoolParam):
                 # parameter is a bool
-                if param.toggle:
-                    dpg.add_checkbox(default_value=param.value, callback=param_updated, user_data=(group, name, node))
+                if param.trigger:
+                    dpg.add_button(label=format_name(name), callback=param_updated, user_data=(group, name, node, True))
                 else:
-                    dpg.add_button(callback=param_updated, user_data=(group, name, node))
+                    dpg.add_checkbox(default_value=param.value, callback=param_updated, user_data=(group, name, node))
             elif isinstance(param, FloatParam):
                 with dpg.group(horizontal=True) as input_group:
                     # parameter is a float

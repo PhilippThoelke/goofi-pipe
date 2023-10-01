@@ -5,7 +5,7 @@ import numpy as np
 
 from goofi.data import Data, DataType
 from goofi.node import Node
-from goofi.params import FloatParam, IntParam, StringParam
+from goofi.params import BoolParam, FloatParam, IntParam, StringParam
 
 
 class ImageGeneration(Node):
@@ -34,6 +34,7 @@ class ImageGeneration(Node):
                 "enabled": False,
                 "strength": FloatParam(0.8, 0, 1),
                 "resize_input": False,
+                "reset_image": BoolParam(False, trigger=True),
             },
         }
 
@@ -50,10 +51,12 @@ class ImageGeneration(Node):
 
         # load StableDiffusion model
         if self.params.img2img.enabled.value:
+            # TODO: make sure this works without internet access
             self.sd_pipe = self.diffusers.StableDiffusionImg2ImgPipeline.from_pretrained(
                 model_id, torch_dtype=self.torch.float16
             )
         else:
+            # TODO: make sure this works without internet access
             self.sd_pipe = self.diffusers.StableDiffusionPipeline.from_pretrained(model_id, torch_dtype=self.torch.float16)
 
         # initialize scheduler
@@ -66,11 +69,16 @@ class ImageGeneration(Node):
 
         # initialize last image
         if not hasattr(self, "last_img"):
-            self.last_img = np.zeros((self.params.image_generation.height.value, self.params.image_generation.width.value, 3))
+            self.last_img = None
+            self.reset_last_img()
 
     def process(self, prompt: Data, negative_prompt: Data, base_image: Data) -> Dict[str, Tuple[np.ndarray, Dict[str, Any]]]:
         if prompt is None:
             return None
+
+        if self.params.img2img.reset_image.value:
+            # reset the last image to zeros
+            self.reset_last_img()
 
         with self.torch.inference_mode():
             if self.params.img2img.enabled.value:
@@ -121,6 +129,10 @@ class ImageGeneration(Node):
                 {"prompt": prompt.data, "negative_prompt": negative_prompt.data if negative_prompt is not None else None},
             )
         }
+
+    def reset_last_img(self):
+        """Reset the last image."""
+        self.last_img = np.zeros((self.params.image_generation.height.value, self.params.image_generation.width.value, 3))
 
     def image_generation_scheduler_changed(self, value):
         """Change the scheduler of the Stable Diffusion pipeline."""

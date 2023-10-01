@@ -11,14 +11,14 @@ class Param(ABC):
     Parameter container that has a specific type and potentially constrains the range of allowed values.
     """
 
-    value: Any = None
+    _value: Any = None
     doc: str = field(default=None, kw_only=True)
 
     def __post_init__(self):
-        if self.value is None:
-            self.value = self.default()
-        if not isinstance(self.value, type(self.default())):
-            raise TypeError(f"Expected {type(self.default())}, got {type(self.value)}")
+        if self._value is None:
+            self._value = self.default()
+        if not isinstance(self._value, type(self.default())):
+            raise TypeError(f"Expected {type(self.default())}, got {type(self._value)}")
 
     @staticmethod
     @abstractmethod
@@ -28,15 +28,34 @@ class Param(ABC):
         """
         pass
 
+    @property
+    def value(self) -> Any:
+        return self._value
+
+    @value.setter
+    def value(self, value: Any):
+        self._value = value
+
 
 @dataclass
 class BoolParam(Param):
-    toggle: bool = True
+    trigger: bool = False
 
     @staticmethod
     def default() -> bool:
         return False
 
+    @property
+    def value(self) -> bool:
+        """If trigger is True, return the current value and reset it to False."""
+        val = self._value
+        if self.trigger:
+            self._value = False
+        return val
+    
+    @value.setter
+    def value(self, value: bool):
+        self._value = value
 
 @dataclass
 class FloatParam(Param):
@@ -116,7 +135,7 @@ class NodeParams:
                 if not isinstance(param, Param):
                     if isinstance(param, dict):
                         # reconstruct serialized param object
-                        param_type = TYPE_PARAM_MAP[type(param["value"])]
+                        param_type = TYPE_PARAM_MAP[type(param["_value"])]
                         data[group][param_name] = param_type(**param)
                         continue
 
@@ -183,7 +202,7 @@ class NodeParams:
                 if not isinstance(param, Param):
                     if isinstance(param, dict):
                         # reconstruct serialized param object
-                        param_type = TYPE_PARAM_MAP[type(param["value"])]
+                        param_type = TYPE_PARAM_MAP[type(param["_value"])]
                         self._data[group] = self._data[group]._replace(**{name: param_type(**param)})
                         continue
 
