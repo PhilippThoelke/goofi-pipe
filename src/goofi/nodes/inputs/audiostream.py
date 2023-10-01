@@ -77,7 +77,4 @@ class AudioStream(Node):
         for device in devices:
             if device["max_input_channels"] > 0:  # This condition will check if a device is an input device.
                 device_names.append(device["name"])
-        print("Available Audio Input Devices:")
-        for name in device_names:
-            print(name)
         return device_names
