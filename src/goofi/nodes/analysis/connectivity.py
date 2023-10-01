@@ -1,6 +1,5 @@
 import numpy as np
-from scipy.signal import hilbert, coherence
-from scipy.stats import zscore
+
 from goofi.data import Data, DataType
 from goofi.node import Node
 from goofi.params import FloatParam, IntParam, StringParam
@@ -29,7 +28,8 @@ class Connectivity(Node):
             },
             "classical": {
                 "method": StringParam("wPLI", options=["coherence", "imag_coherence", "wPLI", "PLI", "PLV"]),
-        }}
+            },
+        }
 
     def process(self, data: Data):
         if data is None:
@@ -92,7 +92,18 @@ def compute_conn_matrix_single(
     return bt_conn.conn_matrix
 
 
+hilbert_fn, coherence_fn = None, None
+
+
 def compute_classical_connectivity(data, method):
+    # import the connectivity function here to avoid loading it on startup
+    global hilbert_fn, coherence_fn
+    if hilbert_fn is None:
+        from scipy.signal import coherence, hilbert
+
+        hilbert_fn = hilbert
+        coherence_fn = coherence
+
     n_channels, n_samples = data.shape
     matrix = np.zeros((n_channels, n_channels))
     for i in range(n_channels):
