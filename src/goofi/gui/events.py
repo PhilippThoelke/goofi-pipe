@@ -171,7 +171,7 @@ def create_node(win):
 
         # add a button for each node that matches the search query
         for node in list_nodes():
-            if node.__name__.lower().startswith(data.lower()):
+            if data.lower() in node.__name__.lower():
                 dpg.add_button(label=node.__name__, callback=select_node_callback, user_data=(win, node), parent=search_group)
 
         # show the search group
