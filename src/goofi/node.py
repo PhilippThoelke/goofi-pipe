@@ -3,6 +3,7 @@ import traceback
 from abc import ABC, abstractmethod
 from copy import deepcopy
 from multiprocessing import Process
+from os.path import dirname, join
 from threading import Event, Thread
 from typing import Any, Callable, Dict, Optional, Tuple, Union
 
@@ -432,6 +433,17 @@ class Node(ABC):
             The category of the node.
         """
         return cls.__module__.split(".")[-2]
+
+    @property
+    def assets_path(self) -> str:
+        """
+        Returns the absolute path to the assets folder of goofi-pipe.
+
+        ### Returns
+        `str`
+            The path to the assets folder of the node.
+        """
+        return join(dirname(dirname(dirname(__file__))), "assets")
 
     @property
     @require_init
