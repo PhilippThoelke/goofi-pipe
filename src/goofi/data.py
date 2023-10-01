@@ -90,7 +90,7 @@ class Data:
 
 
 DTYPE_TO_TYPE = {
-    DataType.ARRAY: np.ndarray,
+    DataType.ARRAY: (np.ndarray, np.number),
     DataType.STRING: str,
     DataType.TABLE: dict,
 }
