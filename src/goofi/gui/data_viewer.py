@@ -1,11 +1,58 @@
 from abc import ABC, abstractmethod
-from typing import Any
+from typing import Any, Tuple
 
+import cv2
 import dearpygui.dearpygui as dpg
 import numpy as np
 
 from goofi.data import Data, DataType
 from goofi.message import Message, MessageType
+
+
+class ViewerContainer:
+    def __init__(self, dtype: DataType, content_window: int) -> None:
+        self.dtype = dtype
+        self.content_window = content_window
+
+        self.viewer_idx = 0
+        self.viewer = DTYPE_VIEWER_MAP[self.dtype][self.viewer_idx](self.content_window)
+
+        with dpg.handler_registry():
+            dpg.add_mouse_click_handler(button=0, callback=self.clicked)
+
+    def clicked(self, _1: int, _2: Any) -> None:
+        """Content window click handler. If the content window is ctrl+clicked, the viewer is switched."""
+        try:
+            state = dpg.get_item_state(self.content_window)
+        except SystemError:
+            # failed to retrieve state, likely because the window was closed
+            return
+
+        if not "hovered" in state or not state["hovered"] or not dpg.is_key_down(dpg.mvKey_Control):
+            # window is not hovered or ctrl is not pressed
+            return
+
+        self.next_viewer()
+
+    def next_viewer(self) -> None:
+        """Switch to the next viewer."""
+        dpg.delete_item(self.content_window, children_only=True)
+        self.viewer_idx = (self.viewer_idx + 1) % len(DTYPE_VIEWER_MAP[self.dtype])
+        self.viewer = DTYPE_VIEWER_MAP[self.dtype][self.viewer_idx](self.content_window)
+
+    def __call__(self, msg: Message) -> Any:
+        if not msg.type == MessageType.DATA:
+            raise ValueError(f"Expected message type DATA, got {msg.type}.")
+        if not msg.content["data"].dtype == self.dtype:
+            raise ValueError(f"Expected data type {self.dtype}, got {msg.content['data'].dtype}.")
+
+        try:
+            # update the data viewer
+            self.viewer.update(msg.content["data"])
+        except UnsupportedViewerError as e:
+            self.next_viewer()
+        except Exception as e:
+            print(f"Error while updating data viewer: {e}")
 
 
 class DataViewer(ABC):
@@ -16,14 +63,6 @@ class DataViewer(ABC):
     @abstractmethod
     def update(self, data: Data) -> None:
         pass
-
-    def __call__(self, msg: Message) -> Any:
-        if not msg.type == MessageType.DATA:
-            raise ValueError(f"Expected message type DATA, got {msg.type}.")
-        if not msg.content["data"].dtype == self.dtype:
-            raise ValueError(f"Expected data type {self.dtype}, got {msg.content['data'].dtype}.")
-        # update the data viewer
-        self.update(msg.content["data"])
 
 
 class ArrayViewer(DataViewer):
@@ -118,11 +157,68 @@ class ArrayViewer(DataViewer):
                     # update existing data series
                     dpg.set_value(self.line_series[i], [xs, array[i]])
         else:
-            raise NotImplementedError("TODO: plot higher-dimensional data")
+            raise UnsupportedViewerError(f"Cannot handle array with {array.ndim} dimensions.")
 
         # autoscale x and y-axis limits
         dpg.set_axis_limits(self.xax, xs.min(), xs.max())
         dpg.set_axis_limits(self.yax, self.vmin - abs(self.vmax) * self.margin, self.vmax + abs(self.vmax) * self.margin)
+
+
+class ImageViewer(DataViewer):
+    def __init__(self, content_window: int, max_res: int = 100) -> None:
+        super().__init__(DataType.ARRAY, content_window)
+
+        config = dpg.get_item_configuration(content_window)
+        res = (config["width"], config["height"])
+
+        # set resolution to max_res
+        if res[0] != max_res and res[1] != max_res:
+            scale = max_res / max(res)
+            res = (int(res[0] * scale), int(res[1] * scale))
+
+        # initialize texture
+        with dpg.texture_registry():
+            self.texture = dpg.add_dynamic_texture(
+                width=res[0], height=res[1], default_value=[1 for _ in range(res[0] * res[1] * 4)]
+            )
+        self.image = dpg.add_image(self.texture, parent=self.content_window)
+
+    def update(self, data: Data) -> None:
+        """
+        This function handles drawing image data to an image item.
+
+        ### Parameters
+        `data` : Data
+            The data message.
+        """
+        # convert data to numpy array and copy to C order (otherwise DPG will crash for some arrays)
+        array = np.squeeze(data.data).copy(order="C")
+
+        if array.ndim > 3:
+            raise UnsupportedViewerError(f"Cannot handle array with {array.ndim} dimensions.")
+        while array.ndim < 3:
+            array = array[..., None]
+
+        # make sure we have 4 channels
+        if array.shape[2] > 4:
+            raise NotImplementedError(f"Cannot handle array with {array.shape[2]} channels.")
+        elif array.shape[2] == 3:
+            array = np.concatenate([array, np.ones((*array.shape[:2], 1))], axis=2)
+        elif array.shape[2] == 2:
+            array = np.concatenate([array, np.ones((*array.shape[:2], 2))], axis=2)
+        elif array.shape[2] == 1:
+            array = np.concatenate([array] * 3 + [np.ones((*array.shape[:2], 1))], axis=2)
+
+        # clamp values to [0, 1]
+        array = np.clip(array, 0, 1)
+
+        tex_config = dpg.get_item_configuration(self.texture)
+        if tex_config["height"] != array.shape[1] or tex_config["width"] != array.shape[0]:
+            # resize array to fit texture
+            array = cv2.resize(array, (tex_config["width"], tex_config["height"]), interpolation=cv2.INTER_NEAREST)
+
+        # update texture
+        dpg.set_value(self.texture, array.flatten())
 
 
 class StringViewer(DataViewer):
@@ -189,7 +285,11 @@ class TableViewer(DataViewer):
 
 
 DTYPE_VIEWER_MAP = {
-    DataType.ARRAY: ArrayViewer,
-    DataType.STRING: StringViewer,
-    DataType.TABLE: TableViewer,
+    DataType.ARRAY: [ArrayViewer, ImageViewer],
+    DataType.STRING: [StringViewer],
+    DataType.TABLE: [TableViewer],
 }
+
+
+class UnsupportedViewerError(Exception):
+    pass

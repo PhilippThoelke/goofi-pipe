@@ -9,7 +9,7 @@ import dearpygui.dearpygui as dpg
 
 from goofi.data import DataType
 from goofi.gui import events
-from goofi.gui.data_viewer import DTYPE_VIEWER_MAP
+from goofi.gui.data_viewer import ViewerContainer
 from goofi.message import Message, MessageType
 from goofi.node_helpers import NodeRef
 from goofi.params import BoolParam, FloatParam, IntParam, Param, StringParam
@@ -401,7 +401,7 @@ class Window:
                 # create content window for data viewer (initialize closed if more than two output slots)
                 content = add_output_slot(out_slots[name], name, closed=len(node.output_slots) > 2)
                 # create data viewer
-                output_draw_handlers[name] = DTYPE_VIEWER_MAP[dtype](content)
+                output_draw_handlers[name] = ViewerContainer(dtype, content)
 
             # add node to node list
             self.nodes[node_name] = GUINode(node_id, in_slots, out_slots, output_draw_handlers, node)
