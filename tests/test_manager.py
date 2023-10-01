@@ -19,11 +19,11 @@ def create_simple_manager() -> Manager:
         The manager object.
     """
     manager = Manager()
-    manager.add_node("Constant", "inputs")
+    manager.add_node("ConstantArray", "inputs")
     manager.add_node("Sine", "inputs")
     manager.add_node("Add", "array")
 
-    manager.add_link("constant0", "add0", "out", "a")
+    manager.add_link("constantarray0", "add0", "out", "a")
     manager.add_link("sine0", "add0", "out", "b")
     return manager
 
@@ -99,6 +99,8 @@ def test_save_simple(overwrite, tmpdir):
     # if path is a file, save to that file
     manager.save(path.join(tmpdir, "test.gfi"), overwrite=overwrite)
     assert path.exists(path.join(tmpdir, "test.gfi")), "Expected file test.gfi to exist."
+
+    time.sleep(0.1)
 
     # if file already exists, raise FileExistsError
     if overwrite:
