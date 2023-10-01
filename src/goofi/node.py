@@ -331,6 +331,8 @@ class Node(ABC):
                     except ValueError:
                         error_message = traceback.format_exc()
                         self.connection.try_send(Message(MessageType.PROCESSING_ERROR, {"error": error_message}))
+                        continue
+
                     try:
                         conn.send(msg)
                     except ConnectionError:
