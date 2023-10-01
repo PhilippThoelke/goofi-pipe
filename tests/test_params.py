@@ -184,3 +184,15 @@ def test_update():
 def test_update_types(param_type):
     p = full_node_params()
     p.update({"group0": {"param" + param_type.__name__: param_type.default()}})
+
+
+@pytest.mark.parametrize("param_type", list_param_types())
+def test_doc(param_type):
+    p = param_type()
+    assert p.doc is None, f"Param type {param_type.__name__} should have no doc string."
+
+    p = param_type(doc="test")
+    assert p.doc == "test", f"Param type {param_type.__name__} should have the correct doc string."
+
+    p = param_type(param_type.default(), doc="test")
+    assert p.doc == "test", f"Param type {param_type.__name__} should have the correct doc string."

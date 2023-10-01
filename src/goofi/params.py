@@ -1,7 +1,7 @@
 from abc import ABC, abstractmethod
 from collections import namedtuple
 from copy import deepcopy
-from dataclasses import asdict, dataclass
+from dataclasses import asdict, dataclass, field
 from typing import Any, Dict, List, Union
 
 
@@ -12,6 +12,7 @@ class Param(ABC):
     """
 
     value: Any = None
+    doc: str = field(default=None, kw_only=True)
 
     def __post_init__(self):
         if self.value is None:

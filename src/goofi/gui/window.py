@@ -205,7 +205,9 @@ def add_param(parent: int, group: str, name: str, param: Param, node: NodeRef) -
     """
     with dpg.table_row(parent=parent):
         with dpg.table_cell():
-            dpg.add_text(format_name(name))
+            lbl = dpg.add_text(format_name(name))
+            if param.doc is not None:
+                dpg.add_text(param.doc, parent=dpg.add_tooltip(parent=lbl))
 
         with dpg.table_cell():
             if isinstance(param, BoolParam):
@@ -333,7 +335,7 @@ def add_output_slot(parent: int, name: str, closed: bool = False, size: Tuple[in
         # add collapsable content area for the data viewer
         header = dpg.add_collapsing_header(label=name, default_open=not closed, open_on_arrow=False, closable=False)
         content = dpg.add_child_window(width=size[0], height=size[1], user_data=size, parent=header)
-        with dpg.tooltip(parent=content,show=True):
+        with dpg.tooltip(parent=content, show=True):
             dpg.add_text("ctrl + click to switch\nbetween data viewers")
 
     # store header, window and content window in user_data for the two callbacks
