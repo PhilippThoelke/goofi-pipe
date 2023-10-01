@@ -168,11 +168,12 @@ def param_updated(_, value, user_data):
         # the parameter includes multiple input widgets, update all of them
         input_group, value_type = user_data[3:]
 
-        # make sure the value has the correct type
         try:
+            # make sure the value has the correct type
             value = value_type(value)
         except ValueError:
-            value = value_type()
+            # failed to convert value to correct type, ignore this update
+            return
 
         # update all input widgets
         for child in dpg.get_item_children(input_group)[1]:
