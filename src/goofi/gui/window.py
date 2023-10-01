@@ -11,7 +11,7 @@ from goofi.data import DataType
 from goofi.gui import events
 from goofi.gui.data_viewer import ViewerContainer
 from goofi.message import Message, MessageType
-from goofi.node_helpers import NodeRef
+from goofi.node_helpers import NodeRef, list_nodes
 from goofi.params import BoolParam, FloatParam, IntParam, Param, StringParam
 
 DTYPE_SHAPE_MAP = {
@@ -19,6 +19,15 @@ DTYPE_SHAPE_MAP = {
     DataType.STRING: dpg.mvNode_PinShape_TriangleFilled,
     DataType.TABLE: dpg.mvNode_PinShape_QuadFilled,
 }
+
+NODE_CATEGORY_COLORS = [
+    [140, 0, 0, 255],
+    [0, 140, 0, 255],
+    [0, 0, 140, 255],
+    [140, 140, 0, 255],
+    [140, 0, 140, 255],
+    [0, 140, 140, 255],
+]
 
 PARAM_WINDOW_WIDTH = 400
 
@@ -68,18 +77,21 @@ class GUINode:
     node_ref: NodeRef
     _error_msg: str = None
 
+    def __post_init__(self):
+        self.set_error(None, Window())
+
     def set_error(self, msg: str, win: "Window") -> None:
         """Set the error message."""
+        if msg is None:
+            # no error, reset theme
+            dpg.bind_item_theme(self.item, win.node_themes[self.node_ref.category])
+            return
+
         if msg == self._error_msg:
             # nothing changed
             return
 
         self._error_msg = msg
-
-        if msg is None:
-            # no error, reset theme
-            dpg.bind_item_theme(self.item, None)
-            return
 
         # we have an error, set theme
         dpg.bind_item_theme(self.item, win.node_error_theme)
@@ -141,8 +153,8 @@ def handle_data(gui_node: GUINode, node: NodeRef, message: Message):
     """
     try:
         gui_node.output_draw_handlers[message.content["slot_name"]](message)
-        gui_node._error_msg = None
-        dpg.bind_item_theme(gui_node.item, None)
+        # TODO: can we get the window from somewhere else?
+        gui_node.set_error(None, Window())
     except ValueError as e:
         # TODO: add proper logging
         print(f"Output draw handler for slot {message.content['slot_name']} failed: {e}")
@@ -156,11 +168,12 @@ def param_updated(_, value, user_data):
         # the parameter includes multiple input widgets, update all of them
         input_group, value_type = user_data[3:]
 
-        # make sure the value has the correct type
         try:
+            # make sure the value has the correct type
             value = value_type(value)
         except ValueError:
-            value = value_type()
+            # failed to convert value to correct type, ignore this update
+            return
 
         # update all input widgets
         for child in dpg.get_item_children(input_group)[1]:
@@ -853,6 +866,18 @@ class Window:
         """Get the mouse position within the node editor."""
         return self._to_node_editor_coords(dpg.get_mouse_pos(local=False))
 
+    def _register_node_category_themes(self) -> None:
+        """Register themes for each node category."""
+        cats = [n.category() for n in list_nodes()]
+        cats = list(set(cats))
+
+        self.node_themes = {}
+        for i, cat in enumerate(cats):
+            with dpg.theme() as theme:
+                with dpg.theme_component():
+                    dpg.add_theme_color(dpg.mvNodeCol_NodeOutline, NODE_CATEGORY_COLORS[i], category=dpg.mvThemeCat_Nodes)
+            self.node_themes[cat] = theme
+
     def _initialize(self, manager, width=1280, height=720):
         """Initialize the window and launch the event loop (blocking)."""
         dpg.create_context()
@@ -892,6 +917,8 @@ class Window:
             self.node_editor = dpg.add_node_editor(callback=self.link_callback, delink_callback=self.delink_callback)
             # add parameters window
             self.parameters = dpg.add_child_window(label="Parameters", autosize_x=True)
+
+        self._register_node_category_themes()
 
         # set up node error theme
         with dpg.theme() as self.node_error_theme:

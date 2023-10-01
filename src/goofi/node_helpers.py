@@ -154,12 +154,15 @@ class NodeRef:
         The parameters of the node.
     `process` : Optional[Process]
         If the node is running in a separate process, this should be the process object. Defaults to None.
+    category : str
+        The category of the node.
     """
 
     connection: Connection
     input_slots: Dict[str, DataType]
     output_slots: Dict[str, DataType]
     params: NodeParams
+    category: str
 
     process: Optional[Process] = None
     callbacks: Dict[MessageType, Callable] = field(default_factory=dict)

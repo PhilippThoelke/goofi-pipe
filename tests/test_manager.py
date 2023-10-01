@@ -19,8 +19,8 @@ def create_simple_manager() -> Manager:
         The manager object.
     """
     manager = Manager()
-    manager.add_node("Constant", "data")
-    manager.add_node("Sine", "data")
+    manager.add_node("Constant", "inputs")
+    manager.add_node("Sine", "inputs")
     manager.add_node("Add", "array")
 
     manager.add_link("constant0", "add0", "out", "a")

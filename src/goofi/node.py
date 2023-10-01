@@ -394,6 +394,7 @@ class Node(ABC):
             {name: slot.dtype for name, slot in in_slots.items()},
             {name: slot.dtype for name, slot in out_slots.items()},
             params,
+            cls.category(),
             process=proc,
         )
 
@@ -427,6 +428,7 @@ class Node(ABC):
                 {name: slot.dtype for name, slot in in_slots.items()},
                 {name: slot.dtype for name, slot in out_slots.items()},
                 deepcopy(params),
+                cls.category(),
             ),
             node,
         )

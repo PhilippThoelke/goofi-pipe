@@ -6,3 +6,4 @@ biotuner @ git+https://github.com/AntoineBellemare/biotuner.git
 pyserial
 oscpy
 sounddevice
+openai

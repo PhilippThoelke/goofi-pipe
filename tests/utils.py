@@ -22,6 +22,10 @@ class DummyNode(Node):
     def process(self):
         return None, {}
 
+    @classmethod
+    def category(cls) -> str:
+        return "dummy"
+
 
 class FullDummyNode(Node):
     def config_input_slots():
