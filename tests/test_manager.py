@@ -127,6 +127,9 @@ def test_save_simple_dir(tmpdir):
     # if path is a directory, save to untitled0.gfi
     manager.save(tmpdir)
     assert path.exists(path.join(tmpdir, "untitled0.gfi")), "Expected file untitled0.gfi to exist."
+
+    time.sleep(0.1)
+
     # if untitled0.gfi exists in the directory, save to untitled1.gfi
     manager.save(tmpdir)
     assert path.exists(path.join(tmpdir, "untitled1.gfi")), "Expected file untitled1.gfi to exist."
