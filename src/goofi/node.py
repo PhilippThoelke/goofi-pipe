@@ -323,6 +323,7 @@ class Node(ABC):
                 except ValueError:
                     error_message = traceback.format_exc()
                     self.connection.try_send(Message(MessageType.PROCESSING_ERROR, {"error": error_message}))
+                    continue
 
                 # send the data to all connected nodes
                 for target_slot, conn in self.output_slots[name].connections:
@@ -338,6 +339,7 @@ class Node(ABC):
                     except ConnectionError:
                         # the target node is dead, remove the connection
                         self.output_slots[name].connections.remove((target_slot, conn))
+                        continue
 
     @staticmethod
     def _configure(cls) -> Tuple[Dict[str, InputSlot], Dict[str, OutputSlot], NodeParams]:
