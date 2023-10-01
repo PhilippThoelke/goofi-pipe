@@ -1,7 +1,7 @@
 from scipy.signal import butter, cheby1, ellip, filtfilt, lfilter, lfilter_zi
 import numpy as np
 from goofi.node import Node
-from goofi.params import StringParam, FloatParam
+from goofi.params import StringParam, FloatParam, IntParam
 from goofi.data import DataType, Data
 
 
@@ -17,6 +17,7 @@ class Filter(Node):
             "filter": {
                 "type": StringParam("butterworth", options=["butterworth", "chebyshev", "elliptic"]),
                 "method": StringParam("Causal", options=["Causal", "Zero-phase"]),
+                "order": IntParam(1, 1, 10),  # added order parameter
                 "f_low": FloatParam(1.0, 0.01, 9999.0),
                 "f_high": FloatParam(60.0, 1.0, 10000.0),
                 "ripple": FloatParam(1.0, 0.1, 10.0),
@@ -28,6 +29,7 @@ class Filter(Node):
         self.filter_state = None
 
     def process(self, data: Data):
+        # TO DO: deal with error when change in order
         if data is None or data.data is None:
             return None
 
@@ -37,17 +39,18 @@ class Filter(Node):
         ripple = self.params["filter"]["ripple"].value
         padding = self.params["filter"]["padding"].value
         method = self.params["filter"]["method"].value
+        order = self.params["filter"]["order"].value
         sfreq = data.meta["sfreq"]
         nyq = 0.5 * sfreq
         low = f_low / nyq
         high = f_high / nyq
 
         if filter_type == "butterworth":
-            b, a = butter(1, [low, high], btype="band")
+            b, a = butter(order, [low, high], btype="band")
         elif filter_type == "chebyshev":
-            b, a = cheby1(1, ripple, [low, high], btype="band")
+            b, a = cheby1(order, ripple, [low, high], btype="band")
         elif filter_type == "elliptic":
-            b, a = ellip(1, ripple, ripple, [low, high], btype="band")
+            b, a = ellip(order, ripple, ripple, [low, high], btype="band")
 
         # Edge Padding 10% of data
 
@@ -60,16 +63,28 @@ class Filter(Node):
             filtered_data = filtfilt(b, a, data.data, padlen=padlen)
 
         if method == "Causal":
-            if self.filter_state is None:
-                # Creating the filter_state with the correct shape
-                n = max(len(a), len(b)) - 1
-                zi_shape = (data.data.shape[-2], n) if data.data.ndim > 1 else (n,)
-                self.filter_state = np.zeros(zi_shape)
-                
-            # Modify the calculation of initial_condition to accommodate the updated filter_state shape
-            initial_condition = self.filter_state * data.data.take(0, axis=-1)[..., np.newaxis]
+            n = max(len(a), len(b)) - 1  # Number of sections
             
-            filtered_data, self.filter_state = lfilter(b, a, data.data, axis=-1, zi=initial_condition)
+            # Handle initialization for 1D data
+            if data.data.ndim == 1:
+                if self.filter_state is None or self.filter_state.ndim != 1:
+                    self.filter_state = np.zeros(n)
+                initial_condition = self.filter_state * data.data[0] 
+                filtered_data, self.filter_state = lfilter(b, a, data.data, zi=initial_condition)
+                
+            if data.data.ndim == 2:
+                num_sections, num_channels = max(len(a), len(b)) - 1, data.data.shape[0]
+                
+                if self.filter_state is None or self.filter_state.ndim != 2 or self.filter_state.shape[1] != num_channels:
+                    self.filter_state = np.zeros((num_sections, num_channels))
+                    
+                initial_condition = self.filter_state * data.data[:, [0]]  # Assuming data.data is (num_channels, num_time_points)
+                filtered_data, self.filter_state = lfilter(b, a, data.data.T, axis=0, zi=initial_condition)
+                filtered_data = filtered_data.T
+
+
+
+
 
 
         return {"filtered_data": (filtered_data, {**data.meta})}

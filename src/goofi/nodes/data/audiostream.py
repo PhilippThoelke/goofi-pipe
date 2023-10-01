@@ -14,7 +14,7 @@ class AudioStream(Node):
                 "buffer_seconds": FloatParam(5.0, 1.0, 60.0),
                 "channels": IntParam(1, 1, 10),
                 "device": StringParam("", options=AudioStream.list_audio_devices()),
-                "convert_to_mono": True,
+                "convert_to_mono": True, #TO DO fix this
             },
             "common": {
                 "autotrigger": True
