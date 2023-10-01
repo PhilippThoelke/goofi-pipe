@@ -2,6 +2,7 @@ import functools
 import importlib
 import inspect
 import pkgutil
+import time
 import traceback
 from dataclasses import dataclass, field
 from multiprocessing import Process
@@ -41,7 +42,10 @@ def list_nodes(verbose: bool = False) -> List[Type]:
 
         # iterate over all modules in the parent module
         for info in pkgutil.walk_packages(parent_module.__path__):
+            # import the module and measure the time it takes
+            start = time.time()
             module = importlib.import_module(f"{parent_module.__name__}.{info.name}")
+            module_annot = "" if time.time() - start < 0.2 else "!!!"
 
             if verbose:
                 # print module name
@@ -67,7 +71,7 @@ def list_nodes(verbose: bool = False) -> List[Type]:
                 raise ValueError(f"Expected exactly one node in module {module.__name__}, got {len(new_nodes)}")
 
             if verbose:
-                print(f"  {new_nodes[0].__name__}", end="")
+                print(f"  {module_annot}{new_nodes[0].__name__}{module_annot}", end="")
 
             nodes.extend(new_nodes)
         return nodes

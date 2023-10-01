@@ -84,7 +84,7 @@ def delete_selected_item(win):
         win._remove_link(link)
 
 
-def select_node_callback(sender, data, user_data):
+def select_node_callback(_1, _2, user_data):
     """Callback for when a node is selected in the create node window."""
     win, node = user_data
     # clean up the state of the GUI
@@ -95,9 +95,25 @@ def select_node_callback(sender, data, user_data):
     win.manager.add_node(node.__name__, node.category())
 
 
+def create_selected_node(win):
+    """Callback for when a node is selected in the create node window."""
+    if win.create_node_window is None:
+        return
+
+    tab_bar, search_group = dpg.get_item_user_data(win.create_node_window)
+    if dpg.get_item_configuration(tab_bar)["show"]:
+        # the tab bar is visible, the user has not selected a node yet
+        return
+
+    # get the selected node
+    top_btn=dpg.get_item_children(search_group)[1][0]
+    # "click" the button
+    user_data = dpg.get_item_user_data(top_btn)
+    dpg.get_item_configuration(top_btn)["callback"](top_btn, None, user_data)
+
+
 def create_node(win):
     """Opens the window for creating a node. If the window is already open, switch to the next tab."""
-
     # create a dictionary of nodes by category
     categories = {}
     for node in list_nodes():
@@ -109,7 +125,7 @@ def create_node(win):
     if win.create_node_window is not None:
         if dpg.is_item_focused(win.create_node_window):
             # the window is open and focused, switch to the next tab
-            tab_bar = dpg.get_item_user_data(win.create_node_window)
+            tab_bar = dpg.get_item_user_data(win.create_node_window)[0]
             # increment tab index
             if dpg.is_key_down(dpg.mvKey_Shift):
                 win.last_create_node_tab = (win.last_create_node_tab - 1) % len(categories)
@@ -133,6 +149,33 @@ def create_node(win):
         label="Create Node", pos=dpg.get_mouse_pos(local=False), no_collapse=True, autosize=True
     )
 
+    def search_callback(sender, data):
+        """Callback for when the search bar changes."""
+        tab_bar, search_group = dpg.get_item_user_data(win.create_node_window)
+
+        if len(data) == 0:
+            # no search query, show all nodes
+            dpg.configure_item(tab_bar, show=True)
+            dpg.configure_item(search_group, show=False)
+            return
+
+        # hide all tabs
+        dpg.configure_item(tab_bar, show=False)
+        # clear the search group
+        dpg.delete_item(search_group, children_only=True)
+
+        # add a button for each node that matches the search query
+        for node in list_nodes():
+            if node.__name__.lower().startswith(data.lower()):
+                dpg.add_button(label=node.__name__, callback=select_node_callback, user_data=(win, node), parent=search_group)
+
+        # show the search group
+        dpg.configure_item(search_group, show=True)
+
+    # add search bar
+    searchbox = dpg.add_input_text(hint="search", parent=win.create_node_window, callback=search_callback)
+    dpg.add_separator(parent=win.create_node_window)
+
     # create a tab bar with a tab for each category
     with dpg.tab_bar(parent=win.create_node_window) as tab_bar:
         for cat, nodes in categories.items():
@@ -141,10 +184,16 @@ def create_node(win):
                 for node in nodes:
                     dpg.add_button(label=node.__name__, callback=select_node_callback, user_data=(win, node))
 
+    # create a vertical group for listing nodes during search
+    search_group = dpg.add_group(horizontal=False, parent=win.create_node_window, show=False)
+
     # switch to the current tab
     dpg.set_value(tab_bar, f"tab_{list(categories.keys())[win.last_create_node_tab]}")
-    # store the tab bar for switching tabs later
-    dpg.set_item_user_data(win.create_node_window, tab_bar)
+    # store the tab bar and search group in the window user data
+    dpg.set_item_user_data(win.create_node_window, (tab_bar, search_group))
+
+    # focus the search bar
+    dpg.focus_item(searchbox)
 
 
 def escape(win):
@@ -184,6 +233,9 @@ def copy_selected_nodes(win, timeout: float = 0.1):
 
     # retrieve selected nodes and their positions
     nodes = {n: dpg.get_item_user_data(n) for n in dpg.get_selected_nodes(win.node_editor)}
+    if len(nodes) == 0:
+        return
+
     positions = [dpg.get_item_pos(n) for n in dpg.get_selected_nodes(win.node_editor)]
     avg_pos = [sum(p[0] for p in positions) / len(positions), sum(p[1] for p in positions) / len(positions)]
 
@@ -257,4 +309,5 @@ KEY_HANDLER_MAP = {
     dpg.mvKey_S: save_manager,
     dpg.mvKey_C: copy_selected_nodes,
     dpg.mvKey_V: paste_nodes,
+    dpg.mvKey_Return: create_selected_node,
 }
