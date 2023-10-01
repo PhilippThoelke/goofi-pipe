@@ -266,6 +266,7 @@ class Node(ABC):
         # wait until the node's setup is complete
         while not self._node_ready:
             time.sleep(0.1)
+            self.connection.try_send(Message(MessageType.PROCESSING_ERROR, {"error": "Node setup not complete."}))
 
         last_update = 0
         while self.alive:
