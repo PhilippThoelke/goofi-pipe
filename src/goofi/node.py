@@ -130,12 +130,14 @@ class Node(ABC):
 
     def _setup(self):
         """This method calls the node's setup method and handles any exceptions that may occur."""
-        try:
-            self.setup()
-            self._node_ready = True
-        except Exception:
-            error_message = traceback.format_exc()
-            self.connection.try_send(Message(MessageType.PROCESSING_ERROR, {"error": error_message}))
+        while not self._node_ready:
+            try:
+                self.setup()
+                self._node_ready = True
+            except Exception:
+                error_message = traceback.format_exc()
+                self.connection.try_send(Message(MessageType.PROCESSING_ERROR, {"error": error_message}))
+                time.sleep(0.1)
 
     def _messaging_loop(self):
         """
@@ -266,7 +268,6 @@ class Node(ABC):
         # wait until the node's setup is complete
         while not self._node_ready:
             time.sleep(0.1)
-            self.connection.try_send(Message(MessageType.PROCESSING_ERROR, {"error": "Node setup not complete."}))
 
         last_update = 0
         while self.alive:
