@@ -14,7 +14,7 @@ class Select(Node):
     def config_params():
         return {"select": {"axis": 0, "include": "", "exclude": ""}}
 
-    def _setup(self):
+    def setup(self):
         from mne import pick_channels
 
         self.pick_channels = pick_channels
