@@ -15,7 +15,7 @@ class AudioStream(Node):
     def config_params():
         return {
             "audio": {
-                "sampling_frequency": StringParam("44100", options=["44100", "48000"]),
+                "sampling_rate": StringParam("44100", options=["44100", "48000"]),
                 "device": StringParam(AudioStream.list_audio_devices()[0], options=AudioStream.list_audio_devices()),
                 "convert_to_mono": True,
             },
@@ -34,7 +34,7 @@ class AudioStream(Node):
 
         self.stream = sd.InputStream(
             callback=self.audio_callback,
-            samplerate=int(self.params.audio.sampling_frequency.value),
+            samplerate=int(self.params.audio.sampling_rate.value),
             device=self.params.audio.device.value,
         )
         self.stream.start()
@@ -60,7 +60,7 @@ class AudioStream(Node):
         if self.params.audio.convert_to_mono.value and data.ndim > 1:
             data = np.mean(data, axis=0, keepdims=False)
 
-        return {"out": (data, {"sfreq": self.params.audio.sampling_frequency.value, "dim0": ["audio"]})}
+        return {"out": (data, {"sfreq": self.params.audio.sampling_rate.value, "dim0": ["audio"]})}
 
     def audio_sampling_frequency_changed(self, value):
         self.setup()
