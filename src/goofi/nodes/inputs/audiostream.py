@@ -13,10 +13,8 @@ class AudioStream(Node):
         return {
             "audio": {
                 "sfreq": IntParam(44100, 8000, 192000),
-                "buffer_seconds": FloatParam(5.0, 1.0, 60.0),
-                "channels": IntParam(1, 1, 10),
                 "device": StringParam(AudioStream.list_audio_devices()[0], options=AudioStream.list_audio_devices()),
-                "convert_to_mono": True,  # TO DO fix this
+                "convert_to_mono": True,  # TODO: fix this
             },
             "common": {"autotrigger": True},
         }
@@ -31,50 +29,43 @@ class AudioStream(Node):
         if hasattr(self, "stream") and self.stream:
             self.stream.stop()
             self.stream.close()
-        self.sfreq = self.params["audio"]["sfreq"].value
-        self.buffer_seconds = self.params["audio"]["buffer_seconds"].value
-        self.channels = self.params["audio"]["channels"].value
-        device = self.params["audio"]["device"].value or None  # corrected the way to access parameters.
 
-        print(f"Initializing stream with device={device}, sfreq={self.sfreq}, channels={self.channels}")  # Debug print
+        self.buffer = None
 
-        self.buffer = np.zeros((self.channels, int(self.sfreq * self.buffer_seconds)))
-
-        try:
-            self.stream = sd.InputStream(
-                callback=self.audio_callback, samplerate=self.sfreq, channels=self.channels, device=device
-            )
-            self.stream.start()
-        except Exception as e:
-            print(f"Error initializing audio stream: {e}")
-            self.stream = None
+        self.stream = sd.InputStream(
+            callback=self.audio_callback, samplerate=self.params.audio.sfreq.value, device=self.params.audio.device.value
+        )
+        self.stream.start()
 
     def audio_callback(self, indata, frames, time, status):
-        if status:
-            print(status)
-        self.buffer = np.roll(self.buffer, shift=-frames, axis=1)
-        self.buffer[:, -frames:] = indata.T  # Assuming you want to transpose the samples
+        """This callback receives audio data from the audio stream."""
+        if self.buffer is None:
+            self.buffer = np.array(indata.T)
+        else:
+            self.buffer = np.concatenate((self.buffer, indata.T), axis=1)
 
     def process(self):
-        if not self.stream:
-            print("Audio stream is not available.")
+        if self.stream is None:
+            raise RuntimeError("Audio stream is not available.")
+
+        if self.buffer is None:
             return None
 
-        data = np.copy(self.buffer)
-        # Convert to mono if required
-        convert_to_mono = self.params.audio.convert_to_mono.value
-        if convert_to_mono and self.channels > 1:
+        data = np.squeeze(np.array(self.buffer))
+        self.buffer = None
+
+        # convert to mono if required
+        if self.params.audio.convert_to_mono.value and data.ndim > 1:
             data = np.mean(data, axis=0, keepdims=False)
-            # ensure that the data is 1D
-        data = np.squeeze(data)
-        meta = {"sfreq": self.sfreq, "dim0": ["audio"]}
-        return {"out": (data, meta)}
+
+        return {"out": (data, {"sfreq": self.params.audio.sfreq.value, "dim0": ["audio"]})}
 
     @staticmethod
     def list_audio_devices():
         devices = sd.query_devices()
         device_names = []
         for device in devices:
-            if device["max_input_channels"] > 0:  # This condition will check if a device is an input device.
+            # check if the device is an input device
+            if device["max_input_channels"] > 0:
                 device_names.append(device["name"])
         return device_names
