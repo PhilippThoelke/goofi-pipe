@@ -8,7 +8,7 @@ from goofi.params import FloatParam
 class Constant(Node):
     def config_params():
         return {
-            "constant": {"value": FloatParam(1.0, -10.0, 10.0), "shape": "1"},
+            "constant": {"value": FloatParam(1.0, -10.0, 10.0)},
             "common": {"autotrigger": True},
         }
 
@@ -16,6 +16,4 @@ class Constant(Node):
         return {"out": DataType.ARRAY}
 
     def process(self):
-        parts = [p for p in self.params.constant.shape.value.split(",") if len(p) > 0]
-        shape = list(map(int, parts))
-        return {"out": (np.ones(shape) * self.params.constant.value.value, {"sfreq": self.params.common.max_frequency.value})}
+        return {"out": (np.ones(1) * self.params.constant.value.value, {})}

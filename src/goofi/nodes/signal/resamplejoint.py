@@ -5,7 +5,7 @@ from goofi.node import Node
 from goofi.params import FloatParam
 
 
-class ResampleMatch(Node):
+class ResampleJoint(Node):
     def config_input_slots():
         # Defining two input slots for two input signals
         return {"data1": DataType.ARRAY, "data2": DataType.ARRAY}
