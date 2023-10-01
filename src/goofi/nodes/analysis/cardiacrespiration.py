@@ -31,8 +31,8 @@ class CardiacRespiration(Node):
 
         if self.params["cardiac"]["input_type"].value == "ppg":
             raise NotImplementedError("PPG not implemented yet")
-            signal, info = nk.ppg_process(data.data, sampling_rate=data.meta["sfreq"])
-            hrv_df = nk.hrv(info, sampling_rate=data.meta["sfreq"])
+            signal, info = self.neurokit.ppg_process(data.data, sampling_rate=data.meta["sfreq"])
+            hrv_df = self.neurokit.hrv(info, sampling_rate=data.meta["sfreq"])
         elif self.params["cardiac"]["input_type"].value == "ecg":
             # extract peaks
             rpeaks, info = self.neurokit.ecg_peaks(data.data, sampling_rate=data.meta["sfreq"])
