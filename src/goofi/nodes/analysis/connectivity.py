@@ -113,30 +113,30 @@ def compute_classical_connectivity(data, method):
                 continue
 
             if method == "wPLI":
-                sig1 = hilbert(data[i, :])
-                sig2 = hilbert(data[j, :])
+                sig1 = hilbert_fn(data[i, :])
+                sig2 = hilbert_fn(data[j, :])
                 imag_csd = np.imag(np.exp(1j * (np.angle(sig1) - np.angle(sig2))))
                 matrix[i, j] = matrix[j, i] = np.abs(np.mean(imag_csd)) / np.mean(np.abs(imag_csd))
 
             elif method == "coherence":
-                f, Cxy = coherence(data[i, :], data[j, :])
+                f, Cxy = coherence_fn(data[i, :], data[j, :])
                 matrix[i, j] = matrix[j, i] = np.mean(Cxy)
 
             elif method == "PLI":
-                sig1 = hilbert(data[i, :])
-                sig2 = hilbert(data[j, :])
+                sig1 = hilbert_fn(data[i, :])
+                sig2 = hilbert_fn(data[j, :])
                 matrix[i, j] = matrix[j, i] = np.mean(np.sign(np.angle(sig1) - np.angle(sig2)))
 
             elif method == "imag_coherence":
-                sig1 = hilbert(data[i, :])
-                sig2 = hilbert(data[j, :])
+                sig1 = hilbert_fn(data[i, :])
+                sig2 = hilbert_fn(data[j, :])
                 matrix[i, j] = matrix[j, i] = np.mean(np.imag(np.conj(sig1) * sig2)) / (
                     np.sqrt(np.mean(np.imag(sig1) ** 2)) * np.sqrt(np.mean(np.imag(sig2) ** 2))
                 )
 
             elif method == "PLV":
-                sig1 = hilbert(data[i, :])
-                sig2 = hilbert(data[j, :])
+                sig1 = hilbert_fn(data[i, :])
+                sig2 = hilbert_fn(data[j, :])
                 matrix[i, j] = matrix[j, i] = np.abs(np.mean(np.exp(1j * (np.angle(sig1) - np.angle(sig2)))))
 
     return matrix
