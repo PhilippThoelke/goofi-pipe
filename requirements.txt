@@ -7,3 +7,4 @@ pyserial
 oscpy
 sounddevice
 openai
+scikit-learn
