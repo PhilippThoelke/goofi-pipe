@@ -320,16 +320,17 @@ class Node(ABC):
                 data = output_data[name]
                 try:
                     data = Data(self.output_slots[name].dtype, data[0], data[1])
-                except ValueError as e:
-                    raise ValueError(
-                        f"The return value of {self.__class__.__name__}.process() is misformed for output "
-                        f"slot {name}. Expected a tuple of result (instance of one of the DataTypes) and "
-                        f"metadata (dict) but got {data}."
-                    ) from e
+                except ValueError:
+                    error_message = traceback.format_exc()
+                    self.connection.try_send(Message(MessageType.PROCESSING_ERROR, {"error": error_message}))
 
                 # send the data to all connected nodes
                 for target_slot, conn in self.output_slots[name].connections:
-                    msg = Message(MessageType.DATA, {"data": data, "slot_name": target_slot})
+                    try:
+                        msg = Message(MessageType.DATA, {"data": data, "slot_name": target_slot})
+                    except ValueError:
+                        error_message = traceback.format_exc()
+                        self.connection.try_send(Message(MessageType.PROCESSING_ERROR, {"error": error_message}))
                     try:
                         conn.send(msg)
                     except ConnectionError:
