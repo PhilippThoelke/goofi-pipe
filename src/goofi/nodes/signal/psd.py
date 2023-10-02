@@ -59,14 +59,17 @@ class PSD(Node):
                 freq = f
                 psd = np.array(psd)
 
+        # prepare metadata
+        meta = data.meta.copy()
+
         # Selecting the range of frequencies
         valid_indices = np.where((freq >= f_min) & (freq <= f_max))[0]
         freq = freq[valid_indices]
         if data.data.ndim == 1:
             psd = psd[valid_indices]
+            meta["channels"]["dim0"] = freq.tolist()
         else:  # if 2D
             psd = psd[:, valid_indices]
+            meta["channels"]["dim1"] = freq.tolist()
 
-        meta = data.meta.copy()
-        meta["channels"]["dim1"] = freq.tolist()
         return {"psd": (psd, meta)}
