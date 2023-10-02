@@ -109,7 +109,7 @@ class MultiprocessingConnection(Connection):
     def recv(self) -> object:
         try:
             return self.conn.recv()
-        except (OSError, EOFError, TypeError, pickle.UnpicklingError):
+        except (OSError, EOFError, TypeError, pickle.UnpicklingError, ValueError):
             raise ConnectionError("Connection closed")
 
     def close(self) -> None:
