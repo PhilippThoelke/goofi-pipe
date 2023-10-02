@@ -24,9 +24,16 @@ class Select(Node):
             return None
 
         axis = self.params.select.axis.value
-        assert f"dim{axis}" in data.meta, f"Missing axis {axis} "
+        if axis < 0:
+            axis = data.data.ndim + axis
 
-        chs = data.meta[f"dim{axis}"]
+        if f"dim{axis}" in data.meta["channels"]:
+            # use channel names from metadata
+            chs = data.meta["channels"][f"dim{axis}"]
+        else:
+            # no channel names for this axis, use indices
+            chs = [str(i) for i in range(data.data.shape[axis])]
+            print(chs)
 
         include = self.params.select.include.value.split(",") or []
         include = [ch.strip() for ch in include if len(ch.strip()) > 0]
@@ -35,7 +42,13 @@ class Select(Node):
 
         idxs = self.pick_channels(chs, include=include, exclude=exclude, ordered=False)
 
-        selected = np.squeeze(data.data[idxs])
-        data.meta[f"dim{axis}"] = [chs[i] for i in idxs]
+        if len(idxs) == 0:
+            raise ValueError("No channels matched the selection.")
 
+        selected = np.take(data.data, idxs, axis=axis)
+        if f"dim{axis}" in data.meta["channels"]:
+            data.meta["channels"][f"dim{axis}"] = [ch for i, ch in enumerate(data.meta["channels"][f"dim{axis}"]) if i in idxs]
+
+        print(data.meta)
+        print(selected.shape)
         return {"out": (selected, data.meta)}
