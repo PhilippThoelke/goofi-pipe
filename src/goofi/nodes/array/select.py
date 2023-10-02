@@ -33,7 +33,6 @@ class Select(Node):
         else:
             # no channel names for this axis, use indices
             chs = [str(i) for i in range(data.data.shape[axis])]
-            print(chs)
 
         include = self.params.select.include.value.split(",") or []
         include = [ch.strip() for ch in include if len(ch.strip()) > 0]
@@ -49,6 +48,15 @@ class Select(Node):
         if f"dim{axis}" in data.meta["channels"]:
             data.meta["channels"][f"dim{axis}"] = [ch for i, ch in enumerate(data.meta["channels"][f"dim{axis}"]) if i in idxs]
 
-        print(data.meta)
-        print(selected.shape)
+        if len(idxs) == 1:
+            # remove axis if only one channel is selected
+            selected = np.squeeze(selected, axis=axis)
+            if f"dim{axis}" in data.meta["channels"]:
+                del data.meta["channels"][f"dim{axis}"]
+
+            for i in range(axis, selected.ndim + 1):
+                if f"dim{i+1}" in data.meta["channels"]:
+                    data.meta["channels"][f"dim{i}"] = data.meta["channels"][f"dim{i+1}"]
+                    del data.meta["channels"][f"dim{i+1}"]
+
         return {"out": (selected, data.meta)}

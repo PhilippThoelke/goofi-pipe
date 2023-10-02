@@ -82,7 +82,7 @@ class SerialStream(Node):
         self.last_time = time_buf[-1]
         self.last_sample = data[-1]
 
-        meta = {"sfreq": self.params.serial.sfreq.value, "dim0": ["serial"]}
+        meta = {"sfreq": self.params.serial.sfreq.value}
         return {"out": (data, meta)}
 
     def detect_serial_port(self, names=["Arduino", "Serial"]):
