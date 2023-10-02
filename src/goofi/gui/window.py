@@ -339,7 +339,7 @@ def add_output_slot(parent: int, name: str, closed: bool = False, size: Tuple[in
         header = dpg.add_collapsing_header(label=name, default_open=not closed, open_on_arrow=False, closable=False)
         content = dpg.add_child_window(width=size[0], height=size[1], user_data=size, parent=header)
         with dpg.tooltip(parent=content, show=True):
-            dpg.add_text("ctrl + click to switch\nbetween data viewers")
+            dpg.add_text("- ctrl + click\nswitch between data viewers\n- scroll\nzoom in/out")
 
     # store header, window and content window in user_data for the two callbacks
     user_data_open.extend([header, window, content])

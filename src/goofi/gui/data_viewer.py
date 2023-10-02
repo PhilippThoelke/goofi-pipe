@@ -16,9 +16,11 @@ class ViewerContainer:
 
         self.viewer_idx = 0
         self.viewer = DTYPE_VIEWER_MAP[self.dtype][self.viewer_idx](self.content_window)
+        self.viewer.set_size()
 
         with dpg.handler_registry():
             dpg.add_mouse_click_handler(button=0, callback=self.clicked)
+            dpg.add_mouse_wheel_handler(callback=self.wheel)
 
     def clicked(self, _1: int, _2: Any) -> None:
         """Content window click handler. If the content window is ctrl+clicked, the viewer is switched."""
@@ -28,17 +30,54 @@ class ViewerContainer:
             # failed to retrieve state, likely because the window was closed
             return
 
-        if not "hovered" in state or not state["hovered"] or not dpg.is_key_down(dpg.mvKey_Control):
-            # window is not hovered or ctrl is not pressed
+        if not "hovered" in state or not state["hovered"]:
+            # window is not hovered
             return
 
-        self.next_viewer()
+        if dpg.is_key_down(dpg.mvKey_Control):
+            # ctrl+click: switch to next viewer
+            self.next_viewer()
+
+    def wheel(self, _1: int, value: Any) -> None:
+        """Content window mouse wheel handler. Increases or deacreases the size of the viewer."""
+        try:
+            state = dpg.get_item_state(self.content_window)
+        except SystemError:
+            # failed to retrieve state, likely because the window was closed
+            return
+
+        if not "hovered" in state or not state["hovered"]:
+            # window is not hovered
+            return
+
+        min_size = dpg.get_item_user_data(self.content_window)
+
+        header = dpg.get_item_parent(self.content_window)
+        window = dpg.get_item_parent(header)
+
+        width, height = dpg.get_item_width(self.content_window), dpg.get_item_height(self.content_window)
+        width = max(min_size[0], width + value * 10)
+        height = max(min_size[1], height + value * 10)
+
+        dpg.set_item_width(self.content_window, width)
+        dpg.set_item_height(self.content_window, height)
+
+        header_height = dpg.get_item_state(header)["rect_size"][1]
+        if header_height == 0:
+            # this happens when the header is off screen, set to default height
+            header_height = 15
+
+        dpg.set_item_width(window, width)
+        dpg.set_item_height(window, height + header_height + 4)  # magic + 4 to avoid scroll bar
+
+        self.viewer.set_size()
 
     def next_viewer(self) -> None:
         """Switch to the next viewer."""
         dpg.delete_item(self.content_window, children_only=True)
         self.viewer_idx = (self.viewer_idx + 1) % len(DTYPE_VIEWER_MAP[self.dtype])
         self.viewer = DTYPE_VIEWER_MAP[self.dtype][self.viewer_idx](self.content_window)
+        self.viewer.set_size()
 
     def __call__(self, msg: Message) -> Any:
         if not msg.type == MessageType.DATA:
@@ -62,6 +101,9 @@ class DataViewer(ABC):
 
     @abstractmethod
     def update(self, data: Data) -> None:
+        pass
+
+    def set_size(self) -> None:
         pass
 
 
@@ -163,6 +205,11 @@ class ArrayViewer(DataViewer):
         dpg.set_axis_limits(self.xax, xs.min(), xs.max())
         dpg.set_axis_limits(self.yax, self.vmin - abs(self.vmax) * self.margin, self.vmax + abs(self.vmax) * self.margin)
 
+    def set_size(self) -> None:
+        """This function sets the size of the plot."""
+        dpg.set_item_width(self.plot, dpg.get_item_width(self.content_window))
+        dpg.set_item_height(self.plot, dpg.get_item_height(self.content_window))
+
 
 class ImageViewer(DataViewer):
     def __init__(self, content_window: int, max_res: int = 100) -> None:
@@ -219,6 +266,11 @@ class ImageViewer(DataViewer):
 
         # update texture
         dpg.set_value(self.texture, array.flatten())
+
+    def set_size(self) -> None:
+        """This function sets the size of the image."""
+        dpg.set_item_width(self.image, dpg.get_item_width(self.content_window))
+        dpg.set_item_height(self.image, dpg.get_item_height(self.content_window))
 
 
 class StringViewer(DataViewer):
