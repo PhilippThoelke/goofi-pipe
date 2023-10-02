@@ -33,6 +33,20 @@ NODE_CATEGORY_COLORS = [
 PARAM_WINDOW_WIDTH = 400
 
 
+class MetadataPrinter(pprint.PrettyPrinter):
+    def format(self, object, context, maxlevels, level):
+        if isinstance(object, float):
+            return (f"{object:.1f}", True, False)
+        return super().format(object, context, maxlevels, level)
+
+
+data = {
+    "apple": 4.123456,
+    "banana": 3.987654,
+    "fruits": [{"name": "cherry", "value": 2.1234}, {"name": "blueberry", "value": 1.456789}],
+}
+
+
 def format_name(name: str) -> str:
     """Format a name to be used as a node label."""
     return name.replace("_", " ").title()
@@ -165,7 +179,7 @@ def handle_data(win: "Window", gui_node: GUINode, node: NodeRef, message: Messag
 
     if win.metadata_view is not None and win.selected_node == gui_node.item:
         try:
-            dpg.set_value(win.metadata_view, pprint.pformat(message.content["data"].meta, compact=True, width=50))
+            dpg.set_value(win.metadata_view, MetadataPrinter(compact=True, width=50).pformat(message.content["data"].meta))
         except SystemError:
             # param window was closed, ignore this error
             pass
