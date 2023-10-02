@@ -18,9 +18,9 @@ class HarmonicSpectrum(Node):
                 "metric": StringParam("harmsim", options=["harmsim", "subharm_tension"]),
                 "normalize": True,
                 "power_law_remove": True,
-                "n_harms": IntParam(3, 1, 10),
-                "delta_lim": IntParam(250, 1, 300),
-                "min_notes": IntParam(2, 1, 10),
+                "n_harms": IntParam(3, 1, 10, doc="Number of harmonics to consider in the subharmonic tension metric"),
+                "delta_lim": IntParam(250, 1, 300, doc="Maximum delta in the subharmonic tension metric"),
+                "min_notes": IntParam(2, 1, 10, doc="Minimum number of notes in the subharmonic tension metric"),
             }
         }
 
