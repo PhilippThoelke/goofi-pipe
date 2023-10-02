@@ -1,3 +1,4 @@
+import pickle
 import time
 import traceback
 from abc import ABC, abstractmethod
@@ -160,7 +161,16 @@ class Node(ABC):
             # receive the message
             try:
                 msg = self.connection.recv()
-            except (EOFError, ConnectionResetError, OSError):
+            except (pickle.UnpicklingError, ValueError, AttributeError):
+                # the message couldn't be unpickled, try the next message
+                self.connection.try_send(
+                    Message(
+                        MessageType.PROCESSING_ERROR,
+                        {"error": f"{traceback.format_exc()}\nReceived unpicklable message from {self.connection}"},
+                    )
+                )
+                continue
+            except ConnectionError:
                 # the connection was closed, consider the node dead
                 self._alive = False
                 self.connection.close()
@@ -350,6 +360,7 @@ class Node(ABC):
                         conn.send(msg)
                     except ConnectionError:
                         # the target node is dead, remove the connection
+                        # TODO: forward removal of this connection to the manager
                         self.output_slots[name].connections.remove((target_slot, conn))
                         continue
 
