@@ -18,5 +18,17 @@ class Transpose(Node):
         if array is None or array.data is None:
             return None
 
-        result = np.transpose(array.data)
+        if array.data.ndim != 2:
+            raise ValueError("Data must be 2D (TODO: support n-dimensional arrays).")
+
+        result = array.data.T
+
+        # transpose channel names
+        ch_names = {}
+        if "dim0" in array.meta["channels"]:
+            ch_names["dim1"] = array.meta["channels"]["dim0"]
+        if "dim1" in array.meta["channels"]:
+            ch_names["dim0"] = array.meta["channels"]["dim1"]
+        array.meta["channels"] = ch_names
+
         return {"out": (result, array.meta)}
