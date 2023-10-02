@@ -179,7 +179,10 @@ def handle_data(win: "Window", gui_node: GUINode, node: NodeRef, message: Messag
 
     if win.metadata_view is not None and win.selected_node == gui_node.item:
         try:
-            dpg.set_value(win.metadata_view, MetadataPrinter(compact=True, width=50).pformat(message.content["data"].meta))
+            dpg.set_value(
+                win.metadata_view[message.content["slot_name"]],
+                MetadataPrinter(compact=True, width=50).pformat(message.content["data"].meta),
+            )
         except SystemError:
             # param window was closed, ignore this error
             pass
@@ -805,7 +808,13 @@ class Window:
             # add window title
             dpg.add_text("Metadata")
             dpg.add_separator()
-            self.metadata_view = dpg.add_text("")
+
+            # add one metadata view for each output slot
+            self.metadata_view = {}
+            for slot in node.output_slots:
+                dpg.add_text(slot, bullet=True)
+                dpg.add_separator()
+                self.metadata_view[slot] = dpg.add_text("")
 
         # show parameters window
         dpg.configure_item(self.param_win, show=True)
