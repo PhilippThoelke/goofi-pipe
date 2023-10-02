@@ -83,7 +83,7 @@ class LSLClient(Node):
             return None
 
         # TODO: add all relevant metadata from self.client.info
-        meta = {"sfreq": self.client.info["sfreq"], "dim0": self.client.info["ch_names"]}
+        meta = {"sfreq": self.client.info["sfreq"], "channels": {"dim0": self.client.info["ch_names"]}}
         return {"out": (data, meta)}
 
     def lsl_stream_stream_name_changed(self, value: str) -> None:

@@ -19,9 +19,18 @@ class Reduce(Node):
         if array is None:
             return None
 
-        return {
-            "out": (
-                getattr(np, self.params.reduce.method.value)(array.data, axis=self.params.reduce.axis.value),
-                array.meta,
-            )
-        }
+        axis = self.params.reduce.axis.value
+        if axis < 0:
+            axis = array.data.ndim + axis
+
+        result = getattr(np, self.params.reduce.method.value)(array.data, axis=axis)
+
+        if f"dim{axis}" in array.meta["channels"]:
+            del array.meta["channels"][f"dim{axis}"]
+
+        for i in range(axis, result.ndim + 1):
+            if f"dim{i+1}" in array.meta["channels"]:
+                array.meta["channels"][f"dim{i}"] = array.meta["channels"][f"dim{i+1}"]
+                del array.meta["channels"][f"dim{i+1}"]
+
+        return {"out": (result, array.meta)}

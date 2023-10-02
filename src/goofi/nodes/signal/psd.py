@@ -1,9 +1,10 @@
-from scipy.signal import welch
+import numpy as np
 from numpy.fft import fft, fftfreq
-from goofi.params import IntParam, FloatParam, StringParam
+from scipy.signal import welch
+
 from goofi.data import Data, DataType
 from goofi.node import Node
-import numpy as np
+from goofi.params import FloatParam, IntParam, StringParam
 
 
 class PSD(Node):
@@ -19,8 +20,8 @@ class PSD(Node):
                 "method": StringParam("welch", options=["fft", "welch"]),
                 "noverlap": IntParam(0, 0, 10000),
                 "precision": FloatParam(0.1, 0.01, 10.0),
-                "f_min": FloatParam(1.0, 0.01, 9999.0),  # added min frequency parameter
-                "f_max": FloatParam(60.0, 1.0, 10000.0),  # added max frequency parameter
+                "f_min": FloatParam(1.0, 0.01, 9999.0),
+                "f_max": FloatParam(60.0, 1.0, 10000.0),
                 "smooth_welch": IntParam(1, 1, 10),
             }
         }
@@ -38,6 +39,7 @@ class PSD(Node):
         f_min = self.params["psd"]["f_min"].value  # Get the min frequency
         f_max = self.params["psd"]["f_max"].value  # Get the max frequency
         smooth = self.params["psd"]["smooth_welch"].value
+
         sfreq = data.meta["sfreq"]
         nperseg = int(sfreq / precision)
         nfft = nperseg / smooth
@@ -65,4 +67,6 @@ class PSD(Node):
         else:  # if 2D
             psd = psd[:, valid_indices]
 
-        return {"psd": (psd, {"freq": freq, **data.meta})}
+        meta = data.meta.copy()
+        meta["channels"]["dim1"] = freq.tolist()
+        return {"psd": (psd, meta)}
