@@ -350,7 +350,7 @@ class Node(ABC):
                 data = output_data[name]
                 try:
                     data = Data(self.output_slots[name].dtype, data[0], data[1])
-                except ValueError:
+                except Exception:
                     error_message = traceback.format_exc()
                     self.connection.try_send(Message(MessageType.PROCESSING_ERROR, {"error": error_message}))
                     continue
@@ -359,7 +359,7 @@ class Node(ABC):
                 for target_slot, conn in self.output_slots[name].connections:
                     try:
                         msg = Message(MessageType.DATA, {"data": data, "slot_name": target_slot})
-                    except ValueError:
+                    except Exception:
                         error_message = traceback.format_exc()
                         self.connection.try_send(Message(MessageType.PROCESSING_ERROR, {"error": error_message}))
                         continue
