@@ -813,8 +813,9 @@ class Window:
             self.metadata_view = {}
             for slot in node.output_slots:
                 dpg.add_text(slot, bullet=True)
-                dpg.add_separator()
                 self.metadata_view[slot] = dpg.add_text("")
+                dpg.add_separator()
+            dpg.delete_item(dpg.last_item())
 
         # show parameters window
         dpg.configure_item(self.param_win, show=True)
