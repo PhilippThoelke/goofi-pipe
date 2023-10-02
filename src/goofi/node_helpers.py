@@ -200,7 +200,7 @@ class NodeRef:
         if param_name not in self.params[group]:
             raise ValueError(f"Parameter '{param_name}' doesn't exist in group '{group}'.")
         self.params[group][param_name].value = param_value
-        self.connection.send(
+        self.connection.try_send(
             Message(
                 MessageType.PARAMETER_UPDATE,
                 {
