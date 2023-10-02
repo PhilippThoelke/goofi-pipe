@@ -1,4 +1,5 @@
 import os
+import pprint
 import threading
 import time
 from dataclasses import dataclass
@@ -142,7 +143,7 @@ class GUINode:
             dpg.bind_item_theme(win.node_info_window, win_theme)
 
 
-def handle_data(gui_node: GUINode, node: NodeRef, message: Message):
+def handle_data(win: "Window", gui_node: GUINode, node: NodeRef, message: Message):
     """
     Handle a data message from a node. This function is registered as a message handler for the
     `MessageType.DATA` message type.
@@ -157,11 +158,17 @@ def handle_data(gui_node: GUINode, node: NodeRef, message: Message):
     """
     try:
         gui_node.output_draw_handlers[message.content["slot_name"]](message)
-        # TODO: can we get the window from somewhere else?
-        gui_node.set_error(None, Window())
+        gui_node.set_error(None, win)
     except ValueError as e:
         # TODO: add proper logging
         print(f"Output draw handler for slot {message.content['slot_name']} failed: {e}")
+
+    if win.metadata_view is not None and win.selected_node == gui_node.item:
+        try:
+            dpg.set_value(win.metadata_view, pprint.pformat(message.content["data"].meta, compact=True, width=50))
+        except SystemError:
+            # param window was closed, ignore this error
+            pass
 
 
 def param_updated(_, value, user_data):
@@ -436,7 +443,7 @@ class Window:
             )
 
             # register data message handler to update the data viewers
-            node.set_message_handler(MessageType.DATA, partial(handle_data, self.nodes[node_name]))
+            node.set_message_handler(MessageType.DATA, partial(handle_data, self, self.nodes[node_name]))
 
     @running
     def remove_node(self, name: str) -> None:
@@ -768,16 +775,23 @@ class Window:
         # get node reference
         node = self.nodes[dpg.get_item_label(item)].node_ref
 
-        # populate parameters window
-        with dpg.tab_bar(parent=self.param_win):
-            for group in node.params:
-                with dpg.tab(label=format_name(group)) as tab:
-                    with dpg.table(header_row=False, parent=tab, policy=dpg.mvTable_SizingStretchProp) as table:
-                        dpg.add_table_column()
-                        dpg.add_table_column()
+        with dpg.child_window(height=dpg.get_viewport_height() / 2, parent=self.param_win):
+            # populate parameters window
+            with dpg.tab_bar():
+                for group in node.params:
+                    with dpg.tab(label=format_name(group)) as tab:
+                        with dpg.table(header_row=False, parent=tab, policy=dpg.mvTable_SizingStretchProp) as table:
+                            dpg.add_table_column()
+                            dpg.add_table_column()
 
-                        for name, param in node.params[group].items():
-                            add_param(table, group, name, param, node)
+                            for name, param in node.params[group].items():
+                                add_param(table, group, name, param, node)
+
+        with dpg.child_window(autosize_y=True, parent=self.param_win):
+            # add window title
+            dpg.add_text("Metadata")
+            dpg.add_separator()
+            self.metadata_view = dpg.add_text("test")
 
         # show parameters window
         dpg.configure_item(self.param_win, show=True)
@@ -904,6 +918,7 @@ class Window:
         self.unsaved_changes_dialog_open = False
         self.node_clipboard = None
         self.node_info_window = None
+        self.metadata_view = None
 
         # create window
         self.window = dpg.add_window(
@@ -927,7 +942,7 @@ class Window:
             # create node editor
             self.node_editor = dpg.add_node_editor(callback=self.link_callback, delink_callback=self.delink_callback)
             # add parameters window
-            self.param_win = dpg.add_child_window(label="Parameters", autosize_x=True)
+            self.param_win = dpg.add_child_window(label="Parameters", autosize_x=True, border=False)
 
         self._register_node_category_themes()
 
