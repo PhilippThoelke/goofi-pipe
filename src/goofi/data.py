@@ -86,6 +86,9 @@ class Data:
             self.data = np.array([self.data])
 
         # populate the metadata
+        self.meta["shape"] = self.data.shape
+
+        # make sure that the metadata contains a channels dict
         if "channels" in self.meta:
             assert isinstance(self.meta["channels"], dict), "Expected channels to be a dict."
         else:
@@ -93,13 +96,12 @@ class Data:
 
         # populate the channel metadata
         for dim in range(self.data.ndim):
-            if f"dim{dim}" not in self.meta["channels"]:
-                self.meta["channels"][f"dim{dim}"] = list(range(self.data.shape[dim]))
-            assert isinstance(self.meta["channels"][f"dim{dim}"], list), f"Expected dim{dim} to be a list."
-            assert len(self.meta["channels"][f"dim{dim}"]) == self.data.shape[dim], (
-                f"Expected dim{dim} to have length {self.data.shape[dim]} but got "
-                f"{len(self.meta['channels'][f'dim{dim}'])}."
-            )
+            if f"dim{dim}" in self.meta["channels"]:
+                assert isinstance(self.meta["channels"][f"dim{dim}"], list), f"Expected dim{dim} to be a list."
+                assert len(self.meta["channels"][f"dim{dim}"]) == self.data.shape[dim], (
+                    f"Expected dim{dim} to have length {self.data.shape[dim]} but got "
+                    f"{len(self.meta['channels'][f'dim{dim}'])}."
+                )
 
     def _configure_string(self):
         pass
