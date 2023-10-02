@@ -165,45 +165,72 @@ class ArrayViewer(DataViewer):
         if self.vmax is None or np.max(array) > self.vmax:
             self.vmax = np.nanmax(array)
 
-        if array.ndim == 0:
-            # TODO: draw 0D in a better way
-            # extend value to have at least 2 elements
-            array = np.array([array, array])
+        if array.size == 1:
+            ##########################
+            # 0D: draw vertical line #
+            ##########################
 
-        if array.ndim == 1:
+            # set x and y-axis ticks
+            dpg.configure_item(self.xax, no_tick_labels=False)
+            dpg.configure_item(self.yax, no_tick_labels=True)
+
             # remove extra data series
             while len(self.line_series) > 1:
                 dpg.delete_item(self.line_series.pop())
 
-            xs = np.arange(array.shape[0])
             if len(self.line_series) == 0:
                 # add new data series
-                self.line_series.append(dpg.add_line_series(xs, array, parent=self.yax))
+                self.line_series.append(dpg.add_line_series([array, array], [0, 1], parent=self.yax))
             else:
                 # update existing data series
-                dpg.set_value(self.line_series[0], [xs, array])
-        elif array.ndim == 2:
-            # remove extra data series
-            while len(self.line_series) > array.shape[0]:
-                dpg.delete_item(self.line_series.pop())
+                dpg.set_value(self.line_series[0], [[array, array], [0, 1]])
 
-            # add new data series
-            xs = np.arange(array.shape[1])
+            # autoscale x and y-axis limits
+            dpg.set_axis_limits(self.xax, self.vmin - abs(self.vmax) * self.margin, self.vmax + abs(self.vmax) * self.margin)
+            dpg.set_axis_limits(self.yax, 0, 1)
+        else:
+            ############################
+            # 1D or 2D: draw line plot #
+            ############################
 
-            # iterate over channels (first dimension)
-            for i in range(array.shape[0]):
-                if len(self.line_series) == i:
+            # set x and y-axis ticks
+            dpg.configure_item(self.xax, no_tick_labels=True)
+            dpg.configure_item(self.yax, no_tick_labels=False)
+
+            if array.ndim == 1:
+                # remove extra data series
+                while len(self.line_series) > 1:
+                    dpg.delete_item(self.line_series.pop())
+
+                xs = np.arange(array.shape[0])
+                if len(self.line_series) == 0:
                     # add new data series
-                    self.line_series.append(dpg.add_line_series(xs, array[i], parent=self.yax))
+                    self.line_series.append(dpg.add_line_series(xs, array, parent=self.yax))
                 else:
                     # update existing data series
-                    dpg.set_value(self.line_series[i], [xs, array[i]])
-        else:
-            raise UnsupportedViewerError(f"Cannot handle array with {array.ndim} dimensions.")
+                    dpg.set_value(self.line_series[0], [xs, array])
+            elif array.ndim == 2:
+                # remove extra data series
+                while len(self.line_series) > array.shape[0]:
+                    dpg.delete_item(self.line_series.pop())
 
-        # autoscale x and y-axis limits
-        dpg.set_axis_limits(self.xax, xs.min(), xs.max())
-        dpg.set_axis_limits(self.yax, self.vmin - abs(self.vmax) * self.margin, self.vmax + abs(self.vmax) * self.margin)
+                # add new data series
+                xs = np.arange(array.shape[1])
+
+                # iterate over channels (first dimension)
+                for i in range(array.shape[0]):
+                    if len(self.line_series) == i:
+                        # add new data series
+                        self.line_series.append(dpg.add_line_series(xs, array[i], parent=self.yax))
+                    else:
+                        # update existing data series
+                        dpg.set_value(self.line_series[i], [xs, array[i]])
+            else:
+                raise UnsupportedViewerError(f"Cannot handle array with {array.ndim} dimensions.")
+
+            # autoscale x and y-axis limits
+            dpg.set_axis_limits(self.xax, xs.min(), xs.max())
+            dpg.set_axis_limits(self.yax, self.vmin - abs(self.vmax) * self.margin, self.vmax + abs(self.vmax) * self.margin)
 
     def set_size(self) -> None:
         """This function sets the size of the plot."""
