@@ -12,7 +12,10 @@ class Param(ABC):
     """
 
     _value: Any = None
-    doc: str = field(default=None, kw_only=True)
+
+    # NOTE: The doc attribute is added to the subclasses using monkey-patching. The kw_only=True argument
+    # is not supported in Python<3.10, so we have to use this hacky solution.
+    # doc: str = field(default=None, kw_only=True)
 
     def __post_init__(self):
         if self._value is None:
@@ -52,10 +55,11 @@ class BoolParam(Param):
         if self.trigger:
             self._value = False
         return val
-    
+
     @value.setter
     def value(self, value: bool):
         self._value = value
+
 
 @dataclass
 class FloatParam(Param):
@@ -85,6 +89,36 @@ class StringParam(Param):
     @staticmethod
     def default() -> str:
         return ""
+
+
+# NOTE: Monkey-patching the 'doc' attribute into the Param subclasses is a hacky solution to include
+# the keyword-only `doc` argument in the __init__ method of the subclasses. Python>=3.10 can use the
+# kw_only=True argument in the field decorator.
+
+
+# decorator for adjusting the __init__ method of the Param subclasses
+def adjusted_init(original_init):
+    def new_init(self, *args, **kwargs):
+        self.doc = kwargs.pop("doc", None)
+        original_init(self, *args, **kwargs)
+
+    return new_init
+
+
+# monkey-patch the 'doc' attribute into the classes
+def add_doc_attribute(cls):
+    setattr(cls, "doc", None)
+    new_field = field(default=None)
+    cls.__dataclass_fields__["doc"] = new_field
+
+    # Adjust the __init__ method
+    cls.__init__ = adjusted_init(cls.__init__)
+
+
+# apply the monkey-patching
+add_doc_attribute(Param)
+for subclass in Param.__subclasses__():
+    add_doc_attribute(subclass)
 
 
 DEFAULT_PARAMS = {
