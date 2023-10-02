@@ -880,7 +880,7 @@ class Window:
     def _register_node_category_themes(self) -> None:
         """Register themes for each node category."""
         cats = [n.category() for n in list_nodes()]
-        cats = list(set(cats))
+        cats = sorted(list(set(cats)))
 
         self.node_themes = {}
         for i, cat in enumerate(cats):
