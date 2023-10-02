@@ -212,7 +212,7 @@ class ArrayViewer(DataViewer):
 
 
 class ImageViewer(DataViewer):
-    def __init__(self, content_window: int, max_res: int = 100) -> None:
+    def __init__(self, content_window: int, max_res: int = 512) -> None:
         super().__init__(DataType.ARRAY, content_window)
 
         config = dpg.get_item_configuration(content_window)
