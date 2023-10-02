@@ -791,7 +791,7 @@ class Window:
             # add window title
             dpg.add_text("Metadata")
             dpg.add_separator()
-            self.metadata_view = dpg.add_text("test")
+            self.metadata_view = dpg.add_text("")
 
         # show parameters window
         dpg.configure_item(self.param_win, show=True)
