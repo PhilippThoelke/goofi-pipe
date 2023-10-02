@@ -17,16 +17,8 @@ class ImageGeneration(Node):
                 "width": IntParam(512, 100, 1024),
                 "height": IntParam(512, 100, 1024),
                 "scheduler": StringParam(
-                    "DDPMScheduler",
-                    options=[
-                        "DDPMScheduler",
-                        "DDIMScheduler",
-                        "PNDMScheduler",
-                        "LMSDiscreteScheduler",
-                        "EulerDiscreteScheduler",
-                        "EulerAncestralDiscreteScheduler",
-                        "DPMSolverMultistepScheduler",
-                    ],
+                    list(SCHEDULER_MAPPING.keys())[0],
+                    options=list(SCHEDULER_MAPPING.keys()),
                 ),
                 "device": "cuda",
             },
@@ -60,9 +52,7 @@ class ImageGeneration(Node):
             self.sd_pipe = self.diffusers.StableDiffusionPipeline.from_pretrained(model_id, torch_dtype=self.torch.float16)
 
         # initialize scheduler
-        self.sd_pipe.scheduler = getattr(self.diffusers, self.params.image_generation.scheduler.value).from_config(
-            self.sd_pipe.scheduler.config
-        )
+        self.image_generation_scheduler_changed(self.params.image_generation.scheduler.value)
 
         # set device
         self.sd_pipe.to(self.params.image_generation.device.value)
@@ -138,7 +128,11 @@ class ImageGeneration(Node):
 
     def image_generation_scheduler_changed(self, value):
         """Change the scheduler of the Stable Diffusion pipeline."""
-        self.sd_pipe.scheduler = getattr(self.diffusers, value).from_config(self.sd_pipe.scheduler.config)
+        scheduler_settings = dict(SCHEDULER_MAPPING[value])
+        scheduler_type = scheduler_settings.pop("_sched")
+        self.sd_pipe.scheduler = getattr(self.diffusers, scheduler_type).from_config(
+            self.sd_pipe.scheduler.config, **scheduler_settings
+        )
 
     def image_generation_width_changed(self, value):
         """Resize the last image to match the new width (for img2img)."""
@@ -170,3 +164,22 @@ def import_libs():
         )
 
     return torch, diffusers
+
+
+SCHEDULER_MAPPING = {
+    "DPM++ 2M": dict(_sched="DPMSolverMultistepScheduler"),
+    "DPM++ 2M Karras": dict(_sched="DPMSolverMultistepScheduler", use_karras_sigmas=True),
+    "DPM++ 2M SDE": dict(_sched="DPMSolverMultistepScheduler", algorithm_type="sde-dpmsolver++"),
+    "DPM++ 2M SDE Karras": dict(_sched="DPMSolverMultistepScheduler", use_karras_sigmas=True, algorithm_type="sde-dpmsolver++"),
+    "DPM++ SDE": dict(_sched="DPMSolverSinglestepScheduler"),
+    "DPM++ SDE Karras": dict(_sched="DPMSolverSinglestepScheduler", use_karras_sigmas=True),
+    "DPM2": dict(_sched="KDPM2DiscreteScheduler"),
+    "DPM2 Karras": dict(_sched="KDPM2DiscreteScheduler", use_karras_sigmas=True),
+    "DPM2 a": dict(_sched="KDPM2AncestralDiscreteScheduler"),
+    "DPM2 a Karras": dict(_sched="KDPM2AncestralDiscreteScheduler", use_karras_sigmas=True),
+    "Euler": dict(_sched="EulerDiscreteScheduler"),
+    "Euler a": dict(_sched="EulerAncestralDiscreteScheduler"),
+    "Heun": dict(_sched="HeunDiscreteScheduler"),
+    "LMS": dict(_sched="LMSDiscreteScheduler"),
+    "LMS Karras": dict(_sched="LMSDiscreteScheduler", use_karras_sigmas=True),
+}
