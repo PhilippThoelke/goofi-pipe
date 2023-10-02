@@ -33,7 +33,7 @@ class ImageGeneration(Node):
             "img2img": {
                 "enabled": False,
                 "strength": FloatParam(0.8, 0, 1),
-                "resize_input": False,
+                "resize_input": True,
                 "reset_image": BoolParam(False, trigger=True),
             },
         }
@@ -84,6 +84,8 @@ class ImageGeneration(Node):
             if self.params.img2img.enabled.value:
                 if base_image is None:
                     base_image = self.last_img
+                else:
+                    base_image = base_image.data
 
                 if self.params.img2img.resize_input.value:
                     # resize input image to match the last image
@@ -93,7 +95,7 @@ class ImageGeneration(Node):
 
                 # run the img2img stable diffusion pipeline
                 img, _ = self.sd_pipe(
-                    image=self.last_img,
+                    image=base_image,
                     strength=self.params.img2img.strength.value,
                     prompt=prompt.data,
                     negative_prompt=negative_prompt.data if negative_prompt is not None else None,
