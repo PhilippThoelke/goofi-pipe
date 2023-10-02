@@ -100,7 +100,6 @@ class Data:
                 f"Expected dim{dim} to have length {self.data.shape[dim]} but got "
                 f"{len(self.meta['channels'][f'dim{dim}'])}."
             )
-        print(self.meta["channels"])
 
     def _configure_string(self):
         pass
