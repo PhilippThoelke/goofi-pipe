@@ -74,19 +74,48 @@ class Data:
         if not isinstance(self.data, DTYPE_TO_TYPE[self.dtype]):
             raise ValueError(f"Expected data of type {DTYPE_TO_TYPE[self.dtype]}, got {type(self.data)}.")
 
-        if self.dtype == DataType.ARRAY and self.data.ndim == 0:
-            # make sure that arrays are at least 1-dimensional
-            self.data = np.array([self.data])
-        elif self.dtype == DataType.TABLE:
-            for key, value in self.data.items():
-                # make sure that table keys are strings
-                if not isinstance(key, str):
-                    raise ValueError(f"Expected table keys of type str, got {type(key)}.")
-                # make sure that table values are Data objects
-                if not isinstance(value, Data):
-                    raise ValueError(f"Expected table values of type Data, got {type(value)}.")
+        # configure the data object by calling the appropriate configure method
+        getattr(self, f"_configure_{self.dtype.name.lower()}")()
 
-        # TODO: add better metadata checks
+    def _configure_array(self):
+        """
+        Configure the data object as an array and populate the metadata.
+        """
+        # make sure that arrays are at least 1-dimensional
+        if self.data.ndim == 0:
+            self.data = np.array([self.data])
+
+        # populate the metadata
+        if "channels" in self.meta:
+            assert isinstance(self.meta["channels"], dict), "Expected channels to be a dict."
+        else:
+            self.meta["channels"] = {}
+
+        # populate the channel metadata
+        for dim in range(self.data.ndim):
+            if f"dim{dim}" not in self.meta["channels"]:
+                self.meta["channels"][f"dim{dim}"] = list(range(self.data.shape[dim]))
+            assert isinstance(self.meta["channels"][f"dim{dim}"], list), f"Expected dim{dim} to be a list."
+            assert len(self.meta["channels"][f"dim{dim}"]) == self.data.shape[dim], (
+                f"Expected dim{dim} to have length {self.data.shape[dim]} but got "
+                f"{len(self.meta['channels'][f'dim{dim}'])}."
+            )
+        print(self.meta["channels"])
+
+    def _configure_string(self):
+        pass
+
+    def _configure_table(self):
+        """
+        Configure the data object as a table and populate the metadata.
+        """
+        for key, value in self.data.items():
+            # make sure that table keys are strings
+            if not isinstance(key, str):
+                raise ValueError(f"Expected table keys of type str, got {type(key)}.")
+            # make sure that table values are Data objects
+            if not isinstance(value, Data):
+                raise ValueError(f"Expected table values of type Data, got {type(value)}.")
 
 
 DTYPE_TO_TYPE = {
