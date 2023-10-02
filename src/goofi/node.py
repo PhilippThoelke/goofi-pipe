@@ -332,7 +332,15 @@ class Node(ABC):
 
             # check that the output data contains the correct fields
             if missing := set(self.output_slots.keys()) - set(output_data.keys()):
-                raise ValueError(f"Missing output fields: {missing}")
+                self.connection.try_send(
+                    Message(
+                        MessageType.PROCESSING_ERROR,
+                        {
+                            "error": f"Missing output fields: {missing}. "
+                            f"Make sure that the process method returns a dict with one entry per output slot."
+                        },
+                    )
+                )
 
             # TODO: handle extra fields in output data
             # extra_fields = list(set(output_data.keys()) - set(self.output_slots.keys()))
