@@ -60,7 +60,7 @@ class AudioStream(Node):
         if self.params.audio.convert_to_mono.value and data.ndim > 1:
             data = np.mean(data, axis=0, keepdims=False)
 
-        return {"out": (data, {"sfreq": self.params.audio.sampling_rate.value})}
+        return {"out": (data, {"sfreq": float(self.params.audio.sampling_rate.value)})}
 
     def audio_sampling_frequency_changed(self, value):
         self.setup()
