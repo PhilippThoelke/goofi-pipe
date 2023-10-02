@@ -14,6 +14,7 @@ class ImageGeneration(Node):
             "image_generation": {
                 "inference_steps": IntParam(50, 5, 100),
                 "guidance_scale": FloatParam(7.5, 0.1, 20),
+                "seed": IntParam(-1, -1, 1000000, doc="-1 for random seed"),
                 "width": IntParam(512, 100, 1024),
                 "height": IntParam(512, 100, 1024),
                 "scheduler": StringParam(
@@ -70,6 +71,10 @@ class ImageGeneration(Node):
             # reset the last image to zeros
             self.reset_last_img()
 
+        # set seed
+        if self.params.image_generation.seed.value != -1:
+            self.torch.manual_seed(self.params.image_generation.seed.value)
+
         with self.torch.inference_mode():
             if self.params.img2img.enabled.value:
                 if base_image is None:
@@ -82,6 +87,10 @@ class ImageGeneration(Node):
                     base_image = cv2.resize(
                         base_image, (self.params.image_generation.width.value, self.params.image_generation.height.value)
                     )
+
+                if base_image.ndim == 3:
+                    # add batch dimension
+                    base_image = np.expand_dims(base_image, 0)
 
                 # run the img2img stable diffusion pipeline
                 img, _ = self.sd_pipe(
@@ -111,7 +120,7 @@ class ImageGeneration(Node):
                 )
 
         # remove the batch dimension
-        img = img[0]
+        img = np.array(img[0])
         # save last image
         self.last_img = img
 
