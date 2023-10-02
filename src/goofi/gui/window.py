@@ -756,12 +756,12 @@ class Window:
         self.selected_node = item
         self.resize_callback(None, [dpg.get_viewport_width(), dpg.get_viewport_height()])
         # clear parameters window
-        dpg.delete_item(self.parameters, children_only=True)
+        dpg.delete_item(self.param_win, children_only=True)
 
         if item is None or dpg.get_item_label(item) not in self.nodes:
             self.selected_node = None
             # node deselected, hide parameters window and resize node editor
-            dpg.configure_item(self.parameters, show=False)
+            dpg.configure_item(self.param_win, show=False)
             self.resize_callback(None, [dpg.get_viewport_width(), dpg.get_viewport_height()])
             return
 
@@ -769,7 +769,7 @@ class Window:
         node = self.nodes[dpg.get_item_label(item)].node_ref
 
         # populate parameters window
-        with dpg.tab_bar(parent=self.parameters):
+        with dpg.tab_bar(parent=self.param_win):
             for group in node.params:
                 with dpg.tab(label=format_name(group)) as tab:
                     with dpg.table(header_row=False, parent=tab, policy=dpg.mvTable_SizingStretchProp) as table:
@@ -780,7 +780,7 @@ class Window:
                             add_param(table, group, name, param, node)
 
         # show parameters window
-        dpg.configure_item(self.parameters, show=True)
+        dpg.configure_item(self.param_win, show=True)
 
     def _processing_error_callback(self, node: NodeRef, message: Message, node_name: str) -> None:
         """Callback for the `MessageType.PROCESSING_ERROR` message type."""
@@ -927,7 +927,7 @@ class Window:
             # create node editor
             self.node_editor = dpg.add_node_editor(callback=self.link_callback, delink_callback=self.delink_callback)
             # add parameters window
-            self.parameters = dpg.add_child_window(label="Parameters", autosize_x=True)
+            self.param_win = dpg.add_child_window(label="Parameters", autosize_x=True)
 
         self._register_node_category_themes()
 
