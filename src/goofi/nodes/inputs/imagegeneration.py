@@ -105,7 +105,7 @@ class ImageGeneration(Node):
                 )
             else:
                 if base_image is not None:
-                    raise ValueError("base_image is not supported for text2img.")
+                    raise ValueError("base_image is not supported in text2img mode. Enable img2img or disconnect base_image.")
 
                 # run the text2img stable diffusion pipeline
                 img, _ = self.sd_pipe(

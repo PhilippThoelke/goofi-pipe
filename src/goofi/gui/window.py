@@ -176,6 +176,8 @@ def handle_data(win: "Window", gui_node: GUINode, node: NodeRef, message: Messag
     except ValueError as e:
         # TODO: add proper logging
         print(f"Output draw handler for slot {message.content['slot_name']} failed: {e}")
+    except KeyError:
+        print(gui_node, message.content["slot_name"], gui_node.output_draw_handlers.keys())
 
     if win.metadata_view is not None and win.selected_node == gui_node.item:
         try:

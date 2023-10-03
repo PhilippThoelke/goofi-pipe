@@ -9,3 +9,4 @@ sounddevice
 openai
 scikit-learn
 opencv-python
+pyzmq

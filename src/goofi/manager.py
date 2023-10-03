@@ -6,6 +6,7 @@ from typing import Any, Dict, Optional
 
 import yaml
 
+from goofi.connection import Connection
 from goofi.gui.window import Window
 from goofi.message import Message, MessageType
 from goofi.node import MultiprocessingForbiddenError
@@ -488,12 +489,17 @@ def main(duration: float = 0, args=None):
     import argparse
     import time
 
+    comm_choices = list(Connection.get_backends().keys())
+
     # parse arguments
     parser = argparse.ArgumentParser(description="goofi-pipe")
     parser.add_argument("filepath", nargs="?", help="path to the file to load from")
     parser.add_argument("--headless", action="store_true", help="run in headless mode")
-    parser.add_argument("-nm", "--no-multiprocessing", action="store_true", help="disable multiprocessing")
+    parser.add_argument("--no-multiprocessing", action="store_true", help="disable multiprocessing")
+    parser.add_argument("--comm", choices=comm_choices, default="mp", help="node communication backend")
     args = parser.parse_args(args)
+
+    Connection.set_backend(args.comm)
 
     # create manager
     manager = Manager(filepath=args.filepath, headless=args.headless, use_multiprocessing=not args.no_multiprocessing)

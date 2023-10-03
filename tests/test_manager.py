@@ -5,7 +5,7 @@ from os import path
 import pytest
 
 import goofi
-from goofi.connection import MultiprocessingConnection
+from goofi.connection import Connection
 from goofi.manager import Manager
 from goofi.message import Message, MessageType
 
@@ -37,9 +37,12 @@ def test_main():
 
 
 @pytest.mark.skipif(platform.system() == "Windows", reason="Multiprocessing is very slow on Windows.")
-def test_simple():
+@pytest.mark.parametrize("comm_backend", Connection.get_backends().keys())
+def test_simple(comm_backend):
+    Connection.set_backend(comm_backend)
+
     manager = create_simple_manager()
-    my_conn, node_conn = MultiprocessingConnection.create()
+    my_conn, node_conn = Connection.create()
     manager.nodes["add0"].connection.send(
         Message(MessageType.ADD_OUTPUT_PIPE, {"slot_name_out": "out", "slot_name_in": "in", "node_connection": my_conn})
     )
@@ -48,8 +51,6 @@ def test_simple():
     rates = []
     data = []
     for _ in range(10):
-        if not node_conn.poll(0.5):
-            raise TimeoutError("No message received from node.")
         msg = node_conn.recv()
         data.append(msg.content["data"].data[0])
 

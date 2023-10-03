@@ -3,7 +3,7 @@ import time
 import pytest
 import yaml
 
-from goofi.connection import MultiprocessingConnection
+from goofi.connection import Connection
 from goofi.data import DataType
 from goofi.message import Message, MessageType
 from goofi.node import Node
@@ -18,11 +18,13 @@ from .utils import (
     make_custom_node,
 )
 
+Connection.set_backend("mp")
+
 
 def test_abstract_node():
     # instantiating an abstract node should raise a TypeError
     with pytest.raises(TypeError):
-        Node(MultiprocessingConnection.create()[0])
+        Node(Connection.create()[0])
 
 
 def test_create_node():

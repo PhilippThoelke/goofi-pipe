@@ -7,7 +7,7 @@ from os.path import dirname, join
 from threading import Event, Thread
 from typing import Any, Callable, Dict, Optional, Tuple, Union
 
-from goofi.connection import Connection, MultiprocessingConnection
+from goofi.connection import Connection
 from goofi.data import Data, DataType
 from goofi.message import Message, MessageType
 from goofi.node_helpers import InputSlot, NodeRef, OutputSlot
@@ -406,7 +406,7 @@ class Node(ABC):
         # integrate initial parameters if they are provided
         if initial_params is not None:
             params.update(initial_params)
-        conn1, conn2 = MultiprocessingConnection.create()
+        conn1, conn2 = Connection.create()
         # instantiate the node in a separate process
         proc = Process(target=cls, args=(conn2, in_slots, out_slots, params, False), daemon=True)
         proc.start()
@@ -440,7 +440,7 @@ class Node(ABC):
         # integrate initial parameters if they are provided
         if initial_params is not None:
             params.update(initial_params)
-        conn1, conn2 = MultiprocessingConnection.create()
+        conn1, conn2 = Connection.create()
         # instantiate the node in the current process
         node = cls(conn2, in_slots, out_slots, params, True)
         # create the node reference
