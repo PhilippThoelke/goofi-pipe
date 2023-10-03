@@ -197,7 +197,7 @@ class ZeroMQConnection(Connection, ABC):
     def recv(self) -> object:
         try:
             return pickle.loads(self.pull_socket.recv())
-        except Exception as e:
+        except Exception:
             raise ConnectionError("Connection closed")
 
     def close(self) -> None:
