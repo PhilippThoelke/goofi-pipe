@@ -34,7 +34,8 @@ def test_create(backend):
 @pytest.mark.parametrize("backend", list_connection_backends())
 def test_super_init(backend):
     conn1, conn2 = backend.create()
-    assert conn1._id and conn2._id, f"{backend.__name__} does not call super().__init__()."
+    assert hasattr(conn1,"_id"), f"{backend.__name__} does not call super().__init__()."
+    assert hasattr(conn2,"_id"), f"{backend.__name__} does not call super().__init__()."
 
 
 @pytest.mark.parametrize("obj", [1, "test", None, [1, 2, 3], {"a": 1}, Message(MessageType.PING, {})])
