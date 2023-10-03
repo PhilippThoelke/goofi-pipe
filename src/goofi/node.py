@@ -167,13 +167,8 @@ class Node(ABC):
                 self.connection.close()
                 continue
             except Exception:
-                # the message couldn't be unpickled, try the next message
-                self.connection.try_send(
-                    Message(
-                        MessageType.PROCESSING_ERROR,
-                        {"error": f"{traceback.format_exc()}\nReceived unpicklable message from {self.connection}"},
-                    )
-                )
+                error_message = traceback.format_exc()
+                self.connection.try_send(Message(MessageType.PROCESSING_ERROR, {"error": error_message}))
                 continue
 
             # potentially restart the processing thread
