@@ -161,7 +161,12 @@ class Node(ABC):
             # receive the message
             try:
                 msg = self.connection.recv()
-            except (pickle.UnpicklingError, ValueError, AttributeError):
+            except ConnectionError:
+                # the connection was closed, consider the node dead
+                self._alive = False
+                self.connection.close()
+                continue
+            except Exception:
                 # the message couldn't be unpickled, try the next message
                 self.connection.try_send(
                     Message(
@@ -169,11 +174,6 @@ class Node(ABC):
                         {"error": f"{traceback.format_exc()}\nReceived unpicklable message from {self.connection}"},
                     )
                 )
-                continue
-            except ConnectionError:
-                # the connection was closed, consider the node dead
-                self._alive = False
-                self.connection.close()
                 continue
 
             # potentially restart the processing thread
