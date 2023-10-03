@@ -205,7 +205,7 @@ def test_pipes():
     assert (
         len(n1.output_slots["out"].connections) == 2
     ), f"Expected two output slot connections, got {len(n1.output_slots['out'].connections)}"
-    assert ("in", ref2.connection) in n1.output_slots["out"].connections, "Output slot connections are incorrect."
+    assert ("in", ref2.connection, False) in n1.output_slots["out"].connections, "Output slot connections are incorrect."
     assert len(results) > 0, "Processing callback should have been called once."
 
     # disconnect the nodes

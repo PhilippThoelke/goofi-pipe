@@ -1,6 +1,6 @@
 import pickle
 import tempfile
-from abc import ABC, abstractmethod, abstractproperty
+from abc import ABC, abstractmethod
 from multiprocessing import Pipe
 from multiprocessing.connection import _ConnectionBase
 from typing import Callable, Dict, Tuple, Type

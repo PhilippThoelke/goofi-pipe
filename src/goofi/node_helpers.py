@@ -122,7 +122,7 @@ class OutputSlot:
     """
 
     dtype: DataType
-    connections: List[Tuple[str, Connection]] = field(default_factory=list)
+    connections: List[Tuple[str, Connection,bool]] = field(default_factory=list)
 
     def __post_init__(self):
         if isinstance(self.dtype, str):

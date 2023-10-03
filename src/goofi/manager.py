@@ -410,6 +410,9 @@ class Manager:
         for node_name_out, node in serialized_nodes.items():
             # iterate over all output slots of the current node
             for slot_name_out, conns in node["out_conns"].items():
+                # filter out self-connections
+                conns = [(s, c) for s, c, self_conn in conns if not self_conn]
+
                 # iterate over all connections of the current slot
                 for slot_name_in, conn in conns:
                     # find the node that matches the output connection of the current slot
@@ -426,6 +429,8 @@ class Manager:
                             )
                             break
                     # NOTE: it's okay if we didn't find the node, it could be some external connection (e.g. GUI)
+
+        print(serialized_nodes)
 
         # remove the output connections from the serialized_nodes dict so we can convert it to yaml
         for node in serialized_nodes.values():
