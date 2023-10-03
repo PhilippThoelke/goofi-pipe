@@ -780,19 +780,23 @@ class Window:
         self.selected_node = item
         self.resize_callback(None, [dpg.get_viewport_width(), dpg.get_viewport_height()])
         # clear parameters window
-        dpg.delete_item(self.param_win, children_only=True)
+        dpg.delete_item(self.side_panel_win, children_only=True)
 
         if item is None or dpg.get_item_label(item) not in self.nodes:
             self.selected_node = None
             # node deselected, hide parameters window and resize node editor
-            dpg.configure_item(self.param_win, show=False)
+            dpg.configure_item(self.side_panel_win, show=False)
             self.resize_callback(None, [dpg.get_viewport_width(), dpg.get_viewport_height()])
             return
 
         # get node reference
         node = self.nodes[dpg.get_item_label(item)].node_ref
 
-        with dpg.child_window(height=dpg.get_viewport_height() / 2, parent=self.param_win):
+        with dpg.child_window(height=dpg.get_viewport_height() / 2, parent=self.side_panel_win):
+            # add title
+            dpg.add_text("Parameters")
+            dpg.add_separator()
+
             # populate parameters window
             with dpg.tab_bar():
                 for group in node.params:
@@ -804,21 +808,20 @@ class Window:
                             for name, param in node.params[group].items():
                                 add_param(table, group, name, param, node)
 
-        with dpg.child_window(autosize_y=True, parent=self.param_win):
-            # add window title
+        with dpg.child_window(autosize_y=True, parent=self.side_panel_win):
+            # add title
             dpg.add_text("Metadata")
             dpg.add_separator()
 
             # add one metadata view for each output slot
             self.metadata_view = {}
-            for slot in node.output_slots:
-                dpg.add_text(slot, bullet=True)
-                self.metadata_view[slot] = dpg.add_text("")
-                dpg.add_separator()
-            dpg.delete_item(dpg.last_item())
+            with dpg.tab_bar():
+                for slot in node.output_slots:
+                    with dpg.tab(label=slot) as tab:
+                        self.metadata_view[slot] = dpg.add_text("")
 
         # show parameters window
-        dpg.configure_item(self.param_win, show=True)
+        dpg.configure_item(self.side_panel_win, show=True)
 
     def _processing_error_callback(self, node: NodeRef, message: Message, node_name: str) -> None:
         """Callback for the `MessageType.PROCESSING_ERROR` message type."""
@@ -844,6 +847,10 @@ class Window:
         else:
             # node selected, resize node editor to fill viewport minus parameters window
             dpg.configure_item(self.node_editor, width=size[0] - PARAM_WINDOW_WIDTH)
+
+            children = dpg.get_item_children(self.side_panel_win)[1]
+            if len(children) > 0:
+                dpg.set_item_height(children[0], dpg.get_viewport_height() / 2)
 
     def update_title(self) -> None:
         """Update the window title."""
@@ -966,7 +973,7 @@ class Window:
             # create node editor
             self.node_editor = dpg.add_node_editor(callback=self.link_callback, delink_callback=self.delink_callback)
             # add parameters window
-            self.param_win = dpg.add_child_window(label="Parameters", autosize_x=True, border=False)
+            self.side_panel_win = dpg.add_child_window(label="Parameters", autosize_x=True, border=False)
 
         self._register_node_category_themes()
 
