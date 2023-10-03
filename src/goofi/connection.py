@@ -1,26 +1,25 @@
-import pickle
 from abc import ABC, abstractmethod
 from multiprocessing import Pipe
 from multiprocessing.connection import _ConnectionBase
 from typing import Tuple
 
-_CONNECTION_IDS = set()
-
 
 class Connection(ABC):
+    _CONNECTION_IDS = set()
+
     def __init__(self) -> None:
         # register a unique id for the connection
         self._id = 0
-        while self._id in _CONNECTION_IDS:
+        while self._id in Connection._CONNECTION_IDS:
             self._id += 1
-        _CONNECTION_IDS.add(self._id)
+        Connection._CONNECTION_IDS.add(self._id)
 
     @staticmethod
     @abstractmethod
     def create(cls) -> Tuple["Connection", "Connection"]:
         """
-        Create 2 instances of the connection class and return them as a tuple. Both instances should be connected
-        to each other using the underlying connection mechanism of the deriving class.
+        Create two instances of the connection class and return them as a tuple. Both instances should be
+        connected to each other using the underlying connection mechanism of the deriving class.
         """
         pass
 
@@ -123,3 +122,14 @@ class MultiprocessingConnection(Connection):
             return self.conn.poll(timeout)
         except OSError:
             raise ConnectionError("Connection closed")
+
+    def __del__(self) -> None:
+        """Destructor to close the connection and free any resources associated with it."""
+        self.close()
+        self.conn._handle = None
+
+        # remove the connection id from the set of connection ids
+        try:
+            Connection._CONNECTION_IDS.remove(self._id)
+        except KeyError:
+            pass
