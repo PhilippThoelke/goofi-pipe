@@ -17,11 +17,13 @@ class Filter(Node):
             "filter": {
                 "type": StringParam("butterworth", options=["butterworth", "chebyshev", "elliptic"]),
                 "method": StringParam("Causal", options=["Causal", "Zero-phase"]),
+                "mode": StringParam("bandpass", options=["bandpass", "notch"]),
                 "order": IntParam(1, 1, 10),  # added order parameter
                 "f_low": FloatParam(1.0, 0.01, 9999.0),
                 "f_high": FloatParam(60.0, 1.0, 10000.0),
                 "ripple": FloatParam(1.0, 0.1, 10.0),
                 "padding": FloatParam(0.1, 0.01, 1.0),
+                "Q": FloatParam(10.0, 0.1, 100.0),  # Quality factor
             }
         }
 
@@ -29,7 +31,6 @@ class Filter(Node):
         self.filter_state = None
 
     def process(self, data: Data):
-        # TO DO: deal with error when change in order
         if data is None or data.data is None:
             return None
 
@@ -40,19 +41,39 @@ class Filter(Node):
         padding = self.params["filter"]["padding"].value
         method = self.params["filter"]["method"].value
         order = self.params["filter"]["order"].value
+        mode = self.params["filter"]["mode"].value
+        Q = self.params["filter"]["Q"].value
         sfreq = data.meta["sfreq"]
         nyq = 0.5 * sfreq
         low = f_low / nyq
         high = f_high / nyq
 
-        if filter_type == "butterworth":
-            b, a = butter(order, [low, high], btype="band")
-        elif filter_type == "chebyshev":
-            b, a = cheby1(order, ripple, [low, high], btype="band")
-        elif filter_type == "elliptic":
-            b, a = ellip(order, ripple, ripple, [low, high], btype="band")
+        if mode == "bandpass":
+            if filter_type == "butterworth":
+                b, a = butter(order, [low, high], btype="band")
+            elif filter_type == "chebyshev":
+                b, a = cheby1(order, ripple, [low, high], btype="band")
+            elif filter_type == "elliptic":
+                b, a = ellip(order, ripple, ripple, [low, high], btype="band")
 
-        # Edge Padding 10% of data
+        elif mode == "notch":
+            f0 = (f_high + f_low) / 2
+            w0 = f0 / nyq
+            bw = f0 / Q
+            bw /= nyq
+            
+            # Ensure that the frequencies are within bounds
+            w_low = np.clip(w0 - bw/2, 0.01, 0.99)  # avoiding exact 0 or 1 for stability
+            w_high = np.clip(w0 + bw/2, 0.01, 0.99)
+            
+            if filter_type == "butterworth":
+                b, a = butter(order, [w_low, w_high], btype='bandstop')
+            elif filter_type == "chebyshev":
+                b, a = cheby1(order, ripple, [w_low, w_high], btype='bandstop')
+            elif filter_type == "elliptic":
+                b, a = ellip(order, ripple, ripple, [w_low, w_high], btype='bandstop')
+
+
 
         if method == "Zero-phase":
             # Calculate the padlen as 10% of the signal length
@@ -63,25 +84,22 @@ class Filter(Node):
             filtered_data = filtfilt(b, a, data.data, padlen=padlen)
 
         if method == "Causal":
-            n = max(len(a), len(b)) - 1  # Number of sections
-
             # Handle initialization for 1D data
             if data.data.ndim == 1:
-                if self.filter_state is None or self.filter_state.ndim != 1:
-                    self.filter_state = np.zeros(n)
-                initial_condition = self.filter_state * data.data[0]
-                filtered_data, self.filter_state = lfilter(b, a, data.data, zi=initial_condition)
+                zi = lfilter_zi(b, a)
+                if self.filter_state is None or self.filter_state.shape != zi.shape:
+                    self.filter_state = zi * data.data[0]
+                filtered_data, self.filter_state = lfilter(b, a, data.data, zi=self.filter_state)
 
             if data.data.ndim == 2:
-                num_sections, num_channels = max(len(a), len(b)) - 1, data.data.shape[0]
+                num_channels = data.data.shape[0]
+                zi = lfilter_zi(b, a).reshape(-1, 1)
+                
+                if self.filter_state is None or self.filter_state.shape[1] != num_channels:
+                    self.filter_state = np.tile(zi, (1, num_channels)) * data.data[:, 0]
 
-                if self.filter_state is None or self.filter_state.ndim != 2 or self.filter_state.shape[1] != num_channels:
-                    self.filter_state = np.zeros((num_sections, num_channels))
-
-                initial_condition = (
-                    self.filter_state * data.data[:, [0]]
-                )  # Assuming data.data is (num_channels, num_time_points)
-                filtered_data, self.filter_state = lfilter(b, a, data.data.T, axis=0, zi=initial_condition)
+                filtered_data, self.filter_state = lfilter(b, a, data.data.T, axis=0, zi=self.filter_state)
                 filtered_data = filtered_data.T
+
 
         return {"filtered_data": (filtered_data, {**data.meta})}
