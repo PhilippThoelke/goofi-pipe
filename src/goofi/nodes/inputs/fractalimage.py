@@ -6,7 +6,7 @@ import time
 
 class FractalImage(Node):
     def config_input_slots():
-        return {}  # No input data for this node
+        return {"complexity": DataType.ARRAY}  # No input data for this node
 
     def config_output_slots():
         return {"image": DataType.ARRAY}
@@ -22,12 +22,15 @@ class FractalImage(Node):
             "common": {"autotrigger": True}
         }
 
-    def process(self):
+    def process(self, complexity: Data):
         # Extract the parameters
         image_size = self.params["image"]["image_size"].value
-        persistence = self.params["image"]["persistence"].value
         octaves = self.params["image"]["octaves"].value
         lacunarity = self.params["image"]["lacunarity"].value
+        if complexity is None:
+            persistence = self.params["image"]["persistence"].value
+        else:
+            persistence = complexity.data
         
         # Generate a new seed based on current time
         seed = int(time.time()*1000) % 2**32  # Convert time to milliseconds and take modulo to avoid overflow
@@ -37,7 +40,7 @@ class FractalImage(Node):
         y = np.linspace(0, 5, image_size)
         x, y = np.meshgrid(x, y)
         image = fbm(x, y, octaves=octaves, lacunarity=lacunarity, persistence=persistence, seed=seed)
-        
+        image = (image + 1) / 2  # Rescale values from [-1, 1] to [0, 1]
         # Return the generated fractal image
         return {"image": (image, {})}  # No metadata to include, hence the empty dictionary
 
