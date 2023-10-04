@@ -829,6 +829,7 @@ class Window:
         """Callback for the `MessageType.PROCESSING_ERROR` message type."""
         error = message.content["error"]
         self.nodes[node_name].set_error(error, self)
+        print(f"Error in node {node_name}:\n{error}")
 
     def link_callback(self, sender: int, items: Tuple[int, int]) -> None:
         """Callback from DearPyGui that two nodes were connected."""
