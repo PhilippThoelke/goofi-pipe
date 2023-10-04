@@ -154,3 +154,6 @@ cython_debug/
 
 # VS Code
 .vscode/
+
+# OpenAI key
+openai.key
