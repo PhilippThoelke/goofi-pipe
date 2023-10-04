@@ -24,7 +24,11 @@ class Connection(ABC):
         """
         List all available connection backends.
         """
-        return {"zmq-tcp": TCPZeroMQConnection, "zmq-ipc": IPCZeroMQConnection, "mp": MultiprocessingConnection}
+        return {
+            "zmq-tcp": TCPZeroMQConnection,
+            "zmq-ipc": IPCZeroMQConnection,
+            "mp": MultiprocessingConnection,
+        }
 
     @staticmethod
     def set_backend(backend: str) -> None:
@@ -190,7 +194,7 @@ class ZeroMQConnection(Connection, ABC):
     def send(self, obj: object) -> None:
         try:
             self.push_socket.send(pickle.dumps(obj))
-        except Exception as e:
+        except Exception:
             raise ConnectionError("Connection closed")
 
     @init_sockets
@@ -202,20 +206,17 @@ class ZeroMQConnection(Connection, ABC):
 
     def close(self) -> None:
         try:
-            if self.push_socket is not None:
-                self.push_socket.close()
+            self.push_socket.close()
         except Exception:
-            raise ConnectionError("Push socket closed.")
+            pass
 
         try:
-            if self.pull_socket is not None:
-                self.pull_socket.close()
+            self.pull_socket.close()
         except Exception:
-            raise ConnectionError("Pull socket closed.")
+            pass
 
-    @abstractmethod
     def __reduce__(self):
-        pass
+        return (self.__class__, (self.push_endpoint, None), self.__getstate__())
 
     def __getstate__(self):
         return {"_id": self._id}
@@ -265,14 +266,8 @@ class TCPZeroMQConnection(ZeroMQConnection):
     def protocol() -> str:
         return "tcp"
 
-    def __reduce__(self):
-        return (TCPZeroMQConnection, (self.push_endpoint, None), self.__getstate__())
-
 
 class IPCZeroMQConnection(ZeroMQConnection):
     @staticmethod
     def protocol() -> str:
         return "ipc"
-
-    def __reduce__(self):
-        return (IPCZeroMQConnection, (self.push_endpoint, None), self.__getstate__())
