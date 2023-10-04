@@ -32,9 +32,9 @@ def generate_messages(data: Data, prefix: str = "") -> List[Tuple[bytes, List[An
         addr = sanitize_address(prefix + "/" + key)
 
         if val.dtype == DataType.ARRAY:
-            # make sure we only have a single value
-            assert val.data.size == 1, "Numerical arrays must only contain a single value (TODO: to be extended)."
-            val = val.data[0]
+            # convert the array to a list
+            assert val.data.ndim < 2, "Numerical arrays must at most be one-dimensional."
+            val = val.data.tolist()
         elif val.dtype == DataType.STRING:
             # simply use the string
             val = val.data
@@ -45,8 +45,12 @@ def generate_messages(data: Data, prefix: str = "") -> List[Tuple[bytes, List[An
         else:
             raise ValueError(f"Unsupported data type {val.dtype} for OSC output.")
 
+        # oscpy expects the message to be a list
+        if not isinstance(val, list):
+            val = [val]
+
         # add the message to the list
-        messages.append((addr.encode(), [val]))
+        messages.append((addr.encode(), val))
 
     return messages
 
