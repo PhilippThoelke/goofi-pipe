@@ -2,7 +2,7 @@ import numpy as np
 
 from goofi.data import Data, DataType
 from goofi.node import Node
-from goofi.params import FloatParam
+from goofi.params import FloatParam, IntParam
 
 
 class Math(Node):
@@ -18,6 +18,7 @@ class Math(Node):
                 "pre_add": FloatParam(0.0, -10.0, 10.0),
                 "multiply": FloatParam(1.0, -10.0, 10.0),
                 "post_add": FloatParam(0.0, -10.0, 10.0),
+                "round": IntParam(3, 0, 10),   # Round parameter added
             },
             "map": {
                 "input_min": FloatParam(0.0, -10.0, 10.0),
@@ -34,17 +35,21 @@ class Math(Node):
         signal = data.data
 
         # apply math operations
-        signal += self.params.math.pre_add.value
-        signal *= self.params.math.multiply.value
-        signal += self.params.math.post_add.value
+        signal += self.params["math"]["pre_add"].value
+        signal *= self.params["math"]["multiply"].value
+        signal += self.params["math"]["post_add"].value
+
+        # apply rounding
+        decimals = self.params["math"]["round"].value
+        signal = np.around(signal, decimals)
 
         # rescale signal from input range to output range
         signal = self.rescale(
             signal,
-            self.params.map.input_min.value,
-            self.params.map.input_max.value,
-            self.params.map.output_min.value,
-            self.params.map.output_max.value,
+            self.params["map"]["input_min"].value,
+            self.params["map"]["input_max"].value,
+            self.params["map"]["output_min"].value,
+            self.params["map"]["output_max"].value,
         )
 
         return {"out": (signal, data.meta)}
