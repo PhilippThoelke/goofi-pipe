@@ -430,8 +430,6 @@ class Manager:
                             break
                     # NOTE: it's okay if we didn't find the node, it could be some external connection (e.g. GUI)
 
-        print(serialized_nodes)
-
         # remove the output connections from the serialized_nodes dict so we can convert it to yaml
         for node in serialized_nodes.values():
             node.pop("out_conns")
