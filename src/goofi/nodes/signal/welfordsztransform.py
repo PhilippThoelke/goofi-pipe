@@ -1,5 +1,6 @@
 from goofi.data import Data, DataType
 from goofi.node import Node
+from goofi.params import BoolParam
 import numpy as np
 
 
@@ -17,6 +18,7 @@ class WelfordsZTransform(Node):
             "welford": {
                 "biased_std": False,
                 "outlier_stds": 4.0,
+                "reset": BoolParam(False, trigger=True)
             }
         }
 
@@ -35,6 +37,8 @@ class WelfordsZTransform(Node):
 
         normalized_value = np.zeros_like(val)
 
+        if self.params['welford']['reset'].value is True:
+            self.reset()
         if val.ndim == 1:
             iterator = enumerate(val)
         else:  # if 2D array, apply the transform along the last dimension
