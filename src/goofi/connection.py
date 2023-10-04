@@ -1,9 +1,12 @@
 import pickle
+import queue
 import tempfile
+import threading
+import time
 from abc import ABC, abstractmethod
 from multiprocessing import Pipe
 from multiprocessing.connection import _ConnectionBase
-from typing import Callable, Dict, Tuple, Type
+from typing import Dict, Tuple, Type
 
 import zmq
 
@@ -53,7 +56,7 @@ class Connection(ABC):
         Create two instances of the connection class and return them as a tuple. Both instances should be
         connected to each other using the underlying connection mechanism of the deriving class.
         """
-        raise TypeError("Abstract method")
+        raise TypeError("This is an abstract method.")
 
     @abstractmethod
     def send(self, obj: object) -> None:
@@ -156,10 +159,14 @@ class ZeroMQConnection(Connection, ABC):
     def __init__(self, push_endpoint: str, pull_endpoint: str = None) -> None:
         super().__init__()
         self.context = zmq.Context()
-        self.push_socket = None
-        self.pull_socket = None
         self.push_endpoint = push_endpoint
         self.pull_endpoint = pull_endpoint
+        self.push_queue = queue.Queue()
+        self.pull_queue = queue.Queue()
+
+        self.alive = True
+        self.push_thread = threading.Thread(target=self.run_push, daemon=True)
+        self.pull_thread = threading.Thread(target=self.run_pull, daemon=True)
 
     @classmethod
     def _create(cls) -> Tuple[Connection, Connection]:
@@ -173,47 +180,68 @@ class ZeroMQConnection(Connection, ABC):
             raise ValueError(f"Invalid protocol: {cls.protocol}")
         return cls(endpoint1, endpoint2), cls(endpoint2, endpoint1)
 
-    def init_sockets(func: Callable) -> Callable:
-        """Decorator to initialize the sockets before calling the decorated function"""
+    def run_push(self):
+        push_socket = None
+        if self.push_endpoint is not None:
+            push_socket = self.context.socket(zmq.PUSH)
+            push_socket.connect(self.push_endpoint)
 
-        def wrapper(self, *args, **kwargs):
-            if self.push_endpoint is not None and self.push_socket is None:
-                # push sockets always use connect, i.e. take the role of the client
-                self.push_socket = self.context.socket(zmq.PUSH)
-                self.push_socket.connect(self.push_endpoint)
+        while self.alive:
+            try:
+                obj = self.push_queue.get(block=False)
+                push_socket.send(pickle.dumps(obj))
+            except queue.Empty:
+                pass
+            time.sleep(0.01)
 
-            if self.pull_endpoint is not None and self.pull_socket is None:
-                # pull sockets always use bind, i.e. take the role of the server
-                self.pull_socket = self.context.socket(zmq.PULL)
-                self.pull_socket.bind(self.pull_endpoint)
-            return func(self, *args, **kwargs)
+        if push_socket:
+            push_socket.close()
 
-        return wrapper
+    def run_pull(self):
+        pull_socket = None
+        if self.pull_endpoint is not None:
+            pull_socket = self.context.socket(zmq.PULL)
+            pull_socket.bind(self.pull_endpoint)
 
-    @init_sockets
+        while self.alive:
+            try:
+                obj = pickle.loads(pull_socket.recv(zmq.NOBLOCK))
+                self.pull_queue.put(obj)
+            except zmq.Again:
+                pass
+            time.sleep(0.01)
+
+        if pull_socket:
+            pull_socket.close()
+
     def send(self, obj: object) -> None:
-        try:
-            self.push_socket.send(pickle.dumps(obj))
-        except Exception:
+        if not self.alive:
             raise ConnectionError("Connection closed")
+        if not self.push_thread.is_alive():
+            try:
+                self.push_thread.start()
+            except RuntimeError:
+                pass
 
-    @init_sockets
+        self.push_queue.put(obj)
+
     def recv(self) -> object:
-        try:
-            return pickle.loads(self.pull_socket.recv())
-        except Exception:
+        if not self.alive:
             raise ConnectionError("Connection closed")
+        if not self.pull_thread.is_alive():
+            try:
+                self.pull_thread.start()
+            except RuntimeError:
+                pass
+
+        return self.pull_queue.get()
 
     def close(self) -> None:
-        try:
-            self.push_socket.close()
-        except Exception:
-            pass
-
-        try:
-            self.pull_socket.close()
-        except Exception:
-            pass
+        self.alive = False
+        if self.push_thread.is_alive():
+            self.push_thread.join()
+        if self.pull_thread.is_alive():
+            self.pull_thread.join()
 
     def __reduce__(self):
         return (self.__class__, (self.push_endpoint, None), self.__getstate__())
