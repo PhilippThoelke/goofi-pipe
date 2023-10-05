@@ -36,8 +36,7 @@ class ZeroMQIn(Node):
         self.socket.connect(f"tcp://{self.params.zero_mq.address.value}:{self.params.zero_mq.port.value}")
 
     def process(self):
-        data=self.socket.recv()
-        data=np.frombuffer(data,dtype=np.float32)
+        data=self.socket.recv_pyobj()
         return {"data": (data,{})}
 
     def zero_mq_address_changed(self, value):

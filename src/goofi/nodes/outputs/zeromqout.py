@@ -35,8 +35,8 @@ class ZeroMQOut(Node):
     def process(self, data:Data):
         if data is None:
             return
-        data=data.data.astype(np.float32).tobytes()
-        self.socket.send(data)
+        data = data.data.astype(np.float32)
+        self.socket.send_pyobj(data)
 
     def zero_mq_address_changed(self, value):
         # TODO: make sure socket stuff only happens on the main thread
