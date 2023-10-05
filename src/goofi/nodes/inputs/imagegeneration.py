@@ -1,3 +1,4 @@
+from os.path import join
 from typing import Any, Dict, Tuple
 
 import cv2
@@ -14,6 +15,7 @@ class ImageGeneration(Node):
             "image_generation": {
                 "inference_steps": IntParam(50, 5, 100),
                 "guidance_scale": FloatParam(7.5, 0.1, 20),
+                "use_fixers": BoolParam(True, doc="Use textural inversion (nfixer and nrealfixer) for better image quality."),
                 "seed": IntParam(-1, -1, 1000000, doc="-1 for random seed"),
                 "width": IntParam(512, 100, 1024),
                 "height": IntParam(512, 100, 1024),
@@ -51,12 +53,16 @@ class ImageGeneration(Node):
         else:
             # TODO: make sure this works without internet access
             self.sd_pipe = self.diffusers.StableDiffusionPipeline.from_pretrained(model_id, torch_dtype=self.torch.float16)
+        # set device
+        self.sd_pipe.to(self.params.image_generation.device.value)
 
         # initialize scheduler
         self.image_generation_scheduler_changed(self.params.image_generation.scheduler.value)
 
-        # set device
-        self.sd_pipe.to(self.params.image_generation.device.value)
+        # load textural inversions
+        if self.params.image_generation.use_fixers.value:
+            self.sd_pipe.load_textual_inversion(join(self.assets_path, "nfixer.pt"))
+            self.sd_pipe.load_textual_inversion(join(self.assets_path, "nrealfixer.pt"))
 
         # initialize last image
         if not hasattr(self, "last_img"):
@@ -66,6 +72,7 @@ class ImageGeneration(Node):
     def process(self, prompt: Data, negative_prompt: Data, base_image: Data) -> Dict[str, Tuple[np.ndarray, Dict[str, Any]]]:
         if prompt is None:
             return None
+        prompt = prompt.data
 
         if self.params.img2img.reset_image.value:
             # reset the last image to zeros
@@ -74,6 +81,11 @@ class ImageGeneration(Node):
         # set seed
         if self.params.image_generation.seed.value != -1:
             self.torch.manual_seed(self.params.image_generation.seed.value)
+
+        # add textural inversions to the negative prompt
+        negative_prompt = negative_prompt.data if negative_prompt is not None else ""
+        if self.params.image_generation.use_fixers.value:
+            negative_prompt = " ".join([negative_prompt, "nfixer nrealfixer"])
 
         with self.torch.inference_mode():
             if self.params.img2img.enabled.value:
@@ -96,8 +108,8 @@ class ImageGeneration(Node):
                 img, _ = self.sd_pipe(
                     image=base_image,
                     strength=self.params.img2img.strength.value,
-                    prompt=prompt.data,
-                    negative_prompt=negative_prompt.data if negative_prompt is not None else None,
+                    prompt=prompt,
+                    negative_prompt=negative_prompt,
                     num_inference_steps=self.params.image_generation.inference_steps.value,
                     guidance_scale=self.params.image_generation.guidance_scale.value,
                     return_dict=False,
@@ -109,8 +121,8 @@ class ImageGeneration(Node):
 
                 # run the text2img stable diffusion pipeline
                 img, _ = self.sd_pipe(
-                    prompt=prompt.data,
-                    negative_prompt=negative_prompt.data if negative_prompt is not None else None,
+                    prompt=prompt,
+                    negative_prompt=negative_prompt,
                     width=self.params.image_generation.width.value,
                     height=self.params.image_generation.height.value,
                     num_inference_steps=self.params.image_generation.inference_steps.value,
@@ -127,13 +139,23 @@ class ImageGeneration(Node):
         return {
             "img": (
                 img,
-                {"prompt": prompt.data, "negative_prompt": negative_prompt.data if negative_prompt is not None else None},
+                {"prompt": prompt, "negative_prompt": negative_prompt if negative_prompt is not None else None},
             )
         }
 
     def reset_last_img(self):
         """Reset the last image."""
         self.last_img = np.zeros((self.params.image_generation.height.value, self.params.image_generation.width.value, 3))
+
+    def image_generation_use_fixers_changed(self, value):
+        """Load the textural inversions."""
+        if value:
+            # load the textural inversions
+            self.sd_pipe.load_textual_inversion(join(self.assets_path, "nfixer.pt"))
+            self.sd_pipe.load_textual_inversion(join(self.assets_path, "nrealfixer.pt"))
+        else:
+            # reload the model without the textural inversions
+            self.setup()
 
     def image_generation_scheduler_changed(self, value):
         """Change the scheduler of the Stable Diffusion pipeline."""
