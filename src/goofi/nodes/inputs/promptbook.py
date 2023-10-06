@@ -12,7 +12,7 @@ class PromptBook(Node):
 
         return {
             "Text_Generation": {"selected_prompt": StringParam(prompt_choices[0], options=prompt_choices)},
-            "common": {"autotrigger": True},
+            "common": {"autotrigger": False},
         }
 
     def config_output_slots():
