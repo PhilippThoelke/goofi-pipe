@@ -198,10 +198,12 @@ class ZeroMQConnection(Connection, ABC):
             push_socket.close()
 
     def run_pull(self):
-        pull_socket = None
-        if self.pull_endpoint is not None:
-            pull_socket = self.context.socket(zmq.PULL)
-            pull_socket.bind(self.pull_endpoint)
+        if self.pull_endpoint is None:
+            # no pull endpoint, stop the thread
+            return
+        
+        pull_socket = self.context.socket(zmq.PULL)
+        pull_socket.bind(self.pull_endpoint)
 
         while self.alive:
             try:
