@@ -390,7 +390,8 @@ class Manager:
 
             # check if we got a response in time
             if self.nodes[name].serialized_state is None:
-                raise TimeoutError(f"Node {name} did not respond to serialize request.")
+                # TODO: add proper logging
+                print(f"ERROR: Node {name} did not respond to serialization request. Attempting to proceed anyway.")
 
             if not self.headless:
                 # retrieve the GUI state
