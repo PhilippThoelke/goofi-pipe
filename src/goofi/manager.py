@@ -390,7 +390,8 @@ class Manager:
 
             # check if we got a response in time
             if self.nodes[name].serialized_state is None:
-                raise TimeoutError(f"Node {name} did not respond to serialize request.")
+                # TODO: add proper logging
+                print(f"ERROR: Node {name} did not respond to serialization request. Attempting to proceed anyway.")
 
             if not self.headless:
                 # retrieve the GUI state
@@ -417,7 +418,20 @@ class Manager:
                 for slot_name_in, conn in conns:
                     # find the node that matches the output connection of the current slot
                     for node_name_in in serialized_nodes.keys():
+                        # prevent corrupting the save file if an illegal self-connection is present
+                        if node_name_in == node_name_out:
+                            # TODO: add proper logging
+                            print(f"WARNING: Illegal self-connection: {node_name_out} to {node_name_in}.")
+                            continue
+
                         if conn == self.nodes[node_name_in].connection:
+                            # verify that the input slot exists
+                            if slot_name_in not in self.nodes[node_name_in].input_slots:
+                                continue
+                            # verify that the output slot exists
+                            if slot_name_out not in self.nodes[node_name_out].output_slots:
+                                continue
+
                             # found the node, add the link
                             links.append(
                                 {
