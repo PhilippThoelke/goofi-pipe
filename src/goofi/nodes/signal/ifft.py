@@ -17,6 +17,21 @@ class IFFT(Node):
         # Check if the input is provided
         if spectrum is None or spectrum.data is None or phase is None or phase.data is None:
             return None
+        
+        # Check if the lengths of spectrum and phase are different
+        if len(spectrum.data) != len(phase.data):
+            # Calculate the difference in lengths
+            length_diff = abs(len(spectrum.data) - len(phase.data))
+            
+            # Check which data is shorter and pad accordingly
+            if len(spectrum.data) < len(phase.data):
+                # Pad the spectrum data with zeros (or another value) to match the phase data length
+                padding = np.zeros(length_diff)
+                spectrum.data = np.concatenate([spectrum.data, padding])
+            else:
+                # Pad the phase data with zeros (or another value) to match the spectrum data length
+                padding = np.zeros(length_diff)
+                phase.data = np.concatenate([phase.data, padding])
 
         # Create complex numbers from magnitude (spectrum) and phase
         complex_data = spectrum.data * np.exp(1j * phase.data)
@@ -26,3 +41,4 @@ class IFFT(Node):
 
         # For this example, I'm not adjusting or copying metadata, but you can do so as needed
         return {"reconstructed": (time_series, {})}
+
