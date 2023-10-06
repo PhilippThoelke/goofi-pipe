@@ -1,5 +1,6 @@
 import numpy as np
-
+from scipy.stats import pearsonr
+from sklearn.feature_selection import mutual_info_regression
 from goofi.data import Data, DataType
 from goofi.node import Node
 from goofi.params import FloatParam, IntParam, StringParam
@@ -16,6 +17,9 @@ class Connectivity(Node):
 
     def config_params():
         return {
+            "classical": {
+                "method": StringParam("wPLI", options=["coherence", "imag_coherence", "wPLI", "PLI", "pearson", "mutual_info", "PLV"]),},
+            
             "biotuner": {
                 "method": StringParam(
                     "None", options=["None", "harmsim", "euler", "subharm_tension", "RRCi", "wPLI_crossfreq"]
@@ -26,9 +30,6 @@ class Connectivity(Node):
                 "precision": FloatParam(0.1, 0.01, 10.0, doc="Precision of the peak extraction in Hz"),
                 "peaks_function": StringParam("EMD", options=["EMD", "fixed", "harmonic_recurrence", "EIMC"],
                                                doc="Peak extraction function"),
-            },
-            "classical": {
-                "method": StringParam("wPLI", options=["coherence", "imag_coherence", "wPLI", "PLI", "PLV"]),
             },
         }
 
@@ -139,5 +140,17 @@ def compute_classical_connectivity(data, method):
                 sig1 = hilbert_fn(data[i, :])
                 sig2 = hilbert_fn(data[j, :])
                 matrix[i, j] = matrix[j, i] = np.abs(np.mean(np.exp(1j * (np.angle(sig1) - np.angle(sig2)))))
+                
+            elif method == "pearson":
+                for i in range(n_channels):
+                    for j in range(i, n_channels):
+                        corr, _ = pearsonr(data[i, :], data[j, :])
+                        matrix[i, j] = matrix[j, i] = corr
+
+            elif method == "mutual_info":
+                for i in range(n_channels):
+                    for j in range(i, n_channels):
+                        mutual_info = mutual_info_regression(data[i, :].reshape(-1, 1), data[j, :])[0]
+                        matrix[i, j] = matrix[j, i] = mutual_info
 
     return matrix
