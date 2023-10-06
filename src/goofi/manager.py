@@ -424,6 +424,13 @@ class Manager:
                             continue
 
                         if conn == self.nodes[node_name_in].connection:
+                            # verify that the input slot exists
+                            if slot_name_in not in self.nodes[node_name_in].input_slots:
+                                continue
+                            # verify that the output slot exists
+                            if slot_name_out not in self.nodes[node_name_out].output_slots:
+                                continue
+
                             # found the node, add the link
                             links.append(
                                 {
