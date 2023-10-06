@@ -59,7 +59,7 @@ class PSD(Node):
                     psd.append(p)
                 freq = f
                 psd = np.array(psd)
-            phase=None
+            phase=np.zeros(psd.shape)
 
         # prepare metadata
         meta = data.meta.copy()
@@ -69,13 +69,11 @@ class PSD(Node):
         freq = freq[valid_indices]
         if data.data.ndim == 1:
             psd = psd[valid_indices]
-            if phase is not None:
-                phase = phase[valid_indices]
+            phase = phase[valid_indices]
             meta["channels"]["dim0"] = freq.tolist()
         else:  # if 2D
             psd = psd[:, valid_indices]
-            if phase is not None:
-                phase = phase[:, valid_indices]
+            phase = phase[:, valid_indices]
             meta["channels"]["dim1"] = freq.tolist()
 
         return {"psd": (psd, meta), "phase": (phase, meta)}
