@@ -1,11 +1,7 @@
 import numpy as np
-
 from goofi.data import Data, DataType
 from goofi.node import Node
-from goofi.params import FloatParam, IntParam, StringParam
-
-from biotuner.scale_construction import create_mode
-from biotuner.metrics import dyad_similarity, metric_denom, compute_consonance
+from goofi.params import IntParam, StringParam
 
 class TuningReduction(Node):
     def config_input_slots():
@@ -24,6 +20,14 @@ class TuningReduction(Node):
             }
         }
 
+    def setup(self):
+        from biotuner.scale_construction import create_mode
+        from biotuner.metrics import dyad_similarity, metric_denom, compute_consonance
+        self.create_mode = create_mode
+        self.dyad_similarity = dyad_similarity
+        self.metric_denom = metric_denom
+        self.compute_consonance = compute_consonance
+        
     def process(self, tuning: Data):
         if tuning is None:
             return None
@@ -35,20 +39,11 @@ class TuningReduction(Node):
         n_steps = self.params['Mode_Generation']['n_steps'].value
         function = self.params['Mode_Generation']['function'].value
         if function == 'harmsim':
-            reduced = create_mode(tuning.data, n_steps, dyad_similarity)
+            reduced = self.create_mode(tuning.data, n_steps, self.dyad_similarity)
         if function == 'denom':
-            reduced = create_mode(tuning.data, n_steps, metric_denom)
+            reduced = self.create_mode(tuning.data, n_steps, self.metric_denom)
         if function == 'cons':
-            reduced = create_mode(tuning.data, n_steps, compute_consonance)
+            reduced = self.create_mode(tuning.data, n_steps, self.compute_consonance)
         return {
             "reduced": (np.array(reduced), tuning.meta),
         }
-
-
-'''def call_function(tuning, steps, method):
-    global create_mode, dyad_similarity, metric_denom, compute_consonance
-    if compute_biotuner_fn is None or harmonic_tuning_fn is None:
-        from biotuner.biotuner_object import compute_biotuner, harmonic_tuning
-
-        compute_biotuner_fn = compute_biotuner
-        harmonic_tuning_fn = harmonic_tuning'''
