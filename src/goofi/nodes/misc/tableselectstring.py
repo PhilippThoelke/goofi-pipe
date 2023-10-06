@@ -13,7 +13,7 @@ class TableSelectString(Node):
     def config_params():
         return {
             "selection": {"key": StringParam("default_key")},
-            "common": {"autotrigger": True},
+            "common": {"autotrigger": False},
         }
 
     def process(self, input_table: Data):

@@ -1,9 +1,9 @@
 import colorsys
-
 import numpy as np
-
+from goofi.params import FloatParam, IntParam, StringParam
 from goofi.data import Data, DataType
 from goofi.node import Node
+import webcolors
 
 
 class TuningColors(Node):
@@ -11,8 +11,16 @@ class TuningColors(Node):
         return {"data": DataType.ARRAY}
 
     def config_output_slots():
-        return {"hue": DataType.ARRAY, "saturation": DataType.ARRAY, "value": DataType.ARRAY}
+        return {"hue": DataType.ARRAY, "saturation": DataType.ARRAY, "value": DataType.ARRAY,
+                "color_names": DataType.STRING}
 
+    def config_params():
+        return {
+            "Biocolors": {
+                "color_names_mode": StringParam("name", options=['name', 'HEX']),
+                "n_top_planets": IntParam(3, 1, 6),
+            }
+        }
     def setup(self):
         from biotuner.biocolors import audible2visible, scale2freqs, wavelength_to_rgb
         from biotuner.biotuner_object import dyad_similarity
@@ -70,9 +78,42 @@ class TuningColors(Node):
         # hsv_all is a list of HSV color tuples, one for each scale step, with hue representing the
         # frequency value, saturation representing the consonance, and luminance set to a fixed value
         hsvs = hsv_all[1:]
-
+        color_names = []
+        color_names_mode = self.params['Biocolors']['color_names_mode'].value
+        if color_names_mode == 'name':
+            for hsv in hsvs:
+                rgb = tuple(map(lambda x: int(x * 255), colorsys.hsv_to_rgb(*hsv)))
+                color_names.append(rgb2name(rgb))
+            color_names =' '.join(color_names)
+            
+        elif color_names_mode == 'HEX':
+            for hsv in hsvs:
+                rgb = tuple(map(lambda x: int(x * 255), colorsys.hsv_to_rgb(*hsv)))
+                hex_value = "#{:02x}{:02x}{:02x}".format(rgb[0], rgb[1], rgb[2])
+                color_names.append(hex_value)
+            color_names = ' '.join(color_names)
         return {
             "hue": (np.array([x[0] for x in hsvs]), data.meta),
             "saturation": (np.array([x[1] for x in hsvs]), data.meta),
             "value": (np.array([x[2] for x in hsvs]), data.meta),
+            "color_names": (color_names, data.meta)
         }
+
+def rgb2name(rgb):
+    """
+    Find the closest color in a dictionary of colors to an input RGB value.
+
+    Parameters:
+        rgb (Tuple[int, int, int]): RGB color tuple
+
+    Returns:
+        str: The name of the closest color in the dictionary
+    """
+    colors = {
+        k: webcolors.hex_to_rgb(k) for k in webcolors.constants.CSS3_HEX_TO_NAMES.keys()
+    }
+    closest_color = min(
+        colors,
+        key=lambda color: sum((a - b) ** 2 for a, b in zip(rgb, colors[color])),
+    )
+    return webcolors.constants.CSS3_HEX_TO_NAMES[closest_color]

@@ -31,18 +31,12 @@ class Resample(Node):
         sf = data.meta["sfreq"]
 
         # Retrieve new sampling frequency parameter
-        new_sfreq = self.params.resample.new_sfreq.value
-
-        # Log the values for debugging
-        # print(f"Original sfreq: {sf}, New sfreq: {new_sfreq}")
+        new_sfreq = self.params["resample"]["new_sfreq"].value
 
         # Calculate up and down factors based on the gcd of sf and new_sfreq
         factor = gcd(int(sf), int(new_sfreq))
         up = new_sfreq // factor
         down = sf // factor
-
-        # Log the up and down values for debugging
-        # print(f"Up: {up}, Down: {down}")
 
         signal = np.array(data.data)
 
@@ -50,10 +44,26 @@ class Resample(Node):
         if np.any(np.isnan(signal)) or np.any(np.isinf(signal)):
             print("Signal contains NaN or inf values")
 
-        # Resample the signal
-        resampled_signal = resample_poly(signal, up, down, padtype="line")
+        # Resample the signal based on its dimension
+        if signal.ndim == 1:
+            resampled_signal = resample_poly(signal, up, down, padtype="line")
+            if "dim0" in data.meta['channels']:
+                del data.meta['channels']['dim0']
+        elif signal.ndim == 2:
+            if "dim0" in data.meta['channels']:
+                del data.meta['channels']['dim0']
+            if "dim1" in data.meta['channels']:
+                del data.meta['channels']['dim1']
+
+            rows, cols = signal.shape
+            resampled_signal = np.zeros((rows, int(cols * up / down)))
+            for i in range(rows):
+                resampled_signal[i, :] = resample_poly(signal[i, :], up, down, padtype="line")
+        else:
+            raise ValueError("Data must be either 1D or 2D")
 
         # Update the 'sfreq' metadata
         data.meta["sfreq"] = new_sfreq
 
         return {"out": (resampled_signal, data.meta)}
+

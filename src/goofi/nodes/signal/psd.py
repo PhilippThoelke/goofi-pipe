@@ -12,7 +12,8 @@ class PSD(Node):
         return {"data": DataType.ARRAY}
 
     def config_output_slots():
-        return {"psd": DataType.ARRAY}
+        return {"psd": DataType.ARRAY,
+                "phase": DataType.ARRAY}
 
     def config_params():
         return {
@@ -46,7 +47,7 @@ class PSD(Node):
         if method == "fft":
             freq = fftfreq(data.data.shape[-1], 1 / sfreq)
             fft_result = fft(data.data, axis=-1)
-            psd = np.abs(fft_result) ** 2
+            psd = np.abs(fft_result)
             phase = np.angle(fft_result)
         elif method == "welch":
             if data.data.ndim == 1:
@@ -58,6 +59,7 @@ class PSD(Node):
                     psd.append(p)
                 freq = f
                 psd = np.array(psd)
+            phase=None
 
         # prepare metadata
         meta = data.meta.copy()
@@ -67,9 +69,13 @@ class PSD(Node):
         freq = freq[valid_indices]
         if data.data.ndim == 1:
             psd = psd[valid_indices]
+            if phase is not None:
+                phase = phase[valid_indices]
             meta["channels"]["dim0"] = freq.tolist()
         else:  # if 2D
             psd = psd[:, valid_indices]
+            if phase is not None:
+                phase = phase[:, valid_indices]
             meta["channels"]["dim1"] = freq.tolist()
 
-        return {"psd": (psd, meta)}
+        return {"psd": (psd, meta), "phase": (phase, meta)}
