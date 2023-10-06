@@ -40,8 +40,26 @@ class HarmonicSpectrum(Node):
         if psd is None or psd.data is None:
             return None
 
-        psd_values, metadata = psd.data, psd.meta
-        freqs = metadata["freq"]
+        metadata = psd.meta
+
+        if psd.data.ndim == 1:
+            freqs = metadata['channels']['dim0']
+            if freqs[0] == 0:
+                freqs[0] == 1e-8
+            harmonicity_values = self._compute_for_single_psd(psd.data, freqs)
+            return {"harmonic_spectrum": (harmonicity_values, {"freq": freqs, **metadata})}
+        elif psd.data.ndim == 2:
+            freqs = metadata['channels']['dim1']
+            if freqs[0] == 0:
+                freqs[0] == 1e-8
+            harmonicity_values_matrix = np.zeros(psd.data.shape)
+            for i, row in enumerate(psd.data):
+                harmonicity_values_matrix[i, :] = self._compute_for_single_psd(row, freqs)
+            return {"harmonic_spectrum": (harmonicity_values_matrix, {"freq": freqs, **metadata})}
+        else:
+            raise ValueError("Data must be either 1D or 2D")
+
+    def _compute_for_single_psd(self, psd_values, freqs):
         power_law_remove = self.params["harmonic"]["power_law_remove"].value
         if power_law_remove:
             psd_values = self.apply_power_law_remove(freqs, psd_values, power_law_remove)
@@ -64,7 +82,7 @@ class HarmonicSpectrum(Node):
             self.cached_metric = metric  # Cache the current metric
         harmonicity_values = np.zeros(len(freqs))
 
-        total_power = np.sum(psd_values**2)  # Assuming psd_values is a 1-D array. If not, adapt accordingly.
+        total_power = np.sum(psd_values**2)
 
         for i in range(len(freqs)):
             weighted_sum_harmonicity = 0
@@ -74,7 +92,8 @@ class HarmonicSpectrum(Node):
 
             harmonicity_values[i] = (weighted_sum_harmonicity / (2 * total_power)) if normalize else weighted_sum_harmonicity
 
-        return {"harmonic_spectrum": (harmonicity_values, {"freq": freqs, **metadata})}
+        return harmonicity_values
+
 
     def compute_harmonicity(self, freqs, metric, n_harms, delta_lim, min_notes):
         harmonicity = np.zeros((len(freqs), len(freqs)))
