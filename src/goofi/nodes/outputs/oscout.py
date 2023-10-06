@@ -37,7 +37,7 @@ def generate_messages(data: Data, prefix: str = "") -> List[Tuple[bytes, List[An
             val = val.data.tolist()
         elif val.dtype == DataType.STRING:
             # simply use the string
-            val = val.data
+            val = val.data.encode("utf-8")
         elif val.dtype == DataType.TABLE:
             # recursively convert the table to a list of messages
             messages.extend(generate_messages(val, addr))
