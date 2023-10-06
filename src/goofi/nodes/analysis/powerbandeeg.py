@@ -28,10 +28,6 @@ class PowerBandEEG(Node):
     def process(self, data: Data):
         if data is None or data.data is None:
             return None
-
-        power_type = self.params["powerband"]["power_type"].value
-        freq = data.meta["freq"]
-
         bands = {
             "delta": (1, 3),
             "theta": (3, 7),
@@ -40,10 +36,23 @@ class PowerBandEEG(Node):
             "highbeta": (20, 30),
             "gamma": (30, 50),
         }
-
+        power_type = self.params["powerband"]["power_type"].value
+        if data.data.ndim == 1:
+            freqs = np.array(data.meta['channels']['dim0'])
+            if freqs[0] == 0:
+                freqs[0] = 1e-8
+            data.meta["channels"]["dim0"] = ['channel1']  # Represent the single channel
+            data.meta["channels"]["dim1"] = freqs.tolist()  # Represent the frequencies
+        elif data.data.ndim == 2:
+            freqs = np.array(data.meta['channels']['dim1'])
+            if freqs[0] == 0:
+                freqs[0] = 1e-8
+            data.meta["channels"]["dim0"] = list(range(psd.shape[0]))  # Represent the channels
+            data.meta["channels"]["dim1"] = freqs.tolist()  # Represent the frequencies
+        
         output = {}
         for band, (f_min, f_max) in bands.items():
-            valid_indices = np.where((freq >= f_min) & (freq <= f_max))[0]
+            valid_indices = np.where((freqs >= f_min) & (freqs <= f_max))[0]
             if data.data.ndim == 1:
                 selected_psd = data.data[valid_indices]
             else:  # if 2D
@@ -56,5 +65,4 @@ class PowerBandEEG(Node):
                 power = power / total_power
 
             output[band] = (np.array(power), {"freq_min": f_min, "freq_max": f_max, **data.meta})
-
         return output
