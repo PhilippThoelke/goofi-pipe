@@ -1,5 +1,4 @@
 from scipy.ndimage import gaussian_filter1d
-
 from goofi.data import Data, DataType
 from goofi.node import Node
 from goofi.params import FloatParam, IntParam

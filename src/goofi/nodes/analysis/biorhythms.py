@@ -28,6 +28,10 @@ class Biorhythms(Node):
             }
         }
 
+    def setup(self):
+        from biotuner.rhythm_construction import consonant_euclid, find_optimal_offsets
+        self.consonant_euclid = consonant_euclid
+        self.find_optimal_offsets = find_optimal_offsets
     def process(self, tuning: Data):
         if tuning is None:
             return None
@@ -42,7 +46,7 @@ class Biorhythms(Node):
         limit_denom_final = self.params["Euclidean"]["limit_denom_final"].value
         optimize_offset = self.params["Euclidean"]["optimize_offset"].value
         # Derive consonant euclidian rhythms from the harmonic tuning
-        euclid_final, cons = consonant_euclid(list(tuning.data), n_steps_down=n_steps_down, limit_denom=limit_denom, 
+        euclid_final, cons = self.consonant_euclid(list(tuning.data), n_steps_down=n_steps_down, limit_denom=limit_denom, 
                                             limit_cons=limit_cons, limit_denom_final=limit_denom_final)
         # Calculate the pulses and steps
         pulses = []
@@ -53,7 +57,7 @@ class Biorhythms(Node):
         
         if optimize_offset == True:
             # Find the optimal offsets
-            offsets = find_optimal_offsets(list(zip(pulses, steps)))
+            offsets = self.find_optimal_offsets(list(zip(pulses, steps)))
         if optimize_offset == False:
             offsets = [0] * len(pulses)
         

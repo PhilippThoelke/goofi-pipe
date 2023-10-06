@@ -1,6 +1,6 @@
 import colorsys
 import numpy as np
-from goofi.params import FloatParam, IntParam, StringParam
+from goofi.params import IntParam, StringParam
 from goofi.data import Data, DataType
 from goofi.node import Node
 import webcolors
