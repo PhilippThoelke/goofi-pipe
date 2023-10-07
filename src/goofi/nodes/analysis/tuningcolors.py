@@ -18,7 +18,7 @@ class TuningColors(Node):
         return {
             "Biocolors": {
                 "color_names_mode": StringParam("name", options=['name', 'HEX']),
-                "n_top_planets": IntParam(3, 1, 6),
+                "n_first_colors": IntParam(3, 1, 6),
             }
         }
     def setup(self):
@@ -92,6 +92,9 @@ class TuningColors(Node):
                 hex_value = "#{:02x}{:02x}{:02x}".format(rgb[0], rgb[1], rgb[2])
                 color_names.append(hex_value)
             color_names = ' '.join(color_names)
+        
+        # select n_first_colors
+        hsvs = hsvs[: self.params["Biocolors"]["n_first_colors"].value]
         return {
             "hue": (np.array([x[0] for x in hsvs]), data.meta),
             "saturation": (np.array([x[1] for x in hsvs]), data.meta),
