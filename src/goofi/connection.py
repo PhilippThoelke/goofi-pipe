@@ -140,7 +140,7 @@ class MultiprocessingConnection(Connection):
     def close(self) -> None:
         try:
             self.conn.close()
-        except OSError:
+        except Exception:
             pass
 
     def __del__(self) -> None:
