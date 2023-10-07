@@ -17,6 +17,7 @@ class Bioelements(Node):
         return {
             "bioelements": {
                 "tolerance": FloatParam(0.5, 0.01, 5),
+                "n_elements": IntParam(2, 1, 4),
             }
         }
 
@@ -35,11 +36,24 @@ class Bioelements(Node):
         tolerance = self.params["bioelements"]["tolerance"].value
         elems, spec_regions, types = bioelements_realtime(data.data, self.air_elements, tolerance)
 
+        # select the n most common elements
+        elems = elems[: self.params["bioelements"]["n_elements"].value]
+        spec_regions = spec_regions[: self.params["bioelements"]["n_elements"].value]
+        types = types[: self.params["bioelements"]["n_elements"].value]
+        
+        # remove duplicates
+        elems = list(dict.fromkeys(elems))
+        spec_regions = list(dict.fromkeys(spec_regions))
+        types = list(dict.fromkeys(types))
+        # create single string for each variable
+        elems = ", ".join(elems)
+        spec_regions = ", ".join(spec_regions)
+        types = ", ".join(types)
         # combine the three lists into a dictionary
         elements = {
-            "element": Data(DataType.STRING, elems[0], {}),
-            "spectral_region": Data(DataType.STRING, spec_regions[0], {}),
-            "type": Data(DataType.STRING, types[0], {}),
+            "element": Data(DataType.STRING, elems, {}),
+            "spectral_region": Data(DataType.STRING, spec_regions, {}),
+            "type": Data(DataType.STRING, types, {}),
         }
         # print(elements)
         return {"elements": (elements, data.meta)}
