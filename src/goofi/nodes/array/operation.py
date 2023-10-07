@@ -16,12 +16,13 @@ class Operation(Node):
     def process(self, a: Data, b: Data):
         if a is None or b is None:
             return None
-        if self.params.operation == "add":
-            out = a.data + b.data
-        if self.params.operation == "subtract":
-            out = a.data - b.data
-        if self.params.operation == "multiply":
-            out = a.data * b.data
-        if self.params.operation == "divide":
-            out = a.data / b.data
-        return {"out": (out, {})}
+        if self.params.operation.operation.value == "add":
+            return {"out": (a.data + b.data, {})}
+        elif self.params.operation.operation.value == "subtract":
+            return {"out": (a.data - b.data, {})}
+        elif self.params.operation.operation.value == "multiply":
+            return {"out": (a.data * b.data, {})}
+        elif self.params.operation.operation.value == "divide":
+            return {"out": (a.data / b.data, {})}
+        else:
+            raise Error
