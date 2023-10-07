@@ -48,16 +48,12 @@ class TextGeneration(Node):
         else:
             self.messages = [{"role": "user", "content": prompt_}]  # Reset conversation history
 
-        try:
-            response = openai.ChatCompletion.create(
-                model=model,
-                messages=self.messages,
-                temperature=temperature,
-                max_tokens=max_tokens,
-            )
-        except Exception as e:
-            print(f"OpenAI API call failed: {e}")
-            return
+        response = openai.ChatCompletion.create(
+            model=model,
+            messages=self.messages,
+            temperature=temperature,
+            max_tokens=max_tokens,
+        )
 
         generated_text = response["choices"][0]["message"]["content"].strip()
 
