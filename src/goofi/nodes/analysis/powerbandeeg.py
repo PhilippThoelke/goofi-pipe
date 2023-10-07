@@ -47,7 +47,7 @@ class PowerBandEEG(Node):
             freqs = np.array(data.meta['channels']['dim1'])
             if freqs[0] == 0:
                 freqs[0] = 1e-8
-            data.meta["channels"]["dim0"] = list(range(psd.shape[0]))  # Represent the channels
+            data.meta["channels"]["dim0"] = list(range(data.data.shape[0]))  # Represent the channels
             data.meta["channels"]["dim1"] = freqs.tolist()  # Represent the frequencies
         
         output = {}
