@@ -10,7 +10,9 @@ class HarmonicSpectrum(Node):
         return {"psd": DataType.ARRAY}
 
     def config_output_slots():
-        return {"harmonic_spectrum": DataType.ARRAY}
+        return {"harmonic_spectrum": DataType.ARRAY,
+                "max_harmonicity": DataType.ARRAY,
+                "avg_harmonicity": DataType.ARRAY}
 
     def config_params():
         return {
@@ -39,23 +41,30 @@ class HarmonicSpectrum(Node):
     def process(self, psd: Data):
         if psd is None or psd.data is None:
             return None
-
+        psd.data = np.squeeze(psd.data)
         metadata = psd.meta
 
         if psd.data.ndim == 1:
             freqs = metadata['channels']['dim0']
             if freqs[0] == 0:
-                freqs[0] == 1e-8
+                freqs[0] = 1e-8
             harmonicity_values = self._compute_for_single_psd(psd.data, freqs)
-            return {"harmonic_spectrum": (harmonicity_values, {"freq": freqs, **metadata})}
+            updated_metadata = {**metadata, "channels": {"dim0": list(range(len(harmonicity_values)))}}
+            print("Metadata:", metadata)
+            print("Shape of psd.data:", psd.data.shape)
+            return {"harmonic_spectrum": (harmonicity_values, updated_metadata),
+                    "max_harmonicity": (np.max(harmonicity_values), updated_metadata),
+                    "avg_harmonicity": (np.mean(harmonicity_values), updated_metadata)}
         elif psd.data.ndim == 2:
             freqs = metadata['channels']['dim1']
             if freqs[0] == 0:
-                freqs[0] == 1e-8
+                freqs[0] == 1e-8    
             harmonicity_values_matrix = np.zeros(psd.data.shape)
             for i, row in enumerate(psd.data):
                 harmonicity_values_matrix[i, :] = self._compute_for_single_psd(row, freqs)
-            return {"harmonic_spectrum": (harmonicity_values_matrix, {"freq": freqs, **metadata})}
+            return {"harmonic_spectrum": (harmonicity_values_matrix, {"freq": freqs, **metadata}),
+                    "max_harmonicity": (np.max(harmonicity_values_matrix, axis=1), {"freq": freqs, **metadata}),
+                    "avg_harmonicity": (np.mean(harmonicity_values_matrix, axis=1), {"freq": freqs, **metadata})}
         else:
             raise ValueError("Data must be either 1D or 2D")
 
