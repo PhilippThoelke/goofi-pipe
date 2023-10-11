@@ -20,6 +20,7 @@ class Biotuner(Node):
             "peaks": DataType.ARRAY,
             "amps": DataType.ARRAY,
             "extended_peaks": DataType.ARRAY,
+            "extended_amps": DataType.ARRAY,
         }
 
     def config_params():
@@ -31,6 +32,9 @@ class Biotuner(Node):
                 "precision": FloatParam(0.1, 0.01, 10.0, doc="Precision of the peak extraction in Hz"),
                 "peaks_function": StringParam("EMD", options=["EMD", "fixed", "harmonic_recurrence", "EIMC"],
                                                doc="Peak extraction function"),
+                "n_harm_subharm": IntParam(3, 1, 10, doc="Number of harmonics to consider in the subharmonic tension metric"),
+                "n_harm_extended": IntParam(3, 1, 10, doc="Number of harmonics to consider in the extended peaks"),
+                "delta_lim": IntParam(250, 1, 300, doc="Maximum delta (in ms) in the subharmonic tension metric"),
             }
         }
 
@@ -50,8 +54,11 @@ class Biotuner(Node):
             min_freq=self.params["biotuner"]["f_min"].value,
             max_freq=self.params["biotuner"]["f_max"].value,
             precision=self.params["biotuner"]["precision"].value,
+            n_harm_extended=self.params["biotuner"]["n_harm_extended"].value,
+            n_harm_subharm=self.params["biotuner"]["n_harm_subharm"].value,
+            delta_lim=self.params["biotuner"]["delta_lim"].value,
         )
-        peaks, extended_peaks, metrics, tuning, harm_tuning, amps = result
+        peaks, extended_peaks, metrics, tuning, harm_tuning, amps, extended_amps = result
 
         return {
             "harmsim": (np.array([metrics["harmsim"]]), data.meta),
@@ -63,13 +70,16 @@ class Biotuner(Node):
             "peaks": (np.array(peaks), data.meta),
             "amps": (np.array(amps), data.meta),
             "extended_peaks": (np.array(extended_peaks), data.meta),
+            "extended_amps": (np.array(extended_amps), data.meta),
         }
 
 
 compute_biotuner_fn, harmonic_tuning_fn = None, None
 
 
-def biotuner_realtime(data, sfreq, n_peaks=5, peaks_function="EMD", min_freq=1, max_freq=65, precision=0.1):
+def biotuner_realtime(data, sfreq, n_peaks=5, peaks_function="EMD", min_freq=1,
+                      max_freq=65, precision=0.1, n_harm_extended=3, n_harm_subharm=3,
+                      delta_lim=250):
     # import the biotuner function here to avoid loading it on startup
     global compute_biotuner_fn, harmonic_tuning_fn
     if compute_biotuner_fn is None or harmonic_tuning_fn is None:
@@ -96,11 +106,11 @@ def biotuner_realtime(data, sfreq, n_peaks=5, peaks_function="EMD", min_freq=1, 
 
     try:
         # try computing the extended peaks
-        bt.peaks_extension(method="harmonic_fit")
+        bt.peaks_extension(method="harmonic_fit", n_harm=n_harm_extended)
     except TypeError:
         raise RuntimeError("Detected only one peak. The largest peak might be below the minimum frequency.")
 
-    bt.compute_peaks_metrics(n_harm=3, delta_lim=250)
+    bt.compute_peaks_metrics(n_harm=n_harm_subharm, delta_lim=delta_lim)
     if hasattr(bt, "all_harmonics"):
         harm_tuning = harmonic_tuning_fn(bt.all_harmonics)
     else:
@@ -108,6 +118,7 @@ def biotuner_realtime(data, sfreq, n_peaks=5, peaks_function="EMD", min_freq=1, 
     peaks = bt.peaks
     amps = bt.amps
     extended_peaks = bt.extended_peaks
+    extended_amps = bt.extended_amps
     metrics = bt.peaks_metrics
 
     if not isinstance(metrics["subharm_tension"][0], float):
@@ -116,4 +127,4 @@ def biotuner_realtime(data, sfreq, n_peaks=5, peaks_function="EMD", min_freq=1, 
     # rescale tenney height from between 4 to 9 to between 0 and 1
     metrics["tenney"] = (metrics["tenney"] - 4) / 5
     tuning = bt.peaks_ratios
-    return peaks, extended_peaks, metrics, tuning, harm_tuning, amps
+    return peaks, extended_peaks, metrics, tuning, harm_tuning, amps, extended_amps
