@@ -18,7 +18,7 @@ class Math(Node):
                 "pre_add": FloatParam(0.0, -10.0, 10.0),
                 "multiply": FloatParam(1.0, -10.0, 10.0),
                 "post_add": FloatParam(0.0, -10.0, 10.0),
-                "round": IntParam(3, 0, 10),   # Round parameter added
+                "round": IntParam(-1, -1, 10),
             },
             "map": {
                 "input_min": FloatParam(0.0, -10.0, 10.0),
@@ -41,7 +41,8 @@ class Math(Node):
 
         # apply rounding
         decimals = self.params["math"]["round"].value
-        signal = np.around(signal, decimals)
+        if decimals >= 0:
+            signal = np.around(signal, decimals)
 
         # rescale signal from input range to output range
         signal = self.rescale(
