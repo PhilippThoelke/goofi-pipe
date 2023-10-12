@@ -10,3 +10,4 @@ openai
 scikit-learn
 opencv-python
 pyzmq
+webcolors
