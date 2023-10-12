@@ -4,7 +4,10 @@ from typing import Any
 
 import cv2
 import dearpygui.dearpygui as dpg
+import matplotlib.pyplot as plt
 import numpy as np
+from mne import channels
+from scipy.interpolate import griddata
 
 from goofi.data import Data, DataType
 from goofi.message import Message, MessageType
@@ -270,6 +273,7 @@ class ImageViewer(DataViewer):
                 width=res[0], height=res[1], default_value=[0.0 for _ in range(res[0] * res[1] * 4)]
             )
         self.image = dpg.add_image(self.texture, parent=self.content_window)
+        self.res = res
 
     def update(self, data: Data) -> None:
         """
@@ -371,6 +375,64 @@ class TrajectoryViewer(ArrayViewer):
         dpg.set_axis_limits(self.yax, self.vmin - abs(self.vmax) * self.margin, self.vmax + abs(self.vmax) * self.margin)
 
 
+class TopomapViewer(ImageViewer):
+    def __init__(self, content_window: int) -> None:
+        super().__init__(content_window)
+
+        self.layout = channels.read_layout("EEG1005")
+        self.cmap = plt.get_cmap("inferno")
+
+    def update(self, data: Data) -> None:
+        """
+        This function handles drawing image data to an image item.
+
+        ### Parameters
+        `data` : Data
+            The data message.
+        """
+        # convert data to numpy array and copy to C order (otherwise DPG will crash for some arrays)
+        array = np.squeeze(data.data).copy(order="C")
+
+        if array.ndim > 1:
+            raise UnsupportedViewerError(f"Cannot handle array with more than one dimension.")
+
+        if "dim0" not in data.meta["channels"]:
+            raise UnsupportedViewerError("Expected data to have channel dim0.")
+
+        # get channel positions
+        idxs, pos = [], []
+        for i, ch in enumerate(data.meta["channels"]["dim0"]):
+            if ch in self.layout.names:
+                idxs.append(i)
+                pos.append(self.layout.pos[self.layout.names.index(ch), :2])
+
+        # create image
+        vmin = np.nanmin([p[0] for p in pos] + [0]), np.nanmin([p[1] for p in pos] + [0])
+        vmax = np.nanmax([p[0] for p in pos] + [1]), np.nanmax([p[1] for p in pos] + [1])
+
+        xs = np.linspace(vmin[0], vmax[0], self.res[0])
+        ys = np.linspace(vmax[1], vmin[1], self.res[1])
+        grid = np.stack(np.meshgrid(xs, ys), axis=-1)
+        grid = grid.reshape(-1, 2)
+
+        img = griddata(pos, array[idxs], grid, method="cubic", fill_value=0)
+        img = img.reshape(self.res)
+        img = self.cmap(img)
+
+        tex_config = dpg.get_item_configuration(self.texture)
+        if tex_config["height"] != img.shape[1] or tex_config["width"] != img.shape[0]:
+            # resize array to fit texture
+            img = cv2.resize(img, (tex_config["width"], tex_config["height"]), interpolation=cv2.INTER_NEAREST)
+
+        # update texture
+        dpg.set_value(self.texture, img.flatten())
+
+    def set_size(self) -> None:
+        """This function sets the size of the image."""
+        dpg.set_item_width(self.image, dpg.get_item_width(self.content_window))
+        dpg.set_item_height(self.image, dpg.get_item_height(self.content_window))
+
+
 class StringViewer(DataViewer):
     def __init__(self, content_window: int) -> None:
         super().__init__(DataType.STRING, content_window)
@@ -435,7 +497,7 @@ class TableViewer(DataViewer):
 
 
 DTYPE_VIEWER_MAP = {
-    DataType.ARRAY: [ArrayViewer, ImageViewer, TrajectoryViewer],
+    DataType.ARRAY: [ArrayViewer, ImageViewer, TrajectoryViewer, TopomapViewer],
     DataType.STRING: [StringViewer],
     DataType.TABLE: [TableViewer],
 }
