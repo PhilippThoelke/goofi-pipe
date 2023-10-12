@@ -1,6 +1,7 @@
 import numpy as np
-from goofi.node import Node
+
 from goofi.data import Data, DataType
+from goofi.node import Node
 from goofi.params import IntParam
 
 
@@ -36,5 +37,9 @@ class TimeDelayEmbedding(Node):
             embedded_array = np.stack(arrays, axis=-1)
         else:
             embedded_array = np.array(arrays)
+
+        if "dim0" in input_array.meta["channels"]:
+            input_array.meta["channels"]["dim1"] = input_array.meta["channels"]["dim0"]
+            del input_array.meta["channels"]["dim0"]
 
         return {"embedded_array": (embedded_array, input_array.meta)}
