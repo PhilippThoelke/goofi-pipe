@@ -21,7 +21,7 @@ DTYPE_SHAPE_MAP = {
     DataType.TABLE: dpg.mvNode_PinShape_QuadFilled,
 }
 
-NODE_CATEGORY_COLORS = [
+NODE_CAT_COLORS = [
     [140, 0, 0, 255],
     [0, 140, 0, 255],
     [0, 0, 140, 255],
@@ -113,7 +113,7 @@ class GUINode:
         self._error_msg = msg
 
         # we have an error, set theme
-        dpg.bind_item_theme(self.item, win.node_error_theme)
+        dpg.bind_item_theme(self.item, win.node_error_themes[self.node_ref.category])
 
         # update the info window if it is open
         info_win = win.node_info_window
@@ -930,12 +930,40 @@ class Window:
         cats = [n.category() for n in list_nodes()]
         cats = sorted(list(set(cats)))
 
+        def scale(color, scale):
+            return [max(min(int(c * scale), 255), 0) for c in color]
+
+        # set up node themes
         self.node_themes = {}
         for i, cat in enumerate(cats):
             with dpg.theme() as theme:
                 with dpg.theme_component():
-                    dpg.add_theme_color(dpg.mvNodeCol_NodeOutline, NODE_CATEGORY_COLORS[i], category=dpg.mvThemeCat_Nodes)
+                    dpg.add_theme_color(dpg.mvNodeCol_TitleBar, NODE_CAT_COLORS[i], category=dpg.mvThemeCat_Nodes)
+                    dpg.add_theme_color(
+                        dpg.mvNodeCol_TitleBarHovered, scale(NODE_CAT_COLORS[i], 1.1), category=dpg.mvThemeCat_Nodes
+                    )
+                    dpg.add_theme_color(
+                        dpg.mvNodeCol_TitleBarSelected, scale(NODE_CAT_COLORS[i], 1.2), category=dpg.mvThemeCat_Nodes
+                    )
             self.node_themes[cat] = theme
+
+        # set up node error themes
+        self.node_error_themes = {}
+        for i, cat in enumerate(cats):
+            with dpg.theme() as theme:
+                with dpg.theme_component():
+                    dpg.add_theme_color(dpg.mvNodeCol_NodeBackground, [80, 0, 0, 255], category=dpg.mvThemeCat_Nodes)
+                    dpg.add_theme_color(dpg.mvNodeCol_NodeBackgroundHovered, [200, 0, 0, 255], category=dpg.mvThemeCat_Nodes)
+                    dpg.add_theme_color(dpg.mvNodeCol_NodeBackgroundSelected, [150, 0, 0, 255], category=dpg.mvThemeCat_Nodes)
+
+                    dpg.add_theme_color(dpg.mvNodeCol_TitleBar, NODE_CAT_COLORS[i], category=dpg.mvThemeCat_Nodes)
+                    dpg.add_theme_color(
+                        dpg.mvNodeCol_TitleBarHovered, scale(NODE_CAT_COLORS[i], 1.1), category=dpg.mvThemeCat_Nodes
+                    )
+                    dpg.add_theme_color(
+                        dpg.mvNodeCol_TitleBarSelected, scale(NODE_CAT_COLORS[i], 1.2), category=dpg.mvThemeCat_Nodes
+                    )
+            self.node_error_themes[cat] = theme
 
     def _initialize(self, manager, width=1280, height=720):
         """Initialize the window and launch the event loop (blocking)."""
@@ -979,13 +1007,6 @@ class Window:
             self.side_panel_win = dpg.add_child_window(label="Parameters", autosize_x=True, border=False)
 
         self._register_node_category_themes()
-
-        # set up node error theme
-        with dpg.theme() as self.node_error_theme:
-            with dpg.theme_component():
-                dpg.add_theme_color(dpg.mvNodeCol_TitleBar, [80, 0, 0, 255], category=dpg.mvThemeCat_Nodes)
-                dpg.add_theme_color(dpg.mvNodeCol_TitleBarSelected, [150, 0, 0, 255], category=dpg.mvThemeCat_Nodes)
-                dpg.add_theme_color(dpg.mvNodeCol_TitleBarHovered, [200, 0, 0, 255], category=dpg.mvThemeCat_Nodes)
 
         # hide the reference node using themes
         with dpg.theme() as ref_theme:
