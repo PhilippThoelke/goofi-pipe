@@ -28,7 +28,7 @@ goofi-pipe # start the application to make sure the installation was successful
 ## Accessing the Node Menu
 
 <p align="center">
-<img src="https://github.com/PhilippThoelke/goofi-pipe/assets/49297774/358a897f-3947-495e-849a-e6d7ebce2238" width="medium">
+<img src="https://github.com/PhilippThoelke/goofi-pipe/assets/49297774/358a897f-3947-495e-849a-e6d7ebce2238" width="small">
 </p>
 
 To access the node menu, simply double-click anywhere within the application window or press the 'Tab' key. The node menu allows you to add various functionalities to your pipeline. Nodes are categorized for easy access, but if you're looking for something specific, the search bar at the top is a handy tool.
@@ -91,7 +91,7 @@ This patch highlights:
 ## Musical Features using Biotuner
 
 <p align="center">
-<img src="IMAGE_PLACEHOLDER_6" width="medium">
+<img src="https://github.com/PhilippThoelke/goofi-pipe/assets/49297774/1e170a2c-c336-4f17-90a5-1aa2849fcf9c" width="medium">
 </p>
 
 This patch presents a pipeline for processing EEG data to extract musical features:
@@ -101,7 +101,7 @@ This patch presents a pipeline for processing EEG data to extract musical featur
 - **Biotuner** Node: With its sophisticated algorithms, Biotuner pinpoints harmonic relationships, tension, peaks, and more, essential for music theory analysis.
 
 <p align="center">
-<img src="IMAGE_PLACEHOLDER_7" width="medium">
+<img src="https://github.com/PhilippThoelke/goofi-pipe/assets/49297774/042692ae-a558-48f2-9693-d09e33240373" width="medium">
 </p>
 
 Delving into the parameters of the Biotuner node:
