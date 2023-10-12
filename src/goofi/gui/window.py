@@ -23,8 +23,8 @@ DTYPE_SHAPE_MAP = {
 
 
 NODE_CAT_COLORS = [
-    [110, 88, 208], 
-    [129, 178, 154],    
+    [110, 88, 208],
+    [129, 178, 154],
     [242, 204, 143],
     [102, 168, 212],
     [224, 122, 95],
@@ -189,6 +189,12 @@ def handle_data(win: "Window", gui_node: GUINode, node: NodeRef, message: Messag
         except SystemError:
             # param window was closed, ignore this error
             pass
+
+
+def toggle_log_plot(_1, _2, data):
+    """Toggle the log plot state of a data viewer."""
+    _, node, slot, axis = data
+    node.output_draw_handlers[slot].toggle_log_plot(axis)
 
 
 def param_updated(_, value, user_data):
@@ -793,7 +799,8 @@ class Window:
             return
 
         # get node reference
-        node = self.nodes[dpg.get_item_label(item)].node_ref
+        node = self.nodes[dpg.get_item_label(item)]
+        node_ref = node.node_ref
 
         with dpg.child_window(height=dpg.get_viewport_height() / 2, parent=self.side_panel_win):
             # add title
@@ -802,25 +809,33 @@ class Window:
 
             # populate parameters window
             with dpg.tab_bar():
-                for group in node.params:
+                for group in node_ref.params:
                     with dpg.tab(label=format_name(group)) as tab:
                         with dpg.table(header_row=False, parent=tab, policy=dpg.mvTable_SizingStretchProp) as table:
                             dpg.add_table_column()
                             dpg.add_table_column()
 
-                            for name, param in node.params[group].items():
-                                add_param(table, group, name, param, node)
+                            for name, param in node_ref.params[group].items():
+                                add_param(table, group, name, param, node_ref)
 
         with dpg.child_window(autosize_y=True, parent=self.side_panel_win):
             # add title
-            dpg.add_text("Metadata")
+            dpg.add_text("Outputs")
             dpg.add_separator()
 
             # add one metadata view for each output slot
             self.metadata_view = {}
             with dpg.tab_bar():
-                for slot in node.output_slots:
+                for slot in node_ref.output_slots:
                     with dpg.tab(label=slot) as tab:
+                        with dpg.group(horizontal=True):
+                            dpg.add_checkbox(
+                                label="log-scale x-axis", callback=toggle_log_plot, user_data=(self, node, slot, "x")
+                            )
+                            dpg.add_checkbox(
+                                label="log-scale y-axis", callback=toggle_log_plot, user_data=(self, node, slot, "y")
+                            )
+                        dpg.add_separator()
                         self.metadata_view[slot] = dpg.add_text("")
 
         # show parameters window
@@ -926,7 +941,7 @@ class Window:
         """Get the mouse position within the node editor."""
         return self._to_node_editor_coords(dpg.get_mouse_pos(local=False))
 
-    def _register_node_category_themes(self, darkness:float=.5) -> None:
+    def _register_node_category_themes(self, darkness: float = 0.5) -> None:
         """Register themes for each node category."""
         cats = [n.category() for n in list_nodes()]
         cats = sorted(list(set(cats)))
@@ -939,12 +954,14 @@ class Window:
         for i, cat in enumerate(cats):
             with dpg.theme() as theme:
                 with dpg.theme_component():
-                    dpg.add_theme_color(dpg.mvNodeCol_TitleBar, scale(NODE_CAT_COLORS[i], darkness), category=dpg.mvThemeCat_Nodes)
                     dpg.add_theme_color(
-                        dpg.mvNodeCol_TitleBarHovered, scale(NODE_CAT_COLORS[i], darkness+.1), category=dpg.mvThemeCat_Nodes
+                        dpg.mvNodeCol_TitleBar, scale(NODE_CAT_COLORS[i], darkness), category=dpg.mvThemeCat_Nodes
                     )
                     dpg.add_theme_color(
-                        dpg.mvNodeCol_TitleBarSelected, scale(NODE_CAT_COLORS[i], darkness+.2), category=dpg.mvThemeCat_Nodes
+                        dpg.mvNodeCol_TitleBarHovered, scale(NODE_CAT_COLORS[i], darkness + 0.1), category=dpg.mvThemeCat_Nodes
+                    )
+                    dpg.add_theme_color(
+                        dpg.mvNodeCol_TitleBarSelected, scale(NODE_CAT_COLORS[i], darkness + 0.2), category=dpg.mvThemeCat_Nodes
                     )
 
             self.node_themes[cat] = theme
@@ -958,12 +975,14 @@ class Window:
                     dpg.add_theme_color(dpg.mvNodeCol_NodeBackgroundHovered, [173, 20, 22], category=dpg.mvThemeCat_Nodes)
                     dpg.add_theme_color(dpg.mvNodeCol_NodeBackgroundSelected, [193, 20, 22], category=dpg.mvThemeCat_Nodes)
 
-                    dpg.add_theme_color(dpg.mvNodeCol_TitleBar, scale(NODE_CAT_COLORS[i], darkness), category=dpg.mvThemeCat_Nodes)
                     dpg.add_theme_color(
-                        dpg.mvNodeCol_TitleBarHovered, scale(NODE_CAT_COLORS[i], darkness+.1), category=dpg.mvThemeCat_Nodes
+                        dpg.mvNodeCol_TitleBar, scale(NODE_CAT_COLORS[i], darkness), category=dpg.mvThemeCat_Nodes
                     )
                     dpg.add_theme_color(
-                        dpg.mvNodeCol_TitleBarSelected, scale(NODE_CAT_COLORS[i], darkness+.2), category=dpg.mvThemeCat_Nodes
+                        dpg.mvNodeCol_TitleBarHovered, scale(NODE_CAT_COLORS[i], darkness + 0.1), category=dpg.mvThemeCat_Nodes
+                    )
+                    dpg.add_theme_color(
+                        dpg.mvNodeCol_TitleBarSelected, scale(NODE_CAT_COLORS[i], darkness + 0.2), category=dpg.mvThemeCat_Nodes
                     )
             self.node_error_themes[cat] = theme
 
