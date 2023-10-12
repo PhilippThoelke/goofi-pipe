@@ -1,3 +1,5 @@
+from copy import deepcopy
+
 import numpy as np
 
 from goofi.data import Data, DataType
@@ -10,9 +12,7 @@ class HarmonicSpectrum(Node):
         return {"psd": DataType.ARRAY}
 
     def config_output_slots():
-        return {"harmonic_spectrum": DataType.ARRAY,
-                "max_harmonicity": DataType.ARRAY,
-                "avg_harmonicity": DataType.ARRAY}
+        return {"harmonic_spectrum": DataType.ARRAY, "max_harmonicity": DataType.ARRAY, "avg_harmonicity": DataType.ARRAY}
 
     def config_params():
         return {
@@ -45,26 +45,38 @@ class HarmonicSpectrum(Node):
         metadata = psd.meta
 
         if psd.data.ndim == 1:
-            freqs = metadata['channels']['dim0']
+            freqs = metadata["channels"]["dim0"]
             if freqs[0] == 0:
                 freqs[0] = 1e-8
             harmonicity_values = self._compute_for_single_psd(psd.data, freqs)
             updated_metadata = {**metadata, "channels": {"dim0": list(range(len(harmonicity_values)))}}
-            print("Metadata:", metadata)
-            print("Shape of psd.data:", psd.data.shape)
-            return {"harmonic_spectrum": (harmonicity_values, updated_metadata),
-                    "max_harmonicity": (np.max(harmonicity_values), updated_metadata),
-                    "avg_harmonicity": (np.mean(harmonicity_values), updated_metadata)}
+
+            reduced_meta = deepcopy(updated_metadata)
+            if "channels" in reduced_meta:
+                del reduced_meta["channels"]
+
+            return {
+                "harmonic_spectrum": (harmonicity_values, updated_metadata),
+                "max_harmonicity": (np.max(harmonicity_values), {"freq": freqs, **reduced_meta}),
+                "avg_harmonicity": (np.mean(harmonicity_values), {"freq": freqs, **reduced_meta}),
+            }
         elif psd.data.ndim == 2:
-            freqs = metadata['channels']['dim1']
+            freqs = metadata["channels"]["dim1"]
             if freqs[0] == 0:
-                freqs[0] == 1e-8    
+                freqs[0] == 1e-8
             harmonicity_values_matrix = np.zeros(psd.data.shape)
             for i, row in enumerate(psd.data):
                 harmonicity_values_matrix[i, :] = self._compute_for_single_psd(row, freqs)
-            return {"harmonic_spectrum": (harmonicity_values_matrix, {"freq": freqs, **metadata}),
-                    "max_harmonicity": (np.max(harmonicity_values_matrix, axis=1), {"freq": freqs, **metadata}),
-                    "avg_harmonicity": (np.mean(harmonicity_values_matrix, axis=1), {"freq": freqs, **metadata})}
+
+            reduced_meta = deepcopy(metadata)
+            if "channels" in reduced_meta and "dim1" in reduced_meta["channels"]:
+                del reduced_meta["channels"]["dim1"]
+
+            return {
+                "harmonic_spectrum": (harmonicity_values_matrix, {**metadata}),
+                "max_harmonicity": (np.max(harmonicity_values_matrix, axis=1), {"freq": freqs, **reduced_meta}),
+                "avg_harmonicity": (np.mean(harmonicity_values_matrix, axis=1), {"freq": freqs, **reduced_meta}),
+            }
         else:
             raise ValueError("Data must be either 1D or 2D")
 
@@ -102,7 +114,6 @@ class HarmonicSpectrum(Node):
             harmonicity_values[i] = (weighted_sum_harmonicity / (2 * total_power)) if normalize else weighted_sum_harmonicity
 
         return harmonicity_values
-
 
     def compute_harmonicity(self, freqs, metric, n_harms, delta_lim, min_notes):
         harmonicity = np.zeros((len(freqs), len(freqs)))
