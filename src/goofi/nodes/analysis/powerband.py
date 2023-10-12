@@ -1,0 +1,46 @@
+from goofi.params import FloatParam, StringParam
+from goofi.data import Data, DataType
+from goofi.node import Node
+import numpy as np
+
+
+class PowerBand(Node):
+    def config_input_slots():
+        return {"data": DataType.ARRAY}
+
+    def config_output_slots():
+        return {"power": DataType.ARRAY}
+
+    def config_params():
+        return {
+            "powerband": {
+                "f_min": FloatParam(1.0, 0.01, 9999.0),
+                "f_max": FloatParam(60.0, 1.0, 10000.0),
+                "power_type": StringParam("absolute", options=["absolute", "relative"]),
+            }
+        }
+
+    def process(self, data):
+        if data is None or data.data is None:
+            return None
+
+        f_min = self.params["powerband"]["f_min"].value
+        f_max = self.params["powerband"]["f_max"].value
+        power_type = self.params["powerband"]["power_type"].value
+
+        freq = data.meta["freq"]
+
+        # Selecting the range of frequencies
+        valid_indices = np.where((freq >= f_min) & (freq <= f_max))[0]
+        if data.data.ndim == 1:
+            selected_psd = data.data[valid_indices]
+        else:  # if 2D
+            selected_psd = data.data[:, valid_indices]
+
+        # Computing the power
+        power = np.sum(selected_psd, axis=-1)
+        if power_type == "relative":
+            total_power = np.sum(data.data, axis=-1)
+            power = power / total_power
+
+        return {"power": (np.array(power), data.meta)}

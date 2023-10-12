@@ -155,8 +155,5 @@ cython_debug/
 # VS Code
 .vscode/
 
-# device-specific files
-dsi24_lib/
-
-# OpenAI API key
+# OpenAI key
 openai.key

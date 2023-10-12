@@ -1,13 +1,12 @@
+numpy
+dearpygui
 mne-realtime
-scikit-learn
-python-osc
-pyedflib
 antropy
-pylsl
-pyserial
 biotuner @ git+https://github.com/AntoineBellemare/biotuner.git
-webcolors
+pyserial
+oscpy
+sounddevice
 openai
-pyttsx3
+scikit-learn
 opencv-python
-pytest
+pyzmq
