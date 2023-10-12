@@ -97,7 +97,7 @@ The nodes used in goofi-pipe can be categorized as follows:
 ### Accessing the Node Menu
 
 <p align="center">
-<img src="IMAGE_PLACEHOLDER_1" width="medium">
+<img src="https://github.com/PhilippThoelke/goofi-pipe/assets/49297774/358a897f-3947-495e-849a-e6d7ebce2238" width="medium">
 </p>
 
 To access the node menu, simply double-click anywhere within the application window or press the 'Tab' key. The node menu allows you to add various functionalities to your pipeline. Nodes are categorized for easy access, but if you're looking for something specific, the search bar at the top is a handy tool.
