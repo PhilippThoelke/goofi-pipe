@@ -36,7 +36,7 @@ To access the node menu, simply double-click anywhere within the application win
 ## Playing with Pre-recorded EEG Signal using LslStream
 
 <p align="center">
-<img src="IMAGE_PLACEHOLDER_2" width="medium">
+<img src="https://github.com/PhilippThoelke/goofi-pipe/assets/49297774/db340bd9-07af-470e-a791-f3c2dcf4935e" width="small">
 </p>
 
 This image showcases the process of utilizing a pre-recorded EEG signal through the `LslStream` node. It's crucial to ensure that the `Stream Name` in the `LslStream` node matches the stream name in the node receiving the data. This ensures data integrity and accurate signal processing in real-time.
@@ -44,7 +44,7 @@ This image showcases the process of utilizing a pre-recorded EEG signal through 
 ## Basic Signal Processing Patch
 
 <p align="center">
-<img src="IMAGE_PLACEHOLDER_3" width="medium">
+<img src="https://github.com/PhilippThoelke/goofi-pipe/assets/49297774/52f85dd4-6395-4eb2-a347-6cf489d659da" width="medium">
 </p>
 
 This patch provides a demonstration of basic EEG signal processing using goofi-pipe.
@@ -64,7 +64,7 @@ One of the user-friendly features of goofi-pipe is the capability to toggle betw
 ## Sending Power Bands via Open Sound Control (OSC)
 
 <p align="center">
-<img src="IMAGE_PLACEHOLDER_4" width="medium">
+<img src="https://github.com/PhilippThoelke/goofi-pipe/assets/49297774/97576017-a737-47b9-aac6-bd0d00e0e7e9" width="medium">
 </p>
 
 Expanding on the basic patch, the advanced additions include:
@@ -79,7 +79,7 @@ These nodes elevate data processing and communication capabilities.
 ## Real-Time Connectivity and Spectrogram
 
 <p align="center">
-<img src="IMAGE_PLACEHOLDER_5" width="medium">
+<img src="https://github.com/PhilippThoelke/goofi-pipe/assets/49297774/7c63a869-d20a-4f41-99fe-eb0931cebdc9" width="medium">
 </p>
 
 This patch highlights:
