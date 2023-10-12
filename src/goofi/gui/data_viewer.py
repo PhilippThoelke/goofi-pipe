@@ -1,5 +1,6 @@
+import traceback
 from abc import ABC, abstractmethod
-from typing import Any, Tuple
+from typing import Any
 
 import cv2
 import dearpygui.dearpygui as dpg
@@ -102,8 +103,9 @@ class ViewerContainer:
             self.viewer.update(msg.content["data"])
         except UnsupportedViewerError as e:
             self.next_viewer()
-        except Exception as e:
-            print(f"Error while updating data viewer: {e}")
+        except Exception:
+            traceback.print_exc()
+            print(f"Error while updating data viewer for data type {self.dtype}.")
 
 
 class DataViewer(ABC):
@@ -312,6 +314,63 @@ class ImageViewer(DataViewer):
         dpg.set_item_height(self.image, dpg.get_item_height(self.content_window))
 
 
+class TrajectoryViewer(ArrayViewer):
+    def update(self, data: Data) -> None:
+        """
+        This function handles drawing numerical trajectories to a plot. Trajectories are all
+        (n x frames) arrays,
+        where the first row is the x-axis and the second row is the y-axis.
+
+        ### Parameters
+        `data` : Data
+            The data message.
+        """
+        # convert data to numpy array and copy to C order (otherwise DPG will crash for some arrays)
+        array = np.squeeze(data.data).copy(order="C")
+
+        if self.vmin is not None and self.vmax is not None:
+            # apply shrinking to vmin and vmax
+            self.vmin = self.vmin * (1 - self.shrinking) + self.vmax * self.shrinking
+            self.vmax = self.vmax * (1 - self.shrinking) + self.vmin * self.shrinking
+
+        # update vmin and vmax
+        if self.vmin is None or np.min(array) < self.vmin:
+            self.vmin = np.nanmin(array)
+        if self.vmax is None or np.max(array) > self.vmax:
+            self.vmax = np.nanmax(array)
+
+        if array.ndim != 2 or array.shape[0] < 2:
+            raise UnsupportedViewerError(f"Cannot handle array with shape {array.shape}.")
+
+        # set x and y-axis ticks
+        dpg.configure_item(self.xax, no_tick_labels=False)
+        dpg.configure_item(self.yax, no_tick_labels=False)
+
+        # Gauss Sum to calculate the number of trajectories
+        n = array.shape[0]
+        n = n * (n - 1) / 2
+
+        # remove extra data series
+        while len(self.line_series) > n:
+            dpg.delete_item(self.line_series.pop())
+
+        while len(self.line_series) < n:
+            # add new data series
+            self.line_series.append(dpg.add_line_series([0, 1], [0, 1], parent=self.yax))
+
+        idx = 0
+        for i in range(array.shape[0]):
+            for j in range(i + 1, array.shape[0]):
+                # update existing data series
+                xs, ys = array[i], array[j]
+                dpg.set_value(self.line_series[idx], [xs, ys])
+                idx += 1
+
+        # autoscale x and y-axis limits
+        dpg.set_axis_limits(self.xax, self.vmin - abs(self.vmax) * self.margin, self.vmax + abs(self.vmax) * self.margin)
+        dpg.set_axis_limits(self.yax, self.vmin - abs(self.vmax) * self.margin, self.vmax + abs(self.vmax) * self.margin)
+
+
 class StringViewer(DataViewer):
     def __init__(self, content_window: int) -> None:
         super().__init__(DataType.STRING, content_window)
@@ -376,7 +435,7 @@ class TableViewer(DataViewer):
 
 
 DTYPE_VIEWER_MAP = {
-    DataType.ARRAY: [ArrayViewer, ImageViewer],
+    DataType.ARRAY: [ArrayViewer, ImageViewer, TrajectoryViewer],
     DataType.STRING: [StringViewer],
     DataType.TABLE: [TableViewer],
 }
