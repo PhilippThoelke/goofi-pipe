@@ -97,7 +97,7 @@ The nodes used in goofi-pipe can be categorized as follows:
 ### Accessing the Node Menu
 
 <p align="center">
-<img src="https://github.com/PhilippThoelke/goofi-pipe/assets/49297774/358a897f-3947-495e-849a-e6d7ebce2238" width="medium">
+<img src="https://github.com/PhilippThoelke/goofi-pipe/assets/49297774/358a897f-3947-495e-849a-e6d7ebce2238" width="small">
 </p>
 
 To access the node menu, simply double-click anywhere within the application window or press the 'Tab' key. The node menu allows you to add various functionalities to your pipeline. Nodes are categorized for easy access, but if you're looking for something specific, the search bar at the top is a handy tool.
@@ -105,7 +105,7 @@ To access the node menu, simply double-click anywhere within the application win
 ### Playing with Pre-recorded EEG Signal using LslStream
 
 <p align="center">
-<img src="IMAGE_PLACEHOLDER_2" width="medium">
+<img src="https://github.com/PhilippThoelke/goofi-pipe/assets/49297774/6032abec-25c4-4fe2-9b71-bd57f33aa28d" width="medium">
 </p>
 
 This image showcases the process of utilizing a pre-recorded EEG signal through the `LslStream` node. It's crucial to ensure that the `Stream Name` in the `LslStream` node matches the stream name in the node receiving the data. This ensures data integrity and accurate signal processing in real-time.
@@ -113,7 +113,7 @@ This image showcases the process of utilizing a pre-recorded EEG signal through 
 ### Basic Signal Processing Patch
 
 <p align="center">
-<img src="IMAGE_PLACEHOLDER_3" width="medium">
+<img src="https://github.com/PhilippThoelke/goofi-pipe/assets/49297774/f6217e6e-7ca6-4e16-922a-bf8077b4541e" width="small">
 </p>
 
 This patch provides a demonstration of basic EEG signal processing using goofi-pipe.
