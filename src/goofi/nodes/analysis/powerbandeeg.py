@@ -41,14 +41,12 @@ class PowerBandEEG(Node):
             freqs = np.array(data.meta['channels']['dim0'])
             if freqs[0] == 0:
                 freqs[0] = 1e-8
-            data.meta["channels"]["dim0"] = ['channel1']  # Represent the single channel
-            data.meta["channels"]["dim1"] = freqs.tolist()  # Represent the frequencies
+            del data.meta["channels"]["dim0"]
         elif data.data.ndim == 2:
             freqs = np.array(data.meta['channels']['dim1'])
             if freqs[0] == 0:
                 freqs[0] = 1e-8
-            data.meta["channels"]["dim0"] = list(range(data.data.shape[0]))  # Represent the channels
-            data.meta["channels"]["dim1"] = freqs.tolist()  # Represent the frequencies
+            del data.meta["channels"]["dim1"]
         
         output = {}
         for band, (f_min, f_max) in bands.items():
