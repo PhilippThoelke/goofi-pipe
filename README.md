@@ -9,7 +9,7 @@
 ## Running the pipeline
 If you only want to run goofi-pipe and not edit any of the code, make sure you activated the desired Python environment with Python>=3.8 and run the following commands in your terminal:
 ```bash
-pip install git+https://github.com/PhilippThoelke/goofi-pipe@goofi2 # install goofi-pipe
+pip install git+https://github.com/PhilippThoelke/goofi-pipe # install goofi-pipe
 goofi-pipe # start the application
 ```
 
@@ -18,7 +18,6 @@ In your terminal, make sure you activated the desired Python environment with Py
 ```bash
 git clone git@github.com:PhilippThoelke/goofi-pipe.git # download the repository
 cd goofi-pipe # navigate into the repository
-git checkout goofi2 # switch to the goofi-pipe 2.0 development branch
 pip install -e . # install goofi-pipe in development mode
 goofi-pipe # start the application to make sure the installation was successful
 ```
