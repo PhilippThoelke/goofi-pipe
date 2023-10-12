@@ -88,6 +88,34 @@ This patch highlights:
 
 - **Spectrogram**: Created using the `PSD` node followed by a `Buffer`, it provides a time-resolved view of the EEG signal's frequency content.
 
+## Musical Features using Biotuner
+
+<p align="center">
+<img src="IMAGE_PLACEHOLDER_6" width="medium">
+</p>
+
+This patch presents a pipeline for processing EEG data to extract musical features:
+
+- Data flows from the EEG recording through several preprocessing nodes and culminates in the **Biotuner** node, which specializes in deriving musical attributes from the EEG.
+
+- **Biotuner** Node: With its sophisticated algorithms, Biotuner pinpoints harmonic relationships, tension, peaks, and more, essential for music theory analysis.
+
+<p align="center">
+<img src="IMAGE_PLACEHOLDER_7" width="medium">
+</p>
+
+Delving into the parameters of the Biotuner node:
+
+- `N Peaks`: The number of spectral peaks to consider.
+- `F Min` & `F Max`: Defines the frequency range for analysis.
+- `Precision`: Sets the precision in Hz for peak extraction.
+- `Peaks Function`: Method to compute the peaks, like EMD, fixed band, or harmonic recurrence.
+- `N Harm Subharm` & `N Harm Extended`: Configures number of harmonics used in different computations.
+- `Delta Lim`: Defines the maximal distance between two subharmonics to include in subharmonic tension computation.
+
+For a deeper understanding and advanced configurations, consult the [Biotuner repository](https://github.com/AntoineBellemare/biotuner).
+
+
 # Data Types and Node Categories
 
 ## Data Types
