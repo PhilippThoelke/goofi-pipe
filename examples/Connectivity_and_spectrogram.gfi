@@ -1,0 +1,341 @@
+links:
+- node_in: reduce0
+  node_out: buffer0
+  slot_in: array
+  slot_out: out
+- node_in: connectivity0
+  node_out: buffer0
+  slot_in: data
+  slot_out: out
+- node_in: buffer0
+  node_out: lslclient0
+  slot_in: val
+  slot_out: out
+- node_in: buffer2
+  node_out: psd0
+  slot_in: val
+  slot_out: psd
+- node_in: math0
+  node_out: buffer2
+  slot_in: data
+  slot_out: out
+- node_in: psd0
+  node_out: reduce0
+  slot_in: data
+  slot_out: out
+- node_in: buffer1
+  node_out: connectivity0
+  slot_in: val
+  slot_out: matrix
+nodes:
+  buffer0:
+    _type: Buffer
+    category: signal
+    gui_kwargs:
+      pos:
+      - 561
+      - 174
+    params:
+      buffer:
+        axis:
+          _value: -1
+          vmax: 3
+          vmin: -1
+        reset:
+          _value: false
+          trigger: true
+        size:
+          _value: 500
+          vmax: 5000
+          vmin: 1
+      common:
+        autotrigger:
+          _value: false
+          trigger: false
+        max_frequency:
+          _value: 30.0
+          vmax: 60.0
+          vmin: 0.0
+  buffer1:
+    _type: Buffer
+    category: signal
+    gui_kwargs:
+      pos:
+      - 975
+      - 173
+    params:
+      buffer:
+        axis:
+          _value: 2
+          vmax: 3
+          vmin: -1
+        reset:
+          _value: false
+          trigger: true
+        size:
+          _value: 3
+          vmax: 5000
+          vmin: 1
+      common:
+        autotrigger:
+          _value: false
+          trigger: false
+        max_frequency:
+          _value: 30.0
+          vmax: 60.0
+          vmin: 0.0
+  buffer2:
+    _type: Buffer
+    category: signal
+    gui_kwargs:
+      pos:
+      - 964
+      - 369
+    params:
+      buffer:
+        axis:
+          _value: 1
+          vmax: 3
+          vmin: -1
+        reset:
+          _value: false
+          trigger: true
+        size:
+          _value: 300
+          vmax: 5000
+          vmin: 1
+      common:
+        autotrigger:
+          _value: false
+          trigger: false
+        max_frequency:
+          _value: 30.0
+          vmax: 60.0
+          vmin: 0.0
+  connectivity0:
+    _type: Connectivity
+    category: analysis
+    gui_kwargs:
+      pos:
+      - 772
+      - 174
+    params:
+      biotuner:
+        f_max:
+          _value: 30.0
+          vmax: 100.0
+          vmin: 1.0
+        f_min:
+          _value: 2.0
+          vmax: 50.0
+          vmin: 0.1
+        method:
+          _value: None
+          options:
+          - None
+          - harmsim
+          - euler
+          - subharm_tension
+          - RRCi
+          - wPLI_crossfreq
+        n_peaks:
+          _value: 5
+          vmax: 10
+          vmin: 1
+        peaks_function:
+          _value: EMD
+          options:
+          - EMD
+          - fixed
+          - harmonic_recurrence
+          - EIMC
+        precision:
+          _value: 0.1
+          vmax: 10.0
+          vmin: 0.01
+      classical:
+        method:
+          _value: wPLI
+          options:
+          - coherence
+          - imag_coherence
+          - wPLI
+          - PLI
+          - pearson
+          - mutual_info
+          - PLV
+      common:
+        autotrigger:
+          _value: false
+          trigger: false
+        max_frequency:
+          _value: 30.0
+          vmax: 60.0
+          vmin: 0.0
+  eegrecording0:
+    _type: EEGRecording
+    category: inputs
+    gui_kwargs:
+      pos:
+      - 246
+      - 173
+    params:
+      common:
+        autotrigger:
+          _value: false
+          trigger: false
+        max_frequency:
+          _value: 30.0
+          vmax: 60.0
+          vmin: 0.0
+      recording:
+        file_path:
+          _value: ''
+          options: null
+        stream_name:
+          _value: goofi-stream
+          options: null
+        use_example_data:
+          _value: true
+          trigger: false
+  lslclient0:
+    _type: LSLClient
+    category: inputs
+    gui_kwargs:
+      pos:
+      - 360
+      - 174
+    params:
+      common:
+        autotrigger:
+          _value: true
+          trigger: false
+        max_frequency:
+          _value: 30.0
+          vmax: 60.0
+          vmin: 0.0
+      lsl_stream:
+        stream_name:
+          _value: goofi-stream
+          options: null
+  math0:
+    _type: Math
+    category: array
+    gui_kwargs:
+      pos:
+      - 1163
+      - 370
+    params:
+      common:
+        autotrigger:
+          _value: false
+          trigger: false
+        max_frequency:
+          _value: 30.0
+          vmax: 60.0
+          vmin: 0.0
+      map:
+        input_max:
+          _value: 1.0
+          vmax: 10.0
+          vmin: -10.0
+        input_min:
+          _value: 0.0
+          vmax: 10.0
+          vmin: -10.0
+        output_max:
+          _value: 1.0
+          vmax: 10.0
+          vmin: -10.0
+        output_min:
+          _value: 0.0
+          vmax: 10.0
+          vmin: -10.0
+      math:
+        multiply:
+          _value: 10000000000.0
+          vmax: 10.0
+          vmin: -10.0
+        post_add:
+          _value: 0.0
+          vmax: 10.0
+          vmin: -10.0
+        pre_add:
+          _value: 0.0
+          vmax: 10.0
+          vmin: -10.0
+        round:
+          _value: -1
+          vmax: 10
+          vmin: -1
+  psd0:
+    _type: PSD
+    category: signal
+    gui_kwargs:
+      pos:
+      - 765
+      - 367
+    params:
+      common:
+        autotrigger:
+          _value: false
+          trigger: false
+        max_frequency:
+          _value: 30.0
+          vmax: 60.0
+          vmin: 0.0
+      psd:
+        f_max:
+          _value: 20.0
+          vmax: 10000.0
+          vmin: 1.0
+        f_min:
+          _value: 1.0
+          vmax: 9999.0
+          vmin: 0.01
+        method:
+          _value: welch
+          options:
+          - fft
+          - welch
+        noverlap:
+          _value: 0
+          vmax: 10000
+          vmin: 0
+        precision:
+          _value: 0.1
+          vmax: 10.0
+          vmin: 0.01
+        smooth_welch:
+          _value: 1
+          vmax: 10
+          vmin: 1
+  reduce0:
+    _type: Reduce
+    category: array
+    gui_kwargs:
+      pos:
+      - 562
+      - 366
+    params:
+      common:
+        autotrigger:
+          _value: false
+          trigger: false
+        max_frequency:
+          _value: 30.0
+          vmax: 60.0
+          vmin: 0.0
+      reduce:
+        axis:
+          _value: 0
+          vmax: 3
+          vmin: -1
+        method:
+          _value: mean
+          options:
+          - mean
+          - median
+          - min
+          - max
+          - std

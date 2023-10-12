@@ -1,0 +1,313 @@
+links:
+- node_in: psd0
+  node_out: buffer0
+  slot_in: data
+  slot_out: out
+- node_in: buffer0
+  node_out: lslclient0
+  slot_in: val
+  slot_out: out
+- node_in: select0
+  node_out: psd0
+  slot_in: data
+  slot_out: psd
+- node_in: extendedtable0
+  node_out: powerbandeeg0
+  slot_in: array_input1
+  slot_out: delta
+- node_in: extendedtable0
+  node_out: powerbandeeg0
+  slot_in: array_input2
+  slot_out: theta
+- node_in: buffer1
+  node_out: powerbandeeg0
+  slot_in: val
+  slot_out: alpha
+- node_in: extendedtable0
+  node_out: powerbandeeg0
+  slot_in: array_input3
+  slot_out: alpha
+- node_in: extendedtable0
+  node_out: powerbandeeg0
+  slot_in: array_input4
+  slot_out: lowbeta
+- node_in: extendedtable0
+  node_out: powerbandeeg0
+  slot_in: array_input5
+  slot_out: highbeta
+- node_in: powerbandeeg0
+  node_out: select0
+  slot_in: data
+  slot_out: out
+- node_in: oscout0
+  node_out: extendedtable0
+  slot_in: data
+  slot_out: table
+nodes:
+  buffer0:
+    _type: Buffer
+    category: signal
+    gui_kwargs:
+      pos:
+      - 561
+      - 174
+    params:
+      buffer:
+        axis:
+          _value: -1
+          vmax: 3
+          vmin: -1
+        reset:
+          _value: false
+          trigger: true
+        size:
+          _value: 160
+          vmax: 5000
+          vmin: 1
+      common:
+        autotrigger:
+          _value: false
+          trigger: false
+        max_frequency:
+          _value: 30.0
+          vmax: 60.0
+          vmin: 0.0
+  buffer1:
+    _type: Buffer
+    category: signal
+    gui_kwargs:
+      pos:
+      - 1163
+      - 361
+    params:
+      buffer:
+        axis:
+          _value: 0
+          vmax: 3
+          vmin: -1
+        reset:
+          _value: false
+          trigger: true
+        size:
+          _value: 100
+          vmax: 5000
+          vmin: 1
+      common:
+        autotrigger:
+          _value: false
+          trigger: false
+        max_frequency:
+          _value: 30.0
+          vmax: 60.0
+          vmin: 0.0
+  eegrecording0:
+    _type: EEGRecording
+    category: inputs
+    gui_kwargs:
+      pos:
+      - 246
+      - 173
+    params:
+      common:
+        autotrigger:
+          _value: false
+          trigger: false
+        max_frequency:
+          _value: 30.0
+          vmax: 60.0
+          vmin: 0.0
+      recording:
+        file_path:
+          _value: ''
+          options: null
+        stream_name:
+          _value: goofi-stream
+          options: null
+        use_example_data:
+          _value: true
+          trigger: false
+  extendedtable0:
+    _type: ExtendedTable
+    category: inputs
+    gui_kwargs:
+      pos:
+      - 1377
+      - 178
+    params:
+      common:
+        autotrigger:
+          _value: false
+          trigger: false
+        max_frequency:
+          _value: 30.0
+          vmax: 60.0
+          vmin: 0.0
+      table:
+        param1:
+          _value: delta
+          options: null
+        param10:
+          _value: value10
+          options: null
+        param2:
+          _value: theta
+          options: null
+        param3:
+          _value: alpha
+          options: null
+        param4:
+          _value: lowbeta
+          options: null
+        param5:
+          _value: highbeta
+          options: null
+        param6:
+          _value: value6
+          options: null
+        param7:
+          _value: value7
+          options: null
+        param8:
+          _value: value8
+          options: null
+        param9:
+          _value: value9
+          options: null
+  lslclient0:
+    _type: LSLClient
+    category: inputs
+    gui_kwargs:
+      pos:
+      - 360
+      - 174
+    params:
+      common:
+        autotrigger:
+          _value: true
+          trigger: false
+        max_frequency:
+          _value: 30.0
+          vmax: 60.0
+          vmin: 0.0
+      lsl_stream:
+        stream_name:
+          _value: goofi-stream
+          options: null
+  oscout0:
+    _type: OSCOut
+    category: outputs
+    gui_kwargs:
+      pos:
+      - 1580
+      - 420
+    params:
+      common:
+        autotrigger:
+          _value: false
+          trigger: false
+        max_frequency:
+          _value: 30.0
+          vmax: 60.0
+          vmin: 0.0
+      osc:
+        address:
+          _value: localhost
+          options: null
+        port:
+          _value: 8000
+          vmax: 65535
+          vmin: 0
+        prefix:
+          _value: /goofi
+          options: null
+  powerbandeeg0:
+    _type: PowerBandEEG
+    category: analysis
+    gui_kwargs:
+      pos:
+      - 1159
+      - 177
+    params:
+      common:
+        autotrigger:
+          _value: false
+          trigger: false
+        max_frequency:
+          _value: 30.0
+          vmax: 60.0
+          vmin: 0.0
+      powerband:
+        power_type:
+          _value: absolute
+          options:
+          - absolute
+          - relative
+  psd0:
+    _type: PSD
+    category: signal
+    gui_kwargs:
+      pos:
+      - 761
+      - 173
+    params:
+      common:
+        autotrigger:
+          _value: false
+          trigger: false
+        max_frequency:
+          _value: 30.0
+          vmax: 60.0
+          vmin: 0.0
+      psd:
+        f_max:
+          _value: 20.0
+          vmax: 10000.0
+          vmin: 1.0
+        f_min:
+          _value: 1.0
+          vmax: 9999.0
+          vmin: 0.01
+        method:
+          _value: welch
+          options:
+          - fft
+          - welch
+        noverlap:
+          _value: 0
+          vmax: 10000
+          vmin: 0
+        precision:
+          _value: 0.1
+          vmax: 10.0
+          vmin: 0.01
+        smooth_welch:
+          _value: 1
+          vmax: 10
+          vmin: 1
+  select0:
+    _type: Select
+    category: array
+    gui_kwargs:
+      pos:
+      - 961
+      - 176
+    params:
+      common:
+        autotrigger:
+          _value: false
+          trigger: false
+        max_frequency:
+          _value: 30.0
+          vmax: 60.0
+          vmin: 0.0
+      select:
+        axis:
+          _value: 0
+          vmax: 3
+          vmin: -1
+        exclude:
+          _value: ''
+          options: null
+        include:
+          _value: Cz, Pz
+          options: null

@@ -1,0 +1,353 @@
+links:
+- node_in: welfordsztransform0
+  node_out: biotuner0
+  slot_in: data
+  slot_out: harmsim
+- node_in: buffer1
+  node_out: biotuner0
+  slot_in: val
+  slot_out: harmsim
+- node_in: extendedtable0
+  node_out: biotuner0
+  slot_in: array_input5
+  slot_out: peaks_ratios_tuning
+- node_in: extendedtable0
+  node_out: biotuner0
+  slot_in: array_input3
+  slot_out: peaks
+- node_in: extendedtable0
+  node_out: biotuner0
+  slot_in: array_input4
+  slot_out: amps
+- node_in: biotuner0
+  node_out: buffer0
+  slot_in: data
+  slot_out: out
+- node_in: smooth0
+  node_out: buffer1
+  slot_in: data
+  slot_out: out
+- node_in: oscout0
+  node_out: extendedtable0
+  slot_in: data
+  slot_out: table
+- node_in: select0
+  node_out: lslclient0
+  slot_in: data
+  slot_out: out
+- node_in: buffer0
+  node_out: select0
+  slot_in: val
+  slot_out: out
+- node_in: extendedtable0
+  node_out: welfordsztransform0
+  slot_in: array_input2
+  slot_out: normalized
+nodes:
+  biotuner0:
+    _type: Biotuner
+    category: analysis
+    gui_kwargs:
+      pos:
+      - 594
+      - 389
+    params:
+      biotuner:
+        delta_lim:
+          _value: 250
+          vmax: 300
+          vmin: 1
+        f_max:
+          _value: 30.0
+          vmax: 100.0
+          vmin: 1.0
+        f_min:
+          _value: 2.0
+          vmax: 50.0
+          vmin: 0.1
+        n_harm_extended:
+          _value: 3
+          vmax: 10
+          vmin: 1
+        n_harm_subharm:
+          _value: 3
+          vmax: 10
+          vmin: 1
+        n_peaks:
+          _value: 5
+          vmax: 10
+          vmin: 1
+        peaks_function:
+          _value: EMD
+          options:
+          - EMD
+          - fixed
+          - harmonic_recurrence
+          - EIMC
+        precision:
+          _value: 0.1
+          vmax: 10.0
+          vmin: 0.01
+      common:
+        autotrigger:
+          _value: false
+          trigger: false
+        max_frequency:
+          _value: 10.0
+          vmax: 60.0
+          vmin: 0.0
+  buffer0:
+    _type: Buffer
+    category: signal
+    gui_kwargs:
+      pos:
+      - 593
+      - 198
+    params:
+      buffer:
+        axis:
+          _value: -1
+          vmax: 3
+          vmin: -1
+        reset:
+          _value: false
+          trigger: true
+        size:
+          _value: 1000
+          vmax: 5000
+          vmin: 1
+      common:
+        autotrigger:
+          _value: false
+          trigger: false
+        max_frequency:
+          _value: 30.0
+          vmax: 60.0
+          vmin: 0.0
+  buffer1:
+    _type: Buffer
+    category: signal
+    gui_kwargs:
+      pos:
+      - 810
+      - 391
+    params:
+      buffer:
+        axis:
+          _value: -1
+          vmax: 3
+          vmin: -1
+        reset:
+          _value: false
+          trigger: true
+        size:
+          _value: 100
+          vmax: 5000
+          vmin: 1
+      common:
+        autotrigger:
+          _value: false
+          trigger: false
+        max_frequency:
+          _value: 30.0
+          vmax: 60.0
+          vmin: 0.0
+  eegrecording0:
+    _type: EEGRecording
+    category: inputs
+    gui_kwargs:
+      pos:
+      - 191
+      - 148
+    params:
+      common:
+        autotrigger:
+          _value: false
+          trigger: false
+        max_frequency:
+          _value: 30.0
+          vmax: 60.0
+          vmin: 0.0
+      recording:
+        file_path:
+          _value: ''
+          options: null
+        stream_name:
+          _value: goofi-stream2
+          options: null
+        use_example_data:
+          _value: true
+          trigger: false
+  extendedtable0:
+    _type: ExtendedTable
+    category: inputs
+    gui_kwargs:
+      pos:
+      - 1013
+      - 196
+    params:
+      common:
+        autotrigger:
+          _value: false
+          trigger: false
+        max_frequency:
+          _value: 30.0
+          vmax: 60.0
+          vmin: 0.0
+      table:
+        param1:
+          _value: spectral_centroid
+          options: null
+        param10:
+          _value: value10
+          options: null
+        param2:
+          _value: harmsim
+          options: null
+        param3:
+          _value: peaks
+          options: null
+        param4:
+          _value: amps
+          options: null
+        param5:
+          _value: tuning
+          options: null
+        param6:
+          _value: value6
+          options: null
+        param7:
+          _value: value7
+          options: null
+        param8:
+          _value: value8
+          options: null
+        param9:
+          _value: value9
+          options: null
+  lslclient0:
+    _type: LSLClient
+    category: inputs
+    gui_kwargs:
+      pos:
+      - 191
+      - 199
+    params:
+      common:
+        autotrigger:
+          _value: true
+          trigger: false
+        max_frequency:
+          _value: 30.0
+          vmax: 60.0
+          vmin: 0.0
+      lsl_stream:
+        stream_name:
+          _value: goofi-stream2
+          options: null
+  oscout0:
+    _type: OSCOut
+    category: outputs
+    gui_kwargs:
+      pos:
+      - 1216
+      - 487
+    params:
+      common:
+        autotrigger:
+          _value: false
+          trigger: false
+        max_frequency:
+          _value: 10.0
+          vmax: 60.0
+          vmin: 0.0
+      osc:
+        address:
+          _value: localhost
+          options: null
+        port:
+          _value: 5070
+          vmax: 65535
+          vmin: 0
+        prefix:
+          _value: /goofi
+          options: null
+  select0:
+    _type: Select
+    category: array
+    gui_kwargs:
+      pos:
+      - 393
+      - 198
+    params:
+      common:
+        autotrigger:
+          _value: false
+          trigger: false
+        max_frequency:
+          _value: 30.0
+          vmax: 60.0
+          vmin: 0.0
+      select:
+        axis:
+          _value: 0
+          vmax: 3
+          vmin: -1
+        exclude:
+          _value: ''
+          options: null
+        include:
+          _value: Cz
+          options: null
+  smooth0:
+    _type: Smooth
+    category: signal
+    gui_kwargs:
+      pos:
+      - 811
+      - 582
+    params:
+      common:
+        autotrigger:
+          _value: false
+          trigger: false
+        max_frequency:
+          _value: 30.0
+          vmax: 60.0
+          vmin: 0.0
+      smooth:
+        axis:
+          _value: -1
+          vmax: 2
+          vmin: 0
+        sigma:
+          _value: 2.0
+          vmax: 20.0
+          vmin: 0.1
+  welfordsztransform0:
+    _type: WelfordsZTransform
+    category: signal
+    gui_kwargs:
+      pos:
+      - 809
+      - 197
+    params:
+      common:
+        autotrigger:
+          _value: false
+          trigger: false
+        max_frequency:
+          _value: 30.0
+          vmax: 60.0
+          vmin: 0.0
+      welford:
+        biased_std:
+          _value: false
+          trigger: false
+        outlier_stds:
+          _value: 4.0
+          vmax: 1.0
+          vmin: 0.0
+        reset:
+          _value: false
+          trigger: true
