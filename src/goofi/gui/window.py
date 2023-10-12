@@ -23,12 +23,12 @@ DTYPE_SHAPE_MAP = {
 
 
 NODE_CAT_COLORS = [
-    [224, 122, 95],
-    [129, 178, 154],
+    [110, 88, 208], 
+    [129, 178, 154],    
     [242, 204, 143],
-    [111, 231, 221],
+    [102, 168, 212],
+    [224, 122, 95],
     [178, 144, 205],
-    [110, 88, 208],
 ]
 
 PARAM_WINDOW_WIDTH = 400
@@ -926,7 +926,7 @@ class Window:
         """Get the mouse position within the node editor."""
         return self._to_node_editor_coords(dpg.get_mouse_pos(local=False))
 
-    def _register_node_category_themes(self) -> None:
+    def _register_node_category_themes(self, darkness:float=.5) -> None:
         """Register themes for each node category."""
         cats = [n.category() for n in list_nodes()]
         cats = sorted(list(set(cats)))
@@ -939,13 +939,14 @@ class Window:
         for i, cat in enumerate(cats):
             with dpg.theme() as theme:
                 with dpg.theme_component():
-                    dpg.add_theme_color(dpg.mvNodeCol_TitleBar, NODE_CAT_COLORS[i], category=dpg.mvThemeCat_Nodes)
+                    dpg.add_theme_color(dpg.mvNodeCol_TitleBar, scale(NODE_CAT_COLORS[i], darkness), category=dpg.mvThemeCat_Nodes)
                     dpg.add_theme_color(
-                        dpg.mvNodeCol_TitleBarHovered, scale(NODE_CAT_COLORS[i], 1.1), category=dpg.mvThemeCat_Nodes
+                        dpg.mvNodeCol_TitleBarHovered, scale(NODE_CAT_COLORS[i], darkness+.1), category=dpg.mvThemeCat_Nodes
                     )
                     dpg.add_theme_color(
-                        dpg.mvNodeCol_TitleBarSelected, scale(NODE_CAT_COLORS[i], 1.2), category=dpg.mvThemeCat_Nodes
+                        dpg.mvNodeCol_TitleBarSelected, scale(NODE_CAT_COLORS[i], darkness+.2), category=dpg.mvThemeCat_Nodes
                     )
+
             self.node_themes[cat] = theme
 
         # set up node error themes
@@ -953,16 +954,16 @@ class Window:
         for i, cat in enumerate(cats):
             with dpg.theme() as theme:
                 with dpg.theme_component():
-                    dpg.add_theme_color(dpg.mvNodeCol_NodeBackground, [80, 0, 0, 255], category=dpg.mvThemeCat_Nodes)
-                    dpg.add_theme_color(dpg.mvNodeCol_NodeBackgroundHovered, [200, 0, 0, 255], category=dpg.mvThemeCat_Nodes)
-                    dpg.add_theme_color(dpg.mvNodeCol_NodeBackgroundSelected, [150, 0, 0, 255], category=dpg.mvThemeCat_Nodes)
+                    dpg.add_theme_color(dpg.mvNodeCol_NodeBackground, [153, 20, 22], category=dpg.mvThemeCat_Nodes)
+                    dpg.add_theme_color(dpg.mvNodeCol_NodeBackgroundHovered, [173, 20, 22], category=dpg.mvThemeCat_Nodes)
+                    dpg.add_theme_color(dpg.mvNodeCol_NodeBackgroundSelected, [193, 20, 22], category=dpg.mvThemeCat_Nodes)
 
-                    dpg.add_theme_color(dpg.mvNodeCol_TitleBar, NODE_CAT_COLORS[i], category=dpg.mvThemeCat_Nodes)
+                    dpg.add_theme_color(dpg.mvNodeCol_TitleBar, scale(NODE_CAT_COLORS[i], darkness), category=dpg.mvThemeCat_Nodes)
                     dpg.add_theme_color(
-                        dpg.mvNodeCol_TitleBarHovered, scale(NODE_CAT_COLORS[i], 1.1), category=dpg.mvThemeCat_Nodes
+                        dpg.mvNodeCol_TitleBarHovered, scale(NODE_CAT_COLORS[i], darkness+.1), category=dpg.mvThemeCat_Nodes
                     )
                     dpg.add_theme_color(
-                        dpg.mvNodeCol_TitleBarSelected, scale(NODE_CAT_COLORS[i], 1.2), category=dpg.mvThemeCat_Nodes
+                        dpg.mvNodeCol_TitleBarSelected, scale(NODE_CAT_COLORS[i], darkness+.2), category=dpg.mvThemeCat_Nodes
                     )
             self.node_error_themes[cat] = theme
 
