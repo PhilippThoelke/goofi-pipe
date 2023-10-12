@@ -40,5 +40,5 @@ class IFFT(Node):
         time_series = np.real(ifft(complex_data))
 
         # For this example, I'm not adjusting or copying metadata, but you can do so as needed
-        return {"reconstructed": (time_series, {})}
+        return {"reconstructed": (time_series, phase.meta)}
 
