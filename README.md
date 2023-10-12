@@ -23,9 +23,74 @@ pip install -e . # install goofi-pipe in development mode
 goofi-pipe # start the application to make sure the installation was successful
 ```
 
-## Data Types and Node Categories
+# Basic Usage
 
-### Data Types
+## Accessing the Node Menu
+
+<p align="center">
+<img src="https://github.com/PhilippThoelke/goofi-pipe/assets/49297774/358a897f-3947-495e-849a-e6d7ebce2238" width="medium">
+</p>
+
+To access the node menu, simply double-click anywhere within the application window or press the 'Tab' key. The node menu allows you to add various functionalities to your pipeline. Nodes are categorized for easy access, but if you're looking for something specific, the search bar at the top is a handy tool.
+
+## Playing with Pre-recorded EEG Signal using LslStream
+
+<p align="center">
+<img src="IMAGE_PLACEHOLDER_2" width="medium">
+</p>
+
+This image showcases the process of utilizing a pre-recorded EEG signal through the `LslStream` node. It's crucial to ensure that the `Stream Name` in the `LslStream` node matches the stream name in the node receiving the data. This ensures data integrity and accurate signal processing in real-time.
+
+## Basic Signal Processing Patch
+
+<p align="center">
+<img src="IMAGE_PLACEHOLDER_3" width="medium">
+</p>
+
+This patch provides a demonstration of basic EEG signal processing using goofi-pipe.
+
+1. **EegRecording**: This is the starting point where the EEG data originates. 
+
+2. **LslClient**: The `LslClient` node retrieves the EEG data from `EegRecording`. Here, the visual representation of the EEG data being streamed in real-time is depicted. By default, the multiple lines in the plot correspond to the different EEG channels.
+
+3. **Buffer**: This node holds the buffered EEG data.
+
+4. **Psd**: Power Spectral Density (PSD) is a technique to measure a signal's power content versus frequency. In this node, the raw EEG data is transformed to exhibit its power distribution across distinct frequency bands.
+
+5. **Math**: This node is employed to execute mathematical operations on the data. In this context, it's rescaling the values to ensure a harmonious dynamic range between 0 and 1, which is ideal for image representation. The resultant data is then visualized as an image.
+
+One of the user-friendly features of goofi-pipe is the capability to toggle between different visualizations. By 'Ctrl+clicking' on any plot within a node, you can effortlessly switch between a line plot and an image representation, offering flexibility in data analysis.
+
+## Sending Power Bands via Open Sound Control (OSC)
+
+<p align="center">
+<img src="IMAGE_PLACEHOLDER_4" width="medium">
+</p>
+
+Expanding on the basic patch, the advanced additions include:
+
+- **Select**: Chooses specific EEG channels.
+- **PowerBandEEG**: Computes EEG signal power across various frequency bands.
+- **ExtendedTable**: Prepares data for transmission in a structured format.
+- **OscOut**: Sends data using the Open-Sound-Control (OSC) protocol.
+
+These nodes elevate data processing and communication capabilities.
+
+## Real-Time Connectivity and Spectrogram
+
+<p align="center">
+<img src="IMAGE_PLACEHOLDER_5" width="medium">
+</p>
+
+This patch highlights:
+
+- **Connectivity**: Analyzes relationships between EEG channels, offering selectable methods like `wPLI`, `coherence`, `PLI`, and more.
+
+- **Spectrogram**: Created using the `PSD` node followed by a `Buffer`, it provides a time-resolved view of the EEG signal's frequency content.
+
+# Data Types and Node Categories
+
+## Data Types
 
 To simplify understanding, we've associated specific shapes with data types at the inputs and outputs of nodes:
 
@@ -33,7 +98,8 @@ To simplify understanding, we've associated specific shapes with data types at t
 - **Triangles**: Represent strings.
 - **Squares**: Represent tables.
 
-### Node Categories
+
+## Node Categories
 
 The nodes used in goofi-pipe can be categorized as follows:
 
@@ -91,42 +157,4 @@ The nodes used in goofi-pipe can be categorized as follows:
 6. **Misc**:
    - Miscellaneous nodes that don't fit into the above categories.
 
-
-## Basic Usage
-
-### Accessing the Node Menu
-
-<p align="center">
-<img src="https://github.com/PhilippThoelke/goofi-pipe/assets/49297774/358a897f-3947-495e-849a-e6d7ebce2238" width="medium">
-</p>
-
-To access the node menu, simply double-click anywhere within the application window or press the 'Tab' key. The node menu allows you to add various functionalities to your pipeline. Nodes are categorized for easy access, but if you're looking for something specific, the search bar at the top is a handy tool.
-
-### Playing with Pre-recorded EEG Signal using LslStream
-
-<p align="center">
-<img src="IMAGE_PLACEHOLDER_2" width="medium">
-</p>
-
-This image showcases the process of utilizing a pre-recorded EEG signal through the `LslStream` node. It's crucial to ensure that the `Stream Name` in the `LslStream` node matches the stream name in the node receiving the data. This ensures data integrity and accurate signal processing in real-time.
-
-### Basic Signal Processing Patch
-
-<p align="center">
-<img src="IMAGE_PLACEHOLDER_3" width="medium">
-</p>
-
-This patch provides a demonstration of basic EEG signal processing using goofi-pipe.
-
-1. **EegRecording**: This is the starting point where the EEG data originates. 
-
-2. **LslClient**: The `LslClient` node retrieves the EEG data from `EegRecording`. Here, the visual representation of the EEG data being streamed in real-time is depicted. By default, the multiple lines in the plot correspond to the different EEG channels.
-
-3. **Buffer**: This node holds the buffered EEG data.
-
-4. **Psd**: Power Spectral Density (PSD) is a technique to measure a signal's power content versus frequency. In this node, the raw EEG data is transformed to exhibit its power distribution across distinct frequency bands.
-
-5. **Math**: This node is employed to execute mathematical operations on the data. In this context, it's rescaling the values to ensure a harmonious dynamic range between 0 and 1, which is ideal for image representation. The resultant data is then visualized as an image.
-
-One of the user-friendly features of goofi-pipe is the capability to toggle between different visualizations. By 'Ctrl+clicking' on any plot within a node, you can effortlessly switch between a line plot and an image representation, offering flexibility in data analysis.
 
