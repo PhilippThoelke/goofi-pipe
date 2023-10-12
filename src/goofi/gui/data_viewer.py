@@ -406,6 +406,9 @@ class TopomapViewer(ImageViewer):
                 idxs.append(i)
                 pos.append(self.layout.pos[self.layout.names.index(ch), :2])
 
+        if len(idxs) == 0:
+            raise UnsupportedViewerError("No channels found in layout.")
+
         # create image
         vmin = np.nanmin([p[0] for p in pos] + [0]), np.nanmin([p[1] for p in pos] + [0])
         vmax = np.nanmax([p[0] for p in pos] + [1]), np.nanmax([p[1] for p in pos] + [1])
