@@ -91,7 +91,7 @@ This patch highlights:
 ## Musical Features using Biotuner
 
 <p align="center">
-<img src="https://github.com/PhilippThoelke/goofi-pipe/assets/49297774/eaac395e-5094-4f94-9128-a271e16e8bbc" width="medium">
+<img src="https://github.com/PhilippThoelke/goofi-pipe/assets/49297774/b426ce44-bf23-4b88-a772-5d183dc36a93" width="medium">
 </p>
 
 This patch presents a pipeline for processing EEG data to extract musical features:
