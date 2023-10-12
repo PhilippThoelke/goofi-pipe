@@ -79,6 +79,18 @@ class ViewerContainer:
         self.viewer = DTYPE_VIEWER_MAP[self.dtype][self.viewer_idx](self.content_window)
         self.viewer.set_size()
 
+    def toggle_log_plot(self, axis: str) -> None:
+        """Toggle log scale on the specified axis."""
+        if axis == "x":
+            axis = self.viewer.xax
+        elif axis == "y":
+            axis = self.viewer.yax
+        else:
+            raise ValueError(f"Invalid axis {axis}.")
+
+        curr = dpg.get_item_configuration(axis)["log_scale"]
+        dpg.configure_item(axis, log_scale=not curr)
+
     def __call__(self, msg: Message) -> Any:
         if not msg.type == MessageType.DATA:
             raise ValueError(f"Expected message type DATA, got {msg.type}.")
