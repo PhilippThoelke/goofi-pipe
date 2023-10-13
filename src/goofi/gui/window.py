@@ -830,10 +830,16 @@ class Window:
                     with dpg.tab(label=slot) as tab:
                         with dpg.group(horizontal=True):
                             dpg.add_checkbox(
-                                label="log-scale x-axis", callback=toggle_log_plot, user_data=(self, node, slot, "x")
+                                label="log-scale x-axis",
+                                default_value=node.output_draw_handlers[slot].log_scale_x,
+                                callback=toggle_log_plot,
+                                user_data=(self, node, slot, "x"),
                             )
                             dpg.add_checkbox(
-                                label="log-scale y-axis", callback=toggle_log_plot, user_data=(self, node, slot, "y")
+                                label="log-scale y-axis",
+                                default_value=node.output_draw_handlers[slot].log_scale_y,
+                                callback=toggle_log_plot,
+                                user_data=(self, node, slot, "y"),
                             )
                         dpg.add_separator()
                         self.metadata_view[slot] = dpg.add_text("")
