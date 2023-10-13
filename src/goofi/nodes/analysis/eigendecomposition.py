@@ -6,6 +6,7 @@ from goofi.node import Node
 from goofi.params import StringParam
 from scipy.sparse.csgraph import laplacian
 from scipy.linalg import eigh
+from copy import deepcopy
 
 class EigenDecomposition(Node):
     def config_input_slots():
@@ -23,7 +24,7 @@ class EigenDecomposition(Node):
         return {
             "Eigen": {
                 "laplacian" : StringParam("none", options=["none", "unnormalized", "normalized"]),
-                "method": StringParam("eigh", options=["eigh", "eigh_general", "eig"]),
+                "method": StringParam("eig", options=[ "eig", "eigh", "eigh_general",]),
             }
         }
 
@@ -51,11 +52,20 @@ class EigenDecomposition(Node):
         if method == "eig":
             eigenvalues, eigenvectors = np.linalg.eig(matrix_data)
 
-        # reordering eigenvalues and eigenvectors
+        # reordering eigenvalues and eigenvectors and channel names (which are strings)
         idx = eigenvalues.argsort()[::-1]
         eigenvalues = eigenvalues[idx]
         eigenvectors = eigenvectors[:,idx]
+        
+        signs = np.sign(np.sum(eigenvectors, axis=0))
+        eigenvectors *= signs
+
+        if 'dim0' in matrix.meta['channels']:
+            matrix.meta['channels']['dim0'] = [matrix.meta['channels']['dim0'][i] for i in idx]
+        
+        copied_meta = deepcopy(matrix.meta)
+        del copied_meta['channels']
         return {
-            "eigenvalues": (np.array(eigenvalues), matrix.meta),
+            "eigenvalues": (np.array(eigenvalues), copied_meta),
             "eigenvectors": (np.array(eigenvectors), matrix.meta)
         }
