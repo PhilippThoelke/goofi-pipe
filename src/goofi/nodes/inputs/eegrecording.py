@@ -21,10 +21,12 @@ class EEGRecording(Node):
         """Load the appropriate data and start the stream. Then wait until running is set to False."""
         if self.params.recording.use_example_data.value:
             raw = mne.concatenate_raws(
-                [mne.io.read_raw(p, verbose=False) for p in eegbci.load_data(1, [1, 2])],
+                [mne.io.read_raw(p, preload=True, verbose=False) for p in eegbci.load_data(1, [1, 2])],
                 verbose=False,
             )
             eegbci.standardize(raw)
+            # scale the data for better default behavior
+            raw.apply_function(lambda x: x * 1e4)
         else:
             # load data from file
             raw = mne.io.read_raw(self.params.recording.file_path.value, preload=True)
