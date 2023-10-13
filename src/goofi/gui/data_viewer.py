@@ -18,8 +18,11 @@ class ViewerContainer:
         self.dtype = dtype
         self.content_window = content_window
 
+        self.log_scale_x = False
+        self.log_scale_y = False
+
         self.viewer_idx = 0
-        self.viewer = DTYPE_VIEWER_MAP[self.dtype][self.viewer_idx](self.content_window)
+        self.viewer = DTYPE_VIEWER_MAP[self.dtype][self.viewer_idx](self.content_window, self)
         self.viewer.set_size()
 
         with dpg.handler_registry():
@@ -80,20 +83,28 @@ class ViewerContainer:
         """Switch to the next viewer."""
         dpg.delete_item(self.content_window, children_only=True)
         self.viewer_idx = (self.viewer_idx + 1) % len(DTYPE_VIEWER_MAP[self.dtype])
-        self.viewer = DTYPE_VIEWER_MAP[self.dtype][self.viewer_idx](self.content_window)
+        self.viewer = DTYPE_VIEWER_MAP[self.dtype][self.viewer_idx](self.content_window, self)
         self.viewer.set_size()
+        self.update_axis_scaling()
 
     def toggle_log_plot(self, axis: str) -> None:
         """Toggle log scale on the specified axis."""
         if axis == "x":
-            axis = self.viewer.xax
+            self.log_scale_x = not self.log_scale_x
         elif axis == "y":
-            axis = self.viewer.yax
+            self.log_scale_y = not self.log_scale_y
         else:
             raise ValueError(f"Invalid axis {axis}.")
 
-        curr = dpg.get_item_configuration(axis)["log_scale"]
-        dpg.configure_item(axis, log_scale=not curr)
+        # apply changes
+        self.update_axis_scaling()
+
+    def update_axis_scaling(self) -> None:
+        """Update the axis scaling."""
+        if hasattr(self.viewer, "xax"):
+            dpg.configure_item(self.viewer.xax, log_scale=self.log_scale_x)
+        if hasattr(self.viewer, "yax"):
+            dpg.configure_item(self.viewer.yax, log_scale=self.log_scale_y)
 
     def __call__(self, msg: Message) -> Any:
         if not msg.type == MessageType.DATA:
@@ -112,9 +123,10 @@ class ViewerContainer:
 
 
 class DataViewer(ABC):
-    def __init__(self, dtype: DataType, content_window: int) -> None:
+    def __init__(self, dtype: DataType, content_window: int, container: ViewerContainer) -> None:
         self.dtype = dtype
         self.content_window = content_window
+        self.container = container
 
     @abstractmethod
     def update(self, data: Data) -> None:
@@ -125,8 +137,8 @@ class DataViewer(ABC):
 
 
 class ArrayViewer(DataViewer):
-    def __init__(self, content_window: int) -> None:
-        super().__init__(DataType.ARRAY, content_window)
+    def __init__(self, content_window: int, container: ViewerContainer) -> None:
+        super().__init__(DataType.ARRAY, content_window, container)
 
         self.vmin = None
         self.vmax = None
@@ -221,7 +233,7 @@ class ArrayViewer(DataViewer):
 
                 # TODO: use dim0 numerical labels if present
                 xs = np.arange(array.shape[0]) + 1
-                
+
                 if len(self.line_series) == 0:
                     # add new data series
                     self.line_series.append(dpg.add_line_series(xs, array, parent=self.yax))
@@ -249,7 +261,11 @@ class ArrayViewer(DataViewer):
 
             # autoscale x and y-axis limits
             dpg.set_axis_limits(self.xax, xs.min(), xs.max())
-            dpg.set_axis_limits(self.yax, self.vmin - abs(self.vmax) * self.margin, self.vmax + abs(self.vmax) * self.margin)
+            m = abs(self.vmax - self.vmin) * self.margin
+            if self.container.log_scale_y:
+                dpg.set_axis_limits(self.yax, max(self.vmin - m, 1e-6), self.vmax + m)
+            else:
+                dpg.set_axis_limits(self.yax, self.vmin - m, self.vmax + m)
 
     def set_size(self) -> None:
         """This function sets the size of the plot."""
@@ -258,8 +274,8 @@ class ArrayViewer(DataViewer):
 
 
 class ImageViewer(DataViewer):
-    def __init__(self, content_window: int, max_res: int = 512) -> None:
-        super().__init__(DataType.ARRAY, content_window)
+    def __init__(self, content_window: int, container: ViewerContainer, max_res: int = 512) -> None:
+        super().__init__(DataType.ARRAY, content_window, container)
 
         config = dpg.get_item_configuration(content_window)
         res = (config["width"], config["height"])
@@ -378,8 +394,8 @@ class TrajectoryViewer(ArrayViewer):
 
 
 class TopomapViewer(ImageViewer):
-    def __init__(self, content_window: int) -> None:
-        super().__init__(content_window)
+    def __init__(self, content_window: int, container: ViewerContainer) -> None:
+        super().__init__(content_window, container)
 
         self.layout = channels.read_layout("EEG1005")
         self.cmap = plt.get_cmap("inferno")
@@ -439,8 +455,8 @@ class TopomapViewer(ImageViewer):
 
 
 class StringViewer(DataViewer):
-    def __init__(self, content_window: int) -> None:
-        super().__init__(DataType.STRING, content_window)
+    def __init__(self, content_window: int, container: ViewerContainer) -> None:
+        super().__init__(DataType.STRING, content_window, container)
 
         # create text item
         self.text = dpg.add_text("", parent=self.content_window)
@@ -457,8 +473,8 @@ class StringViewer(DataViewer):
 
 
 class TableViewer(DataViewer):
-    def __init__(self, content_window: int) -> None:
-        super().__init__(DataType.TABLE, content_window)
+    def __init__(self, content_window: int, container: ViewerContainer) -> None:
+        super().__init__(DataType.TABLE, content_window, container)
 
         # create table
         self.table = dpg.add_table(parent=self.content_window, header_row=False, policy=dpg.mvTable_SizingFixedFit)
