@@ -16,7 +16,7 @@ class FractalImage(Node):
             "image": {
                 "image_size": IntParam(512, 128, 2048),
                 "persistence": FloatParam(0.5, 0.1, 1.0, doc="The persistence value for the fractal noise (higher values result in more detail)"),
-                "octaves": IntParam(6, 1, 6, ),
+                "octaves": IntParam(6, 1, 6),
                 "lacunarity": FloatParam(2.0, 1.0, 4.0),
             },
             "common": {"autotrigger": True}

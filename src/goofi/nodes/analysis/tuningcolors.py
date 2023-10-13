@@ -104,6 +104,7 @@ class TuningColors(Node):
             "color_names": (color_names, data.meta)
         }
 
+
 def rgb2name(rgb):
     """
     Find the closest color in a dictionary of colors to an input RGB value.
