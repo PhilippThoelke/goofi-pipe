@@ -263,7 +263,8 @@ class ArrayViewer(DataViewer):
             dpg.set_axis_limits(self.xax, xs.min(), xs.max())
             m = abs(self.vmax - self.vmin) * self.margin
             if self.container.log_scale_y:
-                dpg.set_axis_limits(self.yax, max(self.vmin - m, 1e-6), self.vmax + m)
+                # TODO: can we have margins with log scale?
+                dpg.set_axis_limits(self.yax, self.vmin, self.vmax)
             else:
                 dpg.set_axis_limits(self.yax, self.vmin - m, self.vmax + m)
 
