@@ -1,7 +1,7 @@
 from scipy.signal import butter, cheby1, ellip, filtfilt, lfilter, lfilter_zi
 import numpy as np
 from goofi.node import Node
-from goofi.params import StringParam, FloatParam, IntParam
+from goofi.params import StringParam, FloatParam, IntParam, BoolParam
 from goofi.data import DataType, Data
 
 
@@ -14,16 +14,25 @@ class Filter(Node):
 
     def config_params():
         return {
-            "filter": {
+            "bandpass": {
+                "apply": BoolParam(False),
                 "type": StringParam("butterworth", options=["butterworth", "chebyshev", "elliptic"]),
-                "method": StringParam("Causal", options=["Causal", "Zero-phase"]),
-                "mode": StringParam("bandpass", options=["bandpass", "notch"]),
-                "order": IntParam(1, 1, 10),  # added order parameter
+                "method": StringParam("Causal", options=["Causal", "Zero-phase"], doc="Zero-phase refers to applying the filter twice, once forward and once backward"),
+                "order": IntParam(3, 1, 10, doc="Order of the bandpass filter"),
                 "f_low": FloatParam(1.0, 0.01, 9999.0),
-                "f_high": FloatParam(60.0, 1.0, 10000.0),
-                "ripple": FloatParam(1.0, 0.1, 10.0),
-                "padding": FloatParam(0.1, 0.01, 1.0),
-                "Q": FloatParam(10.0, 0.1, 100.0),  # Quality factor
+                "f_high": FloatParam(50.0, 1.0, 10000.0),
+                "ripple": FloatParam(1.0, 0.1, 10.0, doc="Ripple refers to the maximum loss in the passband of the filter"),
+                "padding": FloatParam(0.1, 0.01, 1.0, doc="Padding refers to the fraction of the signal to pad at the beginning and end of the signal"),
+            },
+            "notch": {
+                "apply": BoolParam(False),
+                "type": StringParam("butterworth", options=["butterworth", "chebyshev", "elliptic"]),
+                "method": StringParam("Causal", options=["Causal", "Zero-phase"], doc="Zero-phase refers to applying the filter twice, once forward and once backward"),
+                "order": IntParam(1, 1, 4, doc="Order of the notch filter"),
+                "f_center": FloatParam(60.0, 0.01, 10000.0, doc="Center frequency of the notch filter"),
+                "Q": FloatParam(10.0, 0.1, 30.0, doc="Intensity of the notch filter"),  
+                "ripple": FloatParam(1.0, 0.1, 10.0, doc="Ripple refers to the maximum loss in the passband of the filter"),
+                "padding": FloatParam(0.1, 0.01, 1.0, doc="Padding refers to the fraction of the signal to pad at the beginning and end of the signal"),
             }
         }
 
@@ -34,21 +43,23 @@ class Filter(Node):
         if data is None or data.data is None:
             return None
 
-        filter_type = self.params["filter"]["type"].value
-        f_low = self.params["filter"]["f_low"].value
-        f_high = self.params["filter"]["f_high"].value
-        ripple = self.params["filter"]["ripple"].value
-        padding = self.params["filter"]["padding"].value
-        method = self.params["filter"]["method"].value
-        order = self.params["filter"]["order"].value
-        mode = self.params["filter"]["mode"].value
-        Q = self.params["filter"]["Q"].value
         sfreq = data.meta["sfreq"]
         nyq = 0.5 * sfreq
-        low = f_low / nyq
-        high = f_high / nyq
 
-        if mode == "bandpass":
+        filtered_data = data.data  # Initialize
+
+        # Bandpass Filtering
+        if self.params["bandpass"]["apply"].value:
+            filter_type = self.params["bandpass"]["type"].value
+            f_low = self.params["bandpass"]["f_low"].value
+            f_high = self.params["bandpass"]["f_high"].value
+            ripple = self.params["bandpass"]["ripple"].value
+            padding = self.params["bandpass"]["padding"].value
+            method = self.params["bandpass"]["method"].value
+            order = self.params["bandpass"]["order"].value
+            low = f_low / nyq
+            high = f_high / nyq
+
             if filter_type == "butterworth":
                 b, a = butter(order, [low, high], btype="band")
             elif filter_type == "chebyshev":
@@ -56,16 +67,24 @@ class Filter(Node):
             elif filter_type == "elliptic":
                 b, a = ellip(order, ripple, ripple, [low, high], btype="band")
 
-        elif mode == "notch":
-            f0 = (f_high + f_low) / 2
-            w0 = f0 / nyq
-            bw = f0 / Q
+            filtered_data = self.apply_filter(b, a, filtered_data, method, padding)
+
+        # Notch Filtering
+        if self.params["notch"]["apply"].value:
+            filter_type = self.params["notch"]["type"].value
+            f_center = self.params["notch"]["f_center"].value
+            ripple = self.params["notch"]["ripple"].value
+            padding = self.params["notch"]["padding"].value
+            method = self.params["notch"]["method"].value
+            order = self.params["notch"]["order"].value
+            Q = self.params["notch"]["Q"].value
+            w0 = f_center / nyq
+            bw = f_center / Q
             bw /= nyq
-            
-            # Ensure that the frequencies are within bounds
-            w_low = np.clip(w0 - bw/2, 0.01, 0.99)  # avoiding exact 0 or 1 for stability
+
+            w_low = np.clip(w0 - bw/2, 0.01, 0.99)
             w_high = np.clip(w0 + bw/2, 0.01, 0.99)
-            
+
             if filter_type == "butterworth":
                 b, a = butter(order, [w_low, w_high], btype='bandstop')
             elif filter_type == "chebyshev":
@@ -73,33 +92,28 @@ class Filter(Node):
             elif filter_type == "elliptic":
                 b, a = ellip(order, ripple, ripple, [w_low, w_high], btype='bandstop')
 
-
-
-        if method == "Zero-phase":
-            # Calculate the padlen as 10% of the signal length
-            if data.data.ndim == 1:
-                padlen = int(padding * len(data.data))
-            else:  # if 2D, you will probably want to apply padding based on the time axis, usually the last axis.
-                padlen = int(padding * data.data.shape[-1])
-            filtered_data = filtfilt(b, a, data.data, padlen=padlen)
-
-        if method == "Causal":
-            # Handle initialization for 1D data
-            if data.data.ndim == 1:
-                zi = lfilter_zi(b, a)
-                if self.filter_state is None or self.filter_state.shape != zi.shape:
-                    self.filter_state = zi * data.data[0]
-                filtered_data, self.filter_state = lfilter(b, a, data.data, zi=self.filter_state)
-
-            if data.data.ndim == 2:
-                num_channels = data.data.shape[0]
-                zi = lfilter_zi(b, a).reshape(-1, 1)
-                
-                if self.filter_state is None or self.filter_state.shape[1] != num_channels:
-                    self.filter_state = np.tile(zi, (1, num_channels)) * data.data[:, 0]
-
-                filtered_data, self.filter_state = lfilter(b, a, data.data.T, axis=0, zi=self.filter_state)
-                filtered_data = filtered_data.T
-
+            filtered_data = self.apply_filter(b, a, filtered_data, method, padding)
 
         return {"filtered_data": (filtered_data, {**data.meta})}
+
+    def apply_filter(self, b, a, data, method, padding):
+        if method == "Zero-phase":
+            if data.ndim == 1:
+                padlen = int(padding * len(data))
+            else:
+                padlen = int(padding * data.shape[-1])
+            return filtfilt(b, a, data, padlen=padlen)
+        elif method == "Causal":
+            if data.ndim == 1:
+                zi = lfilter_zi(b, a)
+                if self.filter_state is None or self.filter_state.shape != zi.shape:
+                    self.filter_state = zi * data[0]
+                return lfilter(b, a, data, zi=self.filter_state)[0]
+            elif data.ndim == 2:
+                num_channels = data.shape[0]
+                zi = lfilter_zi(b, a).reshape(-1, 1)
+                if self.filter_state is None or self.filter_state.shape[1] != num_channels:
+                    self.filter_state = np.tile(zi, (1, num_channels)) * data[:, 0]
+                return lfilter(b, a, data.T, axis=0, zi=self.filter_state)[0].T
+        else:
+            return data
