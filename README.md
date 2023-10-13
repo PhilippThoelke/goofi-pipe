@@ -32,6 +32,34 @@ goofi-pipe # start the application to make sure the installation was successful
 
 To access the node menu, simply double-click anywhere within the application window or press the 'Tab' key. The node menu allows you to add various functionalities to your pipeline. Nodes are categorized for easy access, but if you're looking for something specific, the search bar at the top is a handy tool.
 
+## Common Parameters and Metadata
+
+<p align="center">
+<img src="path_to_image_for_common_parameters" alt="Common Parameters" width="small">
+</p>
+
+**Common Parameters**: All nodes within goofi have a set of common parameters. These settings consistently dictate how the node operates within the pipeline.
+
+- **AutoTrigger**: This option, when enabled, allows the node to be triggered automatically. When disabled,
+the node is triggered when it receives input.
+  
+- **Max_Frequency**: This denotes the maximum rate at which computations are set for the node.
+
+<p align="center">
+<img src="path_to_image_for_metadata" alt="Metadata" width="small">
+</p>
+
+**Metadata**: This section conveys essential information passed between nodes. Each output node will be accompanied by its metadata, providing clarity and consistency throughout the workflow.
+
+Here are some conventional components present in the metadata
+
+- **Channel Dictionary**: A conventional representation of EEG channels names.
+  
+- **Sampling Frequency**: The rate at which data samples are measured. It's crucial for maintaining consistent data input and output across various nodes.
+
+- **Shape of the Output**: Details the format and structure of the node's output.
+
+
 ## Playing with Pre-recorded EEG Signal using LslStream
 
 <p align="center">
