@@ -1,95 +1,116 @@
-import threading
-import time
+import socket
 from typing import Any, Dict, Tuple
 
 import numpy as np
-from mne_realtime import LSLClient as MNE_LSLClient
+import pylsl
 
 from goofi.data import DataType
 from goofi.node import Node
+from goofi.params import BoolParam
 
 
 class LSLClient(Node):
     def config_params():
         return {
-            "lsl_stream": {"stream_name": "goofi-stream"},
+            "lsl_stream": {
+                "source_name": "goofi-stream",
+                "stream_name": "",
+                "refresh": BoolParam(False, trigger=True),
+            },
             "common": {"autotrigger": True},
         }
 
     def config_output_slots():
         return {"out": DataType.ARRAY}
 
-    def client_thread(self):
-        """Start the client and wait until running is set to False."""
-        self.client = MNE_LSLClient(host=self.params.lsl_stream.stream_name.value, wait_max=1.5, verbose=False)
-        try:
-            self.client.start()
-        except RuntimeError:
-            self.running = False
-            return
+    def setup(self):
+        """Initialize and start the LSL client."""
+        if hasattr(self, "client"):
+            self.disconnect()
+        self.client = None
 
-        if self.data_iterator is not None:
-            raise RuntimeError("Data iterator already exists. The previous client was not stopped properly.")
+        # initialize list of streams
+        self.available_streams = None
+        self.lsl_stream_refresh_changed(True)
 
-        # grab the data iterator
-        self.data_iterator = self.client.iter_raw_buffers()
-
-        while self.running:
-            time.sleep(0.1)
-
-        self.client.stop()
-
-    def setup(self, init: bool = True):
-        """
-        Initialize and start the client.
-
-        ### Parameters
-        `init`: bool
-            Flag to indicate whether this is the first time the client is being initialized.
-        """
-        if init:
-            self.running = False
-            self.thread = None
-            self.data_iterator = None
-        # start the client
-        self.start()
-
-    def start(self):
-        """Start a new client. If a client is already running, stop it first."""
-        self.stop()
-
-        # start the client
-        self.running = True
-        self.thread = threading.Thread(target=self.client_thread, daemon=True)
-        self.thread.start()
-
-    def stop(self):
-        """Stop the client and wait for the thread to finish."""
-        self.running = False
-        if self.thread is not None:
-            self.thread.join()
-            self.thread = None
-            self.data_iterator = None
+        self.connect()
 
     def process(self) -> Dict[str, Tuple[np.ndarray, Dict[str, Any]]]:
         """Fetch the next chunk of data from the client."""
-        if not self.running or self.data_iterator is None:
-            # client is not running, or not initialized yet
+        if self.available_streams is None:
+            self.lsl_stream_refresh_changed(True)
+
+        if self.client is None:
+            if not self.connect():
+                return None
+
+        # fetch data
+        samples, _ = self.client.pull_chunk()
+        samples = np.array(samples).T
+
+        if samples.size == 0:
             return None
 
-        # grab the next chunk of data
-        data = next(self.data_iterator)
-        if data.size == 0:
-            return None
+        ch_info = self.client.info().desc().child("channels").child("channel")
+        ch_type = self.client.info().type().lower()
+        ch_names = []
+        for k in range(1, self.client.info().channel_count() + 1):
+            ch_names.append(ch_info.child_value("label") or "{} {:03d}".format(ch_type.upper(), k))
+            ch_info = ch_info.next_sibling()
 
-        # TODO: add all relevant metadata from self.client.info
-        meta = {"sfreq": self.client.info["sfreq"], "channels": {"dim0": self.client.info["ch_names"]}}
-        return {"out": (data, meta)}
+        meta = {
+            "sfreq": self.client.info().nominal_srate(),
+            "channels": {"dim0": ch_names},
+            "available_streams": {info.source_id(): info.name() for info in self.available_streams},
+        }
+        return {"out": (samples, meta)}
+
+    def connect(self) -> bool:
+        """Connect to the LSL stream."""
+        self.disconnect()
+
+        # find the stream
+        source_name = self.params.lsl_stream.source_name.value
+        stream_name = self.params.lsl_stream.stream_name.value
+
+        matches = {}
+        for info in self.available_streams:
+            h, s, n = info.hostname(), info.source_id(), info.name()
+            if s == source_name and (len(stream_name) == 0 or n == stream_name):
+                if (s, n) in matches and h == socket.gethostname():
+                    # prefer local streams
+                    matches[(s, n)] = info
+                elif (s, n) not in matches:
+                    # otherwise, prefer the first match
+                    matches[(s, n)] = info
+
+        if len(matches) == 0:
+            raise RuntimeError(f"Could not find stream {stream_name} from source {source_name}.")
+        elif len(matches) > 1:
+            ms = {m[0]: m[1] for m in matches.keys()}
+            raise RuntimeError(f"Found multiple streams matching {stream_name} from source {source_name}: {ms}.")
+
+        # connect to the stream
+        self.client = pylsl.StreamInlet(info=list(matches.values())[0])
+        return True
+
+    def disconnect(self) -> None:
+        """Disconnect from the LSL stream."""
+        if self.client is not None:
+            self.client.close_stream()
+            self.client = None
+
+    def lsl_stream_refresh_changed(self, value: bool) -> None:
+        self.available_streams = pylsl.resolve_streams()
+        print("Available LSL streams:")
+        for info in self.available_streams:
+            print(f"  {info.source_id()}: {info.name()} (hostname: {info.hostname()})")
+        print()
+
+    def lsl_stream_source_name_changed(self, value: str) -> None:
+        assert value != "", "Host name cannot be empty."
+        self.setup()
 
     def lsl_stream_stream_name_changed(self, value: str) -> None:
         assert value != "", "Stream name cannot be empty."
-        # reinitialize the client
-        self.setup(init=False)
-
-    def terminate(self) -> None:
-        self.stop()
+        self.setup()
