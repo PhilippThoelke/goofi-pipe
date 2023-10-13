@@ -18,7 +18,7 @@ class Connectivity(Node):
     def config_params():
         return {
             "classical": {
-                "method": StringParam("wPLI", options=["coherence", "imag_coherence", "wPLI", "PLI", "pearson", "mutual_info", "PLV"]),},
+                "method": StringParam("wPLI", options=["coherence", "imag_coherence", "wPLI", "PLI", "PLV", "covariance", "pearson", "mutual_info"]),},
             
             "biotuner": {
                 "method": StringParam(
@@ -108,6 +108,11 @@ def compute_classical_connectivity(data, method):
 
     n_channels, n_samples = data.shape
     matrix = np.zeros((n_channels, n_channels))
+    
+    if method == "covariance":
+        matrix = np.cov(data)
+        return matrix
+    # TODO : optimize this shit
     for i in range(n_channels):
         for j in range(i, n_channels):  # Only compute upper diagonal
             if i == j:
@@ -142,15 +147,11 @@ def compute_classical_connectivity(data, method):
                 matrix[i, j] = matrix[j, i] = np.abs(np.mean(np.exp(1j * (np.angle(sig1) - np.angle(sig2)))))
                 
             elif method == "pearson":
-                for i in range(n_channels):
-                    for j in range(i, n_channels):
-                        corr, _ = pearsonr(data[i, :], data[j, :])
-                        matrix[i, j] = matrix[j, i] = corr
+                corr, _ = pearsonr(data[i, :], data[j, :])
+                matrix[i, j] = matrix[j, i] = corr
 
             elif method == "mutual_info":
-                for i in range(n_channels):
-                    for j in range(i, n_channels):
-                        mutual_info = mutual_info_regression(data[i, :].reshape(-1, 1), data[j, :])[0]
-                        matrix[i, j] = matrix[j, i] = mutual_info
+                mutual_info = mutual_info_regression(data[i, :].reshape(-1, 1), data[j, :])[0]
+                matrix[i, j] = matrix[j, i] = mutual_info
 
     return matrix
