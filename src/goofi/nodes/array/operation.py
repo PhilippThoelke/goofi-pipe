@@ -8,7 +8,7 @@ class Operation(Node):
         return {"a": DataType.ARRAY, "b": DataType.ARRAY}
 
     def config_params():
-        return {"operation":{"operation": StringParam("add", options=["add", "sutract", "multiply", "divide"])}}
+        return {"operation": {"operation": StringParam("add", options=["add", "sutract", "multiply", "divide"])}}
 
     def config_output_slots():
         return {"out": DataType.ARRAY}
@@ -25,4 +25,4 @@ class Operation(Node):
         elif self.params.operation.operation.value == "divide":
             return {"out": (a.data / b.data, {})}
         else:
-            raise Error
+            raise ValueError(f"Invalid operation: {self.params.operation.operation.value}")
