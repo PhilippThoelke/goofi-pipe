@@ -94,7 +94,7 @@ class Data:
         else:
             self.meta["channels"] = {}
 
-        # populate the channel metadata
+        # check the channels metadata
         for dim in range(self.data.ndim):
             if f"dim{dim}" in self.meta["channels"]:
                 assert isinstance(self.meta["channels"][f"dim{dim}"], list), f"Expected dim{dim} to be a list."
@@ -102,6 +102,12 @@ class Data:
                     f"Expected dim{dim} to have length {self.data.shape[dim]} but got "
                     f"{len(self.meta['channels'][f'dim{dim}'])}."
                 )
+        for dim in self.meta["channels"].keys():
+            assert dim.startswith("dim"), f"Expected channel key to start with 'dim', got {dim}."
+            dim = dim[3:]
+            assert dim.isdigit(), f"Expected channel key to end with a number, got {dim}."
+            dim = int(dim)
+            assert dim < self.data.ndim, f"Expected channel key to be less than {self.data.ndim}, got {dim}."
 
     def _configure_string(self):
         pass
