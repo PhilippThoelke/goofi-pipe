@@ -35,7 +35,7 @@ To access the node menu, simply double-click anywhere within the application win
 ## Common Parameters and Metadata
 
 <p align="center">
-<img src="path_to_image_for_common_parameters" alt="Common Parameters" width="small">
+<img src="https://github.com/PhilippThoelke/goofi-pipe/assets/49297774/23ba6df7-7f28-4505-acff-205e42e48dcb" alt="Common Parameters" width="small">
 </p>
 
 **Common Parameters**: All nodes within goofi have a set of common parameters. These settings consistently dictate how the node operates within the pipeline.
@@ -46,7 +46,7 @@ the node is triggered when it receives input.
 - **Max_Frequency**: This denotes the maximum rate at which computations are set for the node.
 
 <p align="center">
-<img src="path_to_image_for_metadata" alt="Metadata" width="small">
+<img src="https://github.com/PhilippThoelke/goofi-pipe/assets/49297774/54604cfb-6611-4ce8-92b2-0b353584c5f5" alt="Metadata" width="small">
 </p>
 
 **Metadata**: This section conveys essential information passed between nodes. Each output node will be accompanied by its metadata, providing clarity and consistency throughout the workflow.
