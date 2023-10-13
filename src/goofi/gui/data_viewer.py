@@ -219,7 +219,9 @@ class ArrayViewer(DataViewer):
                 while len(self.line_series) > 1:
                     dpg.delete_item(self.line_series.pop())
 
-                xs = np.arange(array.shape[0])
+                # TODO: use dim0 numerical labels if present
+                xs = np.arange(array.shape[0]) + 1
+                
                 if len(self.line_series) == 0:
                     # add new data series
                     self.line_series.append(dpg.add_line_series(xs, array, parent=self.yax))
@@ -231,8 +233,8 @@ class ArrayViewer(DataViewer):
                 while len(self.line_series) > array.shape[0]:
                     dpg.delete_item(self.line_series.pop())
 
-                # add new data series
-                xs = np.arange(array.shape[1])
+                # TODO: use dim0 numerical labels if present
+                xs = np.arange(array.shape[1]) + 1
 
                 # iterate over channels (first dimension)
                 for i in range(array.shape[0]):
