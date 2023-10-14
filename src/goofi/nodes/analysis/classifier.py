@@ -27,6 +27,7 @@ class Classifier(Node):
                 "n_states": IntParam(2, 1, 10),
                 "current_state": IntParam(1, 1, 10),
                 "add_to_training": BoolParam(False),
+                "train": BoolParam(False, trigger=True, doc="Train the classifier"),
                 "classifier_choice": StringParam("SVM", options=["NaiveBayes", "SVM", "RandomForest", "LogisticRegression", "KNeighbors"]),
                 "clear_training": BoolParam(False, trigger=True, doc="Clear the training set"),},
                 "NaiveBayes": {
@@ -54,6 +55,7 @@ class Classifier(Node):
         self.training_data = []
         self.training_labels = []
         self.classifier = None
+        self.classifier_trained = False
 
     def process(self, data: Data):
         if data is None:
@@ -64,13 +66,15 @@ class Classifier(Node):
             self.training_data.extend(transposed_data)
             self.training_labels.extend([self.params.classification.current_state.value] * transposed_data.shape[0])
             self.classifier = None
-            print("Added to training set.")  # Debug statement
+            self.classifier_trained = False
+            #print("Added to training set.")  # Debug statement
             return None
 
         if self.params.classification.clear_training.value:
             self.training_data = []
             self.training_labels = []
             self.classifier = None
+            self.classifier_trained = False
             print("Training set cleared.")
             
         if len(self.training_data) == 0:
@@ -96,11 +100,25 @@ class Classifier(Node):
             elif classifier_choice == "KNeighbors":
                 self.classifier = KNeighborsClassifier(n_neighbors=self.params.KNeighbors.n_neighbors.value)
 
+        if self.params.classification.train.value:
+            # check if there are enough samples for each class
+            for i in range(1, self.params.classification.n_states.value + 1):
+                if self.training_labels.count(i) < 2:
+                    print(f"Not enough samples for class {i} in training set.")
+                    return None
             try:
                 print(f"Training data shape: {len(self.training_data)} samples, {len(self.training_data[0]) if self.training_data else 0} features per sample.")  # Debug statement
                 self.classifier.fit(self.training_data, self.training_labels)
+                self.classifier_trained = True 
             except Exception as e:
                 print(f"Error during fitting: {e}")  # Debug statement
+                
+        
+        # check if the classifier has been trained
+        if self.classifier_trained is False:
+            print("Classifier not trained.")
+            return None  
+              
         transposed_data = data.data.T
         probs = self.classifier.predict_proba(transposed_data)
         
