@@ -68,6 +68,8 @@ Here are some conventional components present in the metadata
 
 This image showcases the process of utilizing a pre-recorded EEG signal through the `LslStream` node. It's crucial to ensure that the `Stream Name` in the `LslStream` node matches the stream name in the node receiving the data. This ensures data integrity and accurate signal processing in real-time.
 
+# Patch examples
+
 ## Basic Signal Processing Patch
 
 <p align="center">
