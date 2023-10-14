@@ -34,7 +34,7 @@ class Clustering(Node):
             model = KMeans(n_clusters=self.params.Clustering["n_clusters"].value, max_iter=max_iter, tol=tolerance)
             labels = model.fit_predict(matrix.data)
             centers = model.cluster_centers_
-            
+            labels = labels.astype(np.float64)
             return {
                 "cluster_labels": (labels, matrix.meta),
                 "cluster_centers": (centers, matrix.meta),
@@ -47,9 +47,9 @@ class Clustering(Node):
                 linkage=self.params.Clustering["linkage"].value
             )
             labels = model.fit_predict(matrix.data)
-
+            # put the labels as float
+            labels = labels.astype(np.float64)
             return {
-                "cluster_labels": (labels, matrix.meta),
-                "num_clusters": self.params.Clustering["n_clusters"].value
+                "cluster_labels": (labels, matrix.meta)
             }
 
