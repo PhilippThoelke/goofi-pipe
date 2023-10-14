@@ -115,6 +115,26 @@ This patch highlights:
 
 - **Spectrogram**: Created using the `PSD` node followed by a `Buffer`, it provides a time-resolved view of the EEG signal's frequency content.
 
+## Realtime Classification
+
+leverage the multimodal framework of goofi, state-of-the-art machine learning classifiers can be built on-the-fly to predict behavior from an array of different sources. Here's a brief walkthrough of three distinct examples:
+
+### 1. Raw EEG Signal Classification
+![EEG Signal Classification](link_to_eeg_image.png)
+This patch captures raw EEG signals using the `EEGrecording` and `LslStream`module. The classifier module allows
+to capture data from different states indicated by the user from *n* features, which in the present case are the 64 EEG channels. Some classifiers allow for visualization of feature importance. Here we show a topomap of the distribution of features importances on the scalp. The classifier outputs probability of being in each of the states in the training data. This prediction is smoothed using a buffer for less jiterry results.  
+![Classifier parameters](link_to_eeg_image.png)
+
+### 2. Audio Input Classification
+![Audio Input Classification](link_to_audio_image.png)
+The audio input stream captures real-time sound data, which can also be passed through a classifier. Different sonic states can be predicted in realtime.
+
+### 3. Video Input Classification
+![Video Input Classification](link_to_video_image.png)
+In this example, video frames are extracted using the `VideoStream` module. Similarly, prediction of labelled visual states can be achieved in realtime.
+
+These patches demonstrate the versatility of our framework in handling various types of real-time data streams for classification tasks.
+
 ## Musical Features using Biotuner
 
 <p align="center">
