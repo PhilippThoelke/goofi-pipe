@@ -106,8 +106,8 @@ class Classifier(Node):
         
         # After the classifier has been trained
         feature_importances = self.get_feature_importances()
-        if feature_importances is not None:
-            print("Feature Importances:", feature_importances)
+        #if feature_importances is not None:
+            #print("Feature Importances:", feature_importances)
         
         # create metadata including the classifier, the size of the training set for each class, and the number of features
         meta = {"classifier": self.params.classification.classifier_choice.value}
