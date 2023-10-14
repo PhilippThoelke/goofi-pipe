@@ -26,7 +26,7 @@ class Classifier(Node):
             "classification": {
                 "n_states": IntParam(2, 1, 10),
                 "current_state": IntParam(1, 1, 10),
-                "add_to_training": BoolParam(False),
+                "add_to_training": BoolParam(False, doc="Add the incoming data to the training set, must be in the shape (n_features, n_samples)"),
                 "train": BoolParam(False, trigger=True, doc="Train the classifier"),
                 "classifier_choice": StringParam("SVM", options=["NaiveBayes", "SVM", "RandomForest", "LogisticRegression", "KNeighbors"]),
                 "clear_training": BoolParam(False, trigger=True, doc="Clear the training set"),},
