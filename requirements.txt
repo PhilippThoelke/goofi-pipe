@@ -8,7 +8,7 @@ oscpy
 sounddevice
 openai
 scikit-learn
-opencv-python
+opencv-python==4.8.0.74 # prevent mediapipe TypeError: 'numpy._DTypeMeta' object is not subscriptable
 pyzmq
 webcolors
 pylsl
