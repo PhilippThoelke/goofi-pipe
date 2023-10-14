@@ -1,8 +1,4 @@
 links:
-- node_in: buffer0
-  node_out: lslclient0
-  slot_in: val
-  slot_out: out
 - node_in: psd0
   node_out: buffer0
   slot_in: data
@@ -11,6 +7,10 @@ links:
   node_out: psd0
   slot_in: data
   slot_out: psd
+- node_in: buffer0
+  node_out: lslclient0
+  slot_in: val
+  slot_out: out
 nodes:
   buffer0:
     _type: Buffer
@@ -71,8 +71,8 @@ nodes:
     category: inputs
     gui_kwargs:
       pos:
-      - 354
-      - 175
+      - 358
+      - 176
     params:
       common:
         autotrigger:
@@ -83,16 +83,22 @@ nodes:
           vmax: 60.0
           vmin: 0.0
       lsl_stream:
-        stream_name:
+        refresh:
+          _value: false
+          trigger: true
+        source_name:
           _value: goofi-stream
+          options: null
+        stream_name:
+          _value: ''
           options: null
   math0:
     _type: Math
     category: array
     gui_kwargs:
       pos:
-      - 962
-      - 174
+      - 963
+      - 173
     params:
       common:
         autotrigger:
@@ -121,7 +127,7 @@ nodes:
           vmin: -10.0
       math:
         multiply:
-          _value: 800000000.0
+          _value: 10.0
           vmax: 10.0
           vmin: -10.0
         post_add:

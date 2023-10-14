@@ -3,14 +3,10 @@ links:
   node_out: buffer0
   slot_in: data
   slot_out: out
-- node_in: buffer0
-  node_out: lslclient0
-  slot_in: val
-  slot_out: out
-- node_in: select0
-  node_out: psd0
+- node_in: oscout0
+  node_out: extendedtable0
   slot_in: data
-  slot_out: psd
+  slot_out: table
 - node_in: extendedtable0
   node_out: powerbandeeg0
   slot_in: array_input1
@@ -35,14 +31,18 @@ links:
   node_out: powerbandeeg0
   slot_in: array_input5
   slot_out: highbeta
+- node_in: select0
+  node_out: psd0
+  slot_in: data
+  slot_out: psd
 - node_in: powerbandeeg0
   node_out: select0
   slot_in: data
   slot_out: out
-- node_in: oscout0
-  node_out: extendedtable0
-  slot_in: data
-  slot_out: table
+- node_in: buffer0
+  node_out: lslclient0
+  slot_in: val
+  slot_out: out
 nodes:
   buffer0:
     _type: Buffer
@@ -178,8 +178,8 @@ nodes:
     category: inputs
     gui_kwargs:
       pos:
-      - 360
-      - 174
+      - 362
+      - 172
     params:
       common:
         autotrigger:
@@ -190,8 +190,14 @@ nodes:
           vmax: 60.0
           vmin: 0.0
       lsl_stream:
-        stream_name:
+        refresh:
+          _value: false
+          trigger: true
+        source_name:
           _value: goofi-stream
+          options: null
+        stream_name:
+          _value: ''
           options: null
   oscout0:
     _type: OSCOut

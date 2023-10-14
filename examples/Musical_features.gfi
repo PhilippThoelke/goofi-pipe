@@ -31,10 +31,6 @@ links:
   node_out: extendedtable0
   slot_in: data
   slot_out: table
-- node_in: select0
-  node_out: lslclient0
-  slot_in: data
-  slot_out: out
 - node_in: buffer0
   node_out: select0
   slot_in: val
@@ -43,6 +39,10 @@ links:
   node_out: welfordsztransform0
   slot_in: array_input2
   slot_out: normalized
+- node_in: select0
+  node_out: lslclient0
+  slot_in: data
+  slot_out: out
 nodes:
   biotuner0:
     _type: Biotuner
@@ -157,7 +157,7 @@ nodes:
     category: inputs
     gui_kwargs:
       pos:
-      - 191
+      - 190
       - 148
     params:
       common:
@@ -173,7 +173,7 @@ nodes:
           _value: ''
           options: null
         stream_name:
-          _value: goofi-stream2
+          _value: goofi-stream
           options: null
         use_example_data:
           _value: true
@@ -230,8 +230,8 @@ nodes:
     category: inputs
     gui_kwargs:
       pos:
-      - 191
-      - 199
+      - 190
+      - 202
     params:
       common:
         autotrigger:
@@ -242,8 +242,14 @@ nodes:
           vmax: 60.0
           vmin: 0.0
       lsl_stream:
+        refresh:
+          _value: false
+          trigger: true
+        source_name:
+          _value: goofi-stream
+          options: null
         stream_name:
-          _value: goofi-stream2
+          _value: ''
           options: null
   oscout0:
     _type: OSCOut

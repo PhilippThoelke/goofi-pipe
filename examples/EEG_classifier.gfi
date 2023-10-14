@@ -1,40 +1,32 @@
 links:
+- node_in: classifier0
+  node_out: buffer0
+  slot_in: data
+  slot_out: out
 - node_in: reduce0
-  node_out: buffer0
+  node_out: buffer1
   slot_in: array
-  slot_out: out
-- node_in: connectivity0
-  node_out: buffer0
-  slot_in: data
-  slot_out: out
-- node_in: math0
-  node_out: buffer2
-  slot_in: data
-  slot_out: out
-- node_in: buffer2
-  node_out: psd0
-  slot_in: val
-  slot_out: psd
-- node_in: psd0
-  node_out: reduce0
-  slot_in: data
   slot_out: out
 - node_in: buffer0
   node_out: lslclient0
   slot_in: val
   slot_out: out
 - node_in: buffer1
-  node_out: connectivity0
+  node_out: classifier0
   slot_in: val
-  slot_out: matrix
+  slot_out: probs
+- node_in: math0
+  node_out: classifier0
+  slot_in: data
+  slot_out: feature_importances
 nodes:
   buffer0:
     _type: Buffer
     category: signal
     gui_kwargs:
       pos:
-      - 561
-      - 174
+      - 486
+      - 179
     params:
       buffer:
         axis:
@@ -45,7 +37,7 @@ nodes:
           _value: false
           trigger: true
         size:
-          _value: 500
+          _value: 1
           vmax: 5000
           vmin: 1
       common:
@@ -61,19 +53,19 @@ nodes:
     category: signal
     gui_kwargs:
       pos:
-      - 975
-      - 173
+      - 891
+      - 180
     params:
       buffer:
         axis:
-          _value: 2
+          _value: 0
           vmax: 3
           vmin: -1
         reset:
           _value: false
           trigger: true
         size:
-          _value: 3
+          _value: 100
           vmax: 5000
           vmin: 1
       common:
@@ -84,87 +76,82 @@ nodes:
           _value: 30.0
           vmax: 60.0
           vmin: 0.0
-  buffer2:
-    _type: Buffer
-    category: signal
-    gui_kwargs:
-      pos:
-      - 964
-      - 369
-    params:
-      buffer:
-        axis:
-          _value: 1
-          vmax: 3
-          vmin: -1
-        reset:
-          _value: false
-          trigger: true
-        size:
-          _value: 300
-          vmax: 5000
-          vmin: 1
-      common:
-        autotrigger:
-          _value: false
-          trigger: false
-        max_frequency:
-          _value: 30.0
-          vmax: 60.0
-          vmin: 0.0
-  connectivity0:
-    _type: Connectivity
+  classifier0:
+    _type: Classifier
     category: analysis
     gui_kwargs:
       pos:
-      - 772
-      - 173
+      - 691
+      - 175
     params:
-      biotuner:
-        f_max:
-          _value: 30.0
-          vmax: 100.0
-          vmin: 1.0
-        f_min:
-          _value: 2.0
-          vmax: 50.0
-          vmin: 0.1
-        method:
-          _value: None
-          options:
-          - None
-          - harmsim
-          - euler
-          - subharm_tension
-          - RRCi
-          - wPLI_crossfreq
-        n_peaks:
+      KNeighbors:
+        n_neighbors:
           _value: 5
+          vmax: 20
+          vmin: 1
+      LogisticRegression:
+        C:
+          _value: 1.0
+          vmax: 10.0
+          vmin: 0.1
+      NaiveBayes:
+        var_smoothing:
+          _value: 1.0e-09
+          vmax: 1.0e-06
+          vmin: 1.0e-12
+      RandomForest:
+        max_depth:
+          _value: 3
+          vmax: 100
+          vmin: 1
+        min_samples_split:
+          _value: 10
+          vmax: 100
+          vmin: 2
+        n_estimators:
+          _value: 100
+          vmax: 1000
+          vmin: 10
+      SVM:
+        C:
+          _value: 1.0
+          vmax: 10.0
+          vmin: 0.1
+        gamma:
+          _value: scale
+          options:
+          - scale
+          - auto
+        kernel:
+          _value: rbf
+          options:
+          - linear
+          - poly
+          - rbf
+          - sigmoid
+      classification:
+        add_to_training:
+          _value: false
+          trigger: false
+        classifier_choice:
+          _value: RandomForest
+          options:
+          - NaiveBayes
+          - SVM
+          - RandomForest
+          - LogisticRegression
+          - KNeighbors
+        clear_training:
+          _value: false
+          trigger: true
+        current_state:
+          _value: 2
           vmax: 10
           vmin: 1
-        peaks_function:
-          _value: EMD
-          options:
-          - EMD
-          - fixed
-          - harmonic_recurrence
-          - EIMC
-        precision:
-          _value: 0.1
-          vmax: 10.0
-          vmin: 0.01
-      classical:
-        method:
-          _value: wPLI
-          options:
-          - coherence
-          - imag_coherence
-          - wPLI
-          - PLI
-          - PLV
-          - covariance
-          - pearson
-          - mutual_info
+        n_states:
+          _value: 2
+          vmax: 10
+          vmin: 1
       common:
         autotrigger:
           _value: false
@@ -178,8 +165,8 @@ nodes:
     category: inputs
     gui_kwargs:
       pos:
-      - 246
-      - 173
+      - 285
+      - 124
     params:
       common:
         autotrigger:
@@ -204,8 +191,8 @@ nodes:
     category: inputs
     gui_kwargs:
       pos:
-      - 360
-      - 173
+      - 286
+      - 182
     params:
       common:
         autotrigger:
@@ -230,8 +217,8 @@ nodes:
     category: array
     gui_kwargs:
       pos:
-      - 1163
-      - 370
+      - 894
+      - 369
     params:
       common:
         autotrigger:
@@ -260,7 +247,7 @@ nodes:
           vmin: -10.0
       math:
         multiply:
-          _value: 10000000000.0
+          _value: 15.0
           vmax: 10.0
           vmin: -10.0
         post_add:
@@ -275,55 +262,13 @@ nodes:
           _value: -1
           vmax: 10
           vmin: -1
-  psd0:
-    _type: PSD
-    category: signal
-    gui_kwargs:
-      pos:
-      - 765
-      - 367
-    params:
-      common:
-        autotrigger:
-          _value: false
-          trigger: false
-        max_frequency:
-          _value: 30.0
-          vmax: 60.0
-          vmin: 0.0
-      psd:
-        f_max:
-          _value: 20.0
-          vmax: 10000.0
-          vmin: 1.0
-        f_min:
-          _value: 1.0
-          vmax: 9999.0
-          vmin: 0.01
-        method:
-          _value: welch
-          options:
-          - fft
-          - welch
-        noverlap:
-          _value: 0
-          vmax: 10000
-          vmin: 0
-        precision:
-          _value: 0.1
-          vmax: 10.0
-          vmin: 0.01
-        smooth_welch:
-          _value: 1
-          vmax: 10
-          vmin: 1
   reduce0:
     _type: Reduce
     category: array
     gui_kwargs:
       pos:
-      - 562
-      - 366
+      - 1094
+      - 182
     params:
       common:
         autotrigger:
