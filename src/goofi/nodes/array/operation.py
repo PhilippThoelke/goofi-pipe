@@ -1,14 +1,19 @@
+import numpy as np
 from goofi.data import Data, DataType
 from goofi.node import Node
 from goofi.params import StringParam
-
+from copy import deepcopy
 
 class Operation(Node):
     def config_input_slots():
         return {"a": DataType.ARRAY, "b": DataType.ARRAY}
 
     def config_params():
-        return {"operation": {"operation": StringParam("add", options=["add", "sutract", "multiply", "divide"])}}
+        return {
+            "operation": {
+                "operation": StringParam("add", options=["add", "subtract", "multiply", "divide", "matmul"])
+            }
+        }
 
     def config_output_slots():
         return {"out": DataType.ARRAY}
@@ -16,13 +21,23 @@ class Operation(Node):
     def process(self, a: Data, b: Data):
         if a is None or b is None:
             return None
-        if self.params.operation.operation.value == "add":
-            return {"out": (a.data + b.data, {})}
-        elif self.params.operation.operation.value == "subtract":
-            return {"out": (a.data - b.data, {})}
-        elif self.params.operation.operation.value == "multiply":
-            return {"out": (a.data * b.data, {})}
-        elif self.params.operation.operation.value == "divide":
-            return {"out": (a.data / b.data, {})}
+        if 'channels' in a.meta and 'channels' in b.meta:
+            if a.meta['channels'] != b.meta['channels']:
+                raise Warning("Channels are not the same, metadata from a is used")
+            new_meta = deepcopy(a.meta)
+        operation = self.params.operation.operation.value
+        
+        if operation == "add":
+            result = a.data + b.data
+        elif operation == "subtract":
+            result = a.data - b.data
+        elif operation == "multiply":
+            result = a.data * b.data
+        elif operation == "divide":
+            result = a.data / b.data
+        elif operation == "matmul":
+            result = np.dot(a.data, b.data)
         else:
-            raise ValueError(f"Invalid operation: {self.params.operation.operation.value}")
+            raise ValueError(f"Invalid operation: {operation}")
+        
+        return {"out": (result, new_meta)}
