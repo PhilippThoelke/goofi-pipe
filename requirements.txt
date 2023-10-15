@@ -12,3 +12,4 @@ opencv-python==4.8.0.74 # prevent mediapipe TypeError: 'numpy._DTypeMeta' object
 pyzmq
 webcolors
 pylsl
+mediapipe
