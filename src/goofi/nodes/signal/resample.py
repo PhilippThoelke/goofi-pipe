@@ -50,13 +50,12 @@ class Resample(Node):
             if "dim0" in data.meta["channels"]:
                 del data.meta["channels"]["dim0"]
         elif signal.ndim == 2:
-            if "dim0" in data.meta["channels"]:
-                del data.meta["channels"]["dim0"]
             if "dim1" in data.meta["channels"]:
                 del data.meta["channels"]["dim1"]
 
             rows, cols = signal.shape
             resampled_signal = np.zeros((rows, int(cols * up / down)))
+            # TODO: vectorize this
             for i in range(rows):
                 resampled_signal[i, :] = resample_poly(signal[i, :], up, down, padtype="line")
         else:
