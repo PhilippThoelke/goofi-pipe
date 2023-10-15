@@ -1,9 +1,11 @@
+from os.path import join
+
 import numpy as np
 import pandas as pd
-from os.path import join, dirname
+
 from goofi.data import Data, DataType
 from goofi.node import Node
-from goofi.params import FloatParam, IntParam, StringParam
+from goofi.params import FloatParam, IntParam
 
 
 class Bioelements(Node):
