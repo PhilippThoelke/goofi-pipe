@@ -1,8 +1,3 @@
-try:
-    import sounddevice as sd
-except OSError:
-    print("Could not import sounddevice. AudioOut node will not be available.")
-    sd = None
 import numpy as np
 
 from goofi.data import Data, DataType
@@ -25,6 +20,8 @@ class AudioOut(Node):
         }
 
     def setup(self):
+        import sounddevice as sd
+
         if hasattr(self, "stream") and self.stream:
             self.stream.stop()
             self.stream.close()
@@ -64,6 +61,8 @@ class AudioOut(Node):
     @staticmethod
     def list_audio_devices():
         """Returns a list of available audio devices."""
+        import sounddevice as sd
+
         if sd is None:
             return ["None"]
 
