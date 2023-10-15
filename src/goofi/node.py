@@ -186,20 +186,20 @@ class Node(ABC):
                 self._alive = False
                 # clear data in connected downstream nodes
                 for slot in self.output_slots.values():
-                    for slot_name, conn,_ in slot.connections:
+                    for slot_name, conn, _ in slot.connections:
                         conn.try_send(Message(MessageType.CLEAR_DATA, {"slot_name": slot_name}))
             elif msg.type == MessageType.ADD_OUTPUT_PIPE:
                 # add a connection to the output slot
                 slot = self.output_slots[msg.content["slot_name_out"]]
                 conn = msg.content["node_connection"]
-                self_conn=False
+                self_conn = False
 
                 if conn is None:
                     # if no connection is specified, connect to the node's own node reference
                     conn = self.connection
-                    self_conn=True
+                    self_conn = True
 
-                slot.connections.append((msg.content["slot_name_in"], conn,self_conn))
+                slot.connections.append((msg.content["slot_name_in"], conn, self_conn))
             elif msg.type == MessageType.REMOVE_OUTPUT_PIPE:
                 # clear the data in the input slot
                 msg.content["node_connection"].try_send(
@@ -208,7 +208,7 @@ class Node(ABC):
                 # remove the connection
                 slot = self.output_slots[msg.content["slot_name_out"]]
                 try:
-                    slot.connections.remove((msg.content["slot_name_in"], msg.content["node_connection"],False))
+                    slot.connections.remove((msg.content["slot_name_in"], msg.content["node_connection"], False))
                 except ValueError:
                     # connection doesn't exist
                     self.connection.try_send(
@@ -353,7 +353,7 @@ class Node(ABC):
                     continue
 
                 # send the data to all connected nodes
-                for target_slot, conn,self_conn in self.output_slots[name].connections:
+                for target_slot, conn, self_conn in self.output_slots[name].connections:
                     try:
                         msg = Message(MessageType.DATA, {"data": data, "slot_name": target_slot})
                     except Exception:
@@ -366,7 +366,7 @@ class Node(ABC):
                     except ConnectionError:
                         # the target node is dead, remove the connection
                         # TODO: forward removal of this connection to the manager
-                        self.output_slots[name].connections.remove((target_slot, conn,self_conn))
+                        self.output_slots[name].connections.remove((target_slot, conn, self_conn))
                         continue
 
     @staticmethod

@@ -18,8 +18,11 @@ class Connectivity(Node):
     def config_params():
         return {
             "classical": {
-                "method": StringParam("wPLI", options=["coherence", "imag_coherence", "wPLI", "PLI", "PLV", "covariance", "pearson", "mutual_info"]),},
-            
+                "method": StringParam(
+                    "wPLI",
+                    options=["coherence", "imag_coherence", "wPLI", "PLI", "PLV", "covariance", "pearson", "mutual_info"],
+                ),
+            },
             "biotuner": {
                 "method": StringParam(
                     "None", options=["None", "harmsim", "euler", "subharm_tension", "RRCi", "wPLI_crossfreq"]
@@ -28,8 +31,9 @@ class Connectivity(Node):
                 "f_min": FloatParam(2.0, 0.1, 50.0, doc="Minimum frequency"),
                 "f_max": FloatParam(30.0, 1.0, 100.0, doc="Maximum frequency"),
                 "precision": FloatParam(0.1, 0.01, 10.0, doc="Precision of the peak extraction in Hz"),
-                "peaks_function": StringParam("EMD", options=["EMD", "fixed", "harmonic_recurrence", "EIMC"],
-                                               doc="Peak extraction function"),
+                "peaks_function": StringParam(
+                    "EMD", options=["EMD", "fixed", "harmonic_recurrence", "EIMC"], doc="Peak extraction function"
+                ),
             },
         }
 
@@ -108,7 +112,7 @@ def compute_classical_connectivity(data, method):
 
     n_channels, n_samples = data.shape
     matrix = np.zeros((n_channels, n_channels))
-    
+
     if method == "covariance":
         matrix = np.cov(data)
         return matrix
@@ -145,7 +149,7 @@ def compute_classical_connectivity(data, method):
                 sig1 = hilbert_fn(data[i, :])
                 sig2 = hilbert_fn(data[j, :])
                 matrix[i, j] = matrix[j, i] = np.abs(np.mean(np.exp(1j * (np.angle(sig1) - np.angle(sig2)))))
-                
+
             elif method == "pearson":
                 corr, _ = pearsonr(data[i, :], data[j, :])
                 matrix[i, j] = matrix[j, i] = corr

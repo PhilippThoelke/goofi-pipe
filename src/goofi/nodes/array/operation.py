@@ -4,16 +4,13 @@ from goofi.node import Node
 from goofi.params import StringParam
 from copy import deepcopy
 
+
 class Operation(Node):
     def config_input_slots():
         return {"a": DataType.ARRAY, "b": DataType.ARRAY}
 
     def config_params():
-        return {
-            "operation": {
-                "operation": StringParam("add", options=["add", "subtract", "multiply", "divide", "matmul"])
-            }
-        }
+        return {"operation": {"operation": StringParam("add", options=["add", "subtract", "multiply", "divide", "matmul"])}}
 
     def config_output_slots():
         return {"out": DataType.ARRAY}
@@ -21,12 +18,12 @@ class Operation(Node):
     def process(self, a: Data, b: Data):
         if a is None or b is None:
             return None
-        if 'channels' in a.meta and 'channels' in b.meta:
-            if a.meta['channels'] != b.meta['channels']:
+        if "channels" in a.meta and "channels" in b.meta:
+            if a.meta["channels"] != b.meta["channels"]:
                 raise Warning("Channels are not the same, metadata from a is used")
             new_meta = deepcopy(a.meta)
         operation = self.params.operation.operation.value
-        
+
         if operation == "add":
             result = a.data + b.data
         elif operation == "subtract":
@@ -39,5 +36,5 @@ class Operation(Node):
             result = np.dot(a.data, b.data)
         else:
             raise ValueError(f"Invalid operation: {operation}")
-        
+
         return {"out": (result, new_meta)}

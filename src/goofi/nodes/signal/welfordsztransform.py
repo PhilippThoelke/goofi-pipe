@@ -14,13 +14,7 @@ class WelfordsZTransform(Node):
         return {"normalized": DataType.ARRAY}
 
     def config_params():
-        return {
-            "welford": {
-                "biased_std": False,
-                "outlier_stds": 4.0,
-                "reset": BoolParam(False, trigger=True)
-            }
-        }
+        return {"welford": {"biased_std": False, "outlier_stds": 4.0, "reset": BoolParam(False, trigger=True)}}
 
     def setup(self):
         self.mean = {}
@@ -37,7 +31,7 @@ class WelfordsZTransform(Node):
 
         normalized_value = np.zeros_like(val)
 
-        if self.params['welford']['reset'].value is True:
+        if self.params["welford"]["reset"].value is True:
             self.reset()
         if val.ndim == 1:
             iterator = enumerate(val)

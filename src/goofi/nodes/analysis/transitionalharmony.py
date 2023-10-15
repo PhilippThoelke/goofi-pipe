@@ -19,7 +19,7 @@ class TransitionalHarmony(Node):
                 "f_min": FloatParam(2.0, 0.1, 50.0),
                 "f_max": FloatParam(30.0, 1.0, 100.0),
                 "precision": FloatParam(0.1, 0.01, 10.0),
-                "peaks_function": StringParam("EMD", options=['EMD', 'fixed', 'harmonic_recurrence', 'EIMC', 'cepstrum']),
+                "peaks_function": StringParam("EMD", options=["EMD", "fixed", "harmonic_recurrence", "EIMC", "cepstrum"]),
                 "delta": IntParam(50, 1, 250),
                 "subharmonics": IntParam(10, 2, 100),
             }

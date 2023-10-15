@@ -17,23 +17,41 @@ class Filter(Node):
             "bandpass": {
                 "apply": BoolParam(False),
                 "type": StringParam("butterworth", options=["butterworth", "chebyshev", "elliptic"]),
-                "method": StringParam("Causal", options=["Causal", "Zero-phase"], doc="Zero-phase refers to applying the filter twice, once forward and once backward"),
+                "method": StringParam(
+                    "Causal",
+                    options=["Causal", "Zero-phase"],
+                    doc="Zero-phase refers to applying the filter twice, once forward and once backward",
+                ),
                 "order": IntParam(3, 1, 10, doc="Order of the bandpass filter"),
                 "f_low": FloatParam(1.0, 0.01, 9999.0),
                 "f_high": FloatParam(50.0, 1.0, 10000.0),
                 "ripple": FloatParam(1.0, 0.1, 10.0, doc="Ripple refers to the maximum loss in the passband of the filter"),
-                "padding": FloatParam(0.1, 0.01, 1.0, doc="Padding refers to the fraction of the signal to pad at the beginning and end of the signal"),
+                "padding": FloatParam(
+                    0.1,
+                    0.01,
+                    1.0,
+                    doc="Padding refers to the fraction of the signal to pad at the beginning and end of the signal",
+                ),
             },
             "notch": {
                 "apply": BoolParam(False),
                 "type": StringParam("butterworth", options=["butterworth", "chebyshev", "elliptic"]),
-                "method": StringParam("Causal", options=["Causal", "Zero-phase"], doc="Zero-phase refers to applying the filter twice, once forward and once backward"),
+                "method": StringParam(
+                    "Causal",
+                    options=["Causal", "Zero-phase"],
+                    doc="Zero-phase refers to applying the filter twice, once forward and once backward",
+                ),
                 "order": IntParam(1, 1, 4, doc="Order of the notch filter"),
                 "f_center": FloatParam(60.0, 0.01, 10000.0, doc="Center frequency of the notch filter"),
-                "Q": FloatParam(10.0, 0.1, 30.0, doc="Intensity of the notch filter"),  
+                "Q": FloatParam(10.0, 0.1, 30.0, doc="Intensity of the notch filter"),
                 "ripple": FloatParam(1.0, 0.1, 10.0, doc="Ripple refers to the maximum loss in the passband of the filter"),
-                "padding": FloatParam(0.1, 0.01, 1.0, doc="Padding refers to the fraction of the signal to pad at the beginning and end of the signal"),
-            }
+                "padding": FloatParam(
+                    0.1,
+                    0.01,
+                    1.0,
+                    doc="Padding refers to the fraction of the signal to pad at the beginning and end of the signal",
+                ),
+            },
         }
 
     def setup(self):
@@ -82,15 +100,15 @@ class Filter(Node):
             bw = f_center / Q
             bw /= nyq
 
-            w_low = np.clip(w0 - bw/2, 0.01, 0.99)
-            w_high = np.clip(w0 + bw/2, 0.01, 0.99)
+            w_low = np.clip(w0 - bw / 2, 0.01, 0.99)
+            w_high = np.clip(w0 + bw / 2, 0.01, 0.99)
 
             if filter_type == "butterworth":
-                b, a = butter(order, [w_low, w_high], btype='bandstop')
+                b, a = butter(order, [w_low, w_high], btype="bandstop")
             elif filter_type == "chebyshev":
-                b, a = cheby1(order, ripple, [w_low, w_high], btype='bandstop')
+                b, a = cheby1(order, ripple, [w_low, w_high], btype="bandstop")
             elif filter_type == "elliptic":
-                b, a = ellip(order, ripple, ripple, [w_low, w_high], btype='bandstop')
+                b, a = ellip(order, ripple, ripple, [w_low, w_high], btype="bandstop")
 
             filtered_data = self.apply_filter(b, a, filtered_data, method, padding)
 

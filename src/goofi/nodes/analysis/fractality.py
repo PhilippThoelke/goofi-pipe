@@ -4,8 +4,8 @@ from goofi.params import StringParam, IntParam, FloatParam
 from goofi.data import Data, DataType
 from goofi.node import Node
 
-class Fractality(Node):
 
+class Fractality(Node):
     def config_input_slots():
         return {"data_input": DataType.ARRAY}
 
@@ -15,18 +15,26 @@ class Fractality(Node):
     def config_params():
         return {
             "method": {
-                "name": StringParam("fractal_higuchi", options=["fractal_katz", "fractal_petrosian", "fractal_linelength", "fractal_psdslope", "fractal_nld", "fractal_higuchi", "box_counting"]),
+                "name": StringParam(
+                    "fractal_higuchi",
+                    options=[
+                        "fractal_katz",
+                        "fractal_petrosian",
+                        "fractal_linelength",
+                        "fractal_psdslope",
+                        "fractal_nld",
+                        "fractal_higuchi",
+                        "box_counting",
+                    ],
+                ),
             },
             "box_counting": {
                 "scales_base": FloatParam(2.0, 1.1, 10.0, doc="Base for the logspace calculation in box_counting"),
                 "scales_start": FloatParam(0.01, 0.001, 1.0, doc="Start of the logspace in box_counting"),
                 "scales_num": IntParam(10, 5, 100, doc="Number of steps in the logspace for box_counting"),
             },
-            "fractal_higuchi": {
-                "k_max": IntParam(10, 1, 100, doc="Maximum k value for fractal_higuchi method")
-            }
+            "fractal_higuchi": {"k_max": IntParam(10, 1, 100, doc="Maximum k value for fractal_higuchi method")},
         }
-
 
     def process(self, data_input: Data):
         if data_input is None or data_input.data is None:
@@ -53,7 +61,6 @@ class Fractality(Node):
 
         return {"fractal_dimension": (result, {})}
 
-
     def box_counting(self, data):
         # Check if data is either 2D or 3D with shape (x, y, 3)
         if len(data.shape) not in [2, 3] or (len(data.shape) == 3 and data.shape[2] != 3):
@@ -65,7 +72,7 @@ class Fractality(Node):
         # Threshold the data to create a binary representation
         threshold = np.mean(data)
         data = (data > threshold).astype(int)
-        
+
         if len(data.shape) != 2:
             raise ValueError("Data for box_counting should be 2D after any necessary conversions")
 
@@ -88,6 +95,8 @@ class Fractality(Node):
         return -coeffs[0]
 
     def rgb2gray(self, rgb):
-        gray = 0.2989 * rgb[:,:,0] + 0.5870 * rgb[:,:,1] + 0.1140 * rgb[:,:,2]
+        gray = 0.2989 * rgb[:, :, 0] + 0.5870 * rgb[:, :, 1] + 0.1140 * rgb[:, :, 2]
         return gray / 255  # Normalize to [0,1]
-#https://github.com/ChatzigeorgiouGroup/FractalDimension/blob/master/FractalDimension.py
+
+
+# https://github.com/ChatzigeorgiouGroup/FractalDimension/blob/master/FractalDimension.py

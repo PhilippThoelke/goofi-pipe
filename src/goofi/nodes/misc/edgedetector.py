@@ -4,6 +4,7 @@ from goofi.data import Data, DataType
 from goofi.node import Node
 import numpy as np
 
+
 class EdgeDetector(Node):
     def config_input_slots():
         return {"image": DataType.ARRAY}  # Image as input
@@ -16,9 +17,9 @@ class EdgeDetector(Node):
             "edge": {
                 "method": StringParam("sobel", options=["canny", "sobel"], doc="Edge detection method"),
                 "threshold1": FloatParam(50.0, 0.0, 300.0, doc="First threshold for the hysteresis procedure for canny"),
-                "threshold2": FloatParam(150.0, 0.0, 300.0, doc="Second threshold for the hysteresis procedure for canny")
+                "threshold2": FloatParam(150.0, 0.0, 300.0, doc="Second threshold for the hysteresis procedure for canny"),
             },
-            "common": {"autotrigger": True}
+            "common": {"autotrigger": True},
         }
 
     def process(self, image: Data):
@@ -47,7 +48,7 @@ class EdgeDetector(Node):
             grad_y = cv2.Sobel(gray_image_8bit, cv2.CV_32F, 0, 1, ksize=3)
             edges = cv2.magnitude(grad_x, grad_y)
             _, edges = cv2.threshold(edges, threshold1, 255, cv2.THRESH_BINARY)
-        
+
         edges = edges.astype(np.float32) / 255.0  # Convert to float and normalize to [0, 1]
 
         return {"edges": (edges, {**image.meta})}

@@ -4,15 +4,13 @@ from goofi.node import Node
 from goofi.params import IntParam
 import numpy as np
 
+
 class FOOOFaperiodic(Node):
     def config_input_slots():
         return {"psd_data": DataType.ARRAY}
 
     def config_output_slots():
-        return {"offset": DataType.ARRAY, 
-                "exponent": DataType.ARRAY, 
-                "cf_peaks": DataType.ARRAY,
-                 "cleaned_psd": DataType.ARRAY}
+        return {"offset": DataType.ARRAY, "exponent": DataType.ARRAY, "cf_peaks": DataType.ARRAY, "cleaned_psd": DataType.ARRAY}
 
     def config_params():
         return {
@@ -28,21 +26,21 @@ class FOOOFaperiodic(Node):
 
         # Create FOOOF object & set its parameters
         fm = FOOOF(max_n_peaks=self.params["fooof"]["max_n_peaks"].value)
-        
+
         # Extract the PSD and freqs from the Data object
         psd = psd_data.data
-        
+
         if psd_data.data.ndim == 1:
-            freqs = np.array(psd_data.meta['channels']["dim0"])
+            freqs = np.array(psd_data.meta["channels"]["dim0"])
         else:  # if 2D
-            freqs = np.array(psd_data.meta['channels']["dim1"])
+            freqs = np.array(psd_data.meta["channels"]["dim1"])
 
         # Fit FOOOF model
         fm.fit(freqs, psd)
 
         # Extract aperiodic component and peak parameters
-        aperiodic_params = fm.get_params('aperiodic_params')
-        peak_params = fm.get_params('peak_params')
+        aperiodic_params = fm.get_params("aperiodic_params")
+        peak_params = fm.get_params("peak_params")
         cleaned_psd = fm._spectrum_peak_rm
 
         # Extracting specific parameters
@@ -56,5 +54,5 @@ class FOOOFaperiodic(Node):
             "offset": (offset, {}),
             "exponent": (exponent, {}),
             "cf_peaks": (cf_peaks, {}),
-             "cleaned_psd": (cleaned_psd, {})
+            "cleaned_psd": (cleaned_psd, {}),
         }

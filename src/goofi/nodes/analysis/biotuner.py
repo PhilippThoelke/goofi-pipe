@@ -30,8 +30,9 @@ class Biotuner(Node):
                 "f_min": FloatParam(2.0, 0.1, 50.0, doc="Minimum frequency"),
                 "f_max": FloatParam(30.0, 1.0, 100.0, doc="Maximum frequency"),
                 "precision": FloatParam(0.1, 0.01, 10.0, doc="Precision of the peak extraction in Hz"),
-                "peaks_function": StringParam("EMD", options=["EMD", "fixed", "harmonic_recurrence", "EIMC"],
-                                               doc="Peak extraction function"),
+                "peaks_function": StringParam(
+                    "EMD", options=["EMD", "fixed", "harmonic_recurrence", "EIMC"], doc="Peak extraction function"
+                ),
                 "n_harm_subharm": IntParam(3, 1, 10, doc="Number of harmonics to consider in the subharmonic tension metric"),
                 "n_harm_extended": IntParam(3, 1, 10, doc="Number of harmonics to consider in the extended peaks"),
                 "delta_lim": IntParam(250, 1, 300, doc="Maximum delta (in ms) in the subharmonic tension metric"),
@@ -77,9 +78,18 @@ class Biotuner(Node):
 compute_biotuner_fn, harmonic_tuning_fn = None, None
 
 
-def biotuner_realtime(data, sfreq, n_peaks=5, peaks_function="EMD", min_freq=1,
-                      max_freq=65, precision=0.1, n_harm_extended=3, n_harm_subharm=3,
-                      delta_lim=250):
+def biotuner_realtime(
+    data,
+    sfreq,
+    n_peaks=5,
+    peaks_function="EMD",
+    min_freq=1,
+    max_freq=65,
+    precision=0.1,
+    n_harm_extended=3,
+    n_harm_subharm=3,
+    delta_lim=250,
+):
     # import the biotuner function here to avoid loading it on startup
     global compute_biotuner_fn, harmonic_tuning_fn
     if compute_biotuner_fn is None or harmonic_tuning_fn is None:

@@ -201,7 +201,7 @@ class ZeroMQConnection(Connection, ABC):
         if self.pull_endpoint is None:
             # no pull endpoint, stop the thread
             return
-        
+
         pull_socket = self.context.socket(zmq.PULL)
         pull_socket.bind(self.pull_endpoint)
 

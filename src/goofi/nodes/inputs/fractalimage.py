@@ -4,6 +4,7 @@ from goofi.node import Node
 import numpy as np
 import time
 
+
 class FractalImage(Node):
     def config_input_slots():
         return {"complexity": DataType.ARRAY}  # No input data for this node
@@ -15,11 +16,13 @@ class FractalImage(Node):
         return {
             "image": {
                 "image_size": IntParam(512, 128, 2048),
-                "persistence": FloatParam(0.5, 0.1, 1.0, doc="The persistence value for the fractal noise (higher values result in more detail)"),
+                "persistence": FloatParam(
+                    0.5, 0.1, 1.0, doc="The persistence value for the fractal noise (higher values result in more detail)"
+                ),
                 "octaves": IntParam(6, 1, 6),
                 "lacunarity": FloatParam(2.0, 1.0, 4.0),
             },
-            "common": {"autotrigger": True}
+            "common": {"autotrigger": True},
         }
 
     def process(self, complexity: Data):
@@ -31,10 +34,10 @@ class FractalImage(Node):
             persistence = self.params["image"]["persistence"].value
         else:
             persistence = complexity.data
-        
+
         # Generate a new seed based on current time
-        seed = int(time.time()*1000) % 2**32  # Convert time to milliseconds and take modulo to avoid overflow
-        
+        seed = int(time.time() * 1000) % 2**32  # Convert time to milliseconds and take modulo to avoid overflow
+
         # Generate the fractal image
         x = np.linspace(0, 5, image_size)
         y = np.linspace(0, 5, image_size)
@@ -44,11 +47,14 @@ class FractalImage(Node):
         # Return the generated fractal image
         return {"image": (image, {})}  # No metadata to include, hence the empty dictionary
 
+
 def fade(t):
     return 6 * t**5 - 15 * t**4 + 10 * t**3
 
+
 def lerp(a, b, x):
     return a + x * (b - a)
+
 
 def gradient(h, x, y):
     # Define the gradient vectors
@@ -57,6 +63,7 @@ def gradient(h, x, y):
     g = vectors[h % 4]
     # Calculate the dot product
     return g[..., 0] * x + g[..., 1] * y
+
 
 def perlin(x, y, seed=0):
     np.random.seed(seed)
@@ -67,19 +74,20 @@ def perlin(x, y, seed=0):
     yi = y.astype(int)
     xf = x - xi
     yf = y - yi
-    
+
     u = fade(xf)
     v = fade(yf)
-    
+
     n00 = gradient(p[p[xi] + yi], xf, yf)
     n01 = gradient(p[p[xi] + yi + 1], xf, yf - 1)
     n11 = gradient(p[p[xi + 1] + yi + 1], xf - 1, yf - 1)
     n10 = gradient(p[p[xi + 1] + yi], xf - 1, yf)
-    
+
     x1 = lerp(n00, n10, u)
     x2 = lerp(n01, n11, u)
-    
+
     return lerp(x1, x2, v)
+
 
 def fbm(x, y, octaves=6, lacunarity=2, persistence=0.5, seed=0):
     value = 0

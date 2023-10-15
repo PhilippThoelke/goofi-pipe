@@ -38,16 +38,16 @@ class PowerBandEEG(Node):
         }
         power_type = self.params["powerband"]["power_type"].value
         if data.data.ndim == 1:
-            freqs = np.array(data.meta['channels']['dim0'])
+            freqs = np.array(data.meta["channels"]["dim0"])
             if freqs[0] == 0:
                 freqs[0] = 1e-8
             del data.meta["channels"]["dim0"]
         elif data.data.ndim == 2:
-            freqs = np.array(data.meta['channels']['dim1'])
+            freqs = np.array(data.meta["channels"]["dim1"])
             if freqs[0] == 0:
                 freqs[0] = 1e-8
             del data.meta["channels"]["dim1"]
-        
+
         output = {}
         for band, (f_min, f_max) in bands.items():
             valid_indices = np.where((freqs >= f_min) & (freqs <= f_max))[0]

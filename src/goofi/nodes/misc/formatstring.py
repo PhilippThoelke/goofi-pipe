@@ -3,6 +3,7 @@ from goofi.node import Node
 from goofi.params import StringParam
 import re
 
+
 class FormatString(Node):
     def config_input_slots():
         slots = {}
@@ -16,7 +17,10 @@ class FormatString(Node):
     def config_params():
         return {
             "pattern": {
-                "key": StringParam("", doc="When empty, will join strings with spaces. You can specify placeholders in the format using curly brackets")
+                "key": StringParam(
+                    "",
+                    doc="When empty, will join strings with spaces. You can specify placeholders in the format using curly brackets",
+                )
             }
         }
 
@@ -35,14 +39,14 @@ class FormatString(Node):
             input_values = [value.data for value in input_strings.values()]
             while input_values and not input_values[-1]:
                 input_values.pop()
-            output = ' '.join(input_values)
+            output = " ".join(input_values)
         else:
             # Replace all named placeholders
             for key, value in input_strings.items():
-                pattern = pattern.replace(f'{{{key}}}', value.data)
+                pattern = pattern.replace(f"{{{key}}}", value.data)
 
             # Identify used keys in the pattern (after named replacement to catch any repeating named placeholders)
-            used_keys = re.findall(r'{(input_string_\d+)}', pattern)
+            used_keys = re.findall(r"{(input_string_\d+)}", pattern)
 
             # Create a list of unused values
             unused_values = [value.data for key, value in input_strings.items() if key not in used_keys]

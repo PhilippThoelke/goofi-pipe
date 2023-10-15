@@ -3,6 +3,7 @@ from goofi.node import Node
 from goofi.data import DataType, Data
 import colorsys
 
+
 class RGBtoHSV(Node):
     def config_input_slots():
         return {"rgb_image": DataType.ARRAY}
@@ -16,7 +17,7 @@ class RGBtoHSV(Node):
     def process(self, rgb_image: Data):
         if rgb_image is None or rgb_image.data is None:
             return None
-        
+
         # Extract RGB values
         r, g, b = rgb_image.data[..., 0], rgb_image.data[..., 1], rgb_image.data[..., 2]
 

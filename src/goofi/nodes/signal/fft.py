@@ -5,13 +5,13 @@ from goofi.node import Node
 from goofi.params import FloatParam, IntParam, StringParam
 from copy import deepcopy
 
+
 class FFT(Node):
     def config_input_slots():
         return {"data": DataType.ARRAY}
 
     def config_output_slots():
-        return {"mag": DataType.ARRAY,
-                "phase": DataType.ARRAY}
+        return {"mag": DataType.ARRAY, "phase": DataType.ARRAY}
 
     def config_params():
         return {
@@ -23,7 +23,7 @@ class FFT(Node):
     def process(self, data: Data):
         if data is None or data.data is None:
             return None
-        
+
         input_type = self.params["fft"]["input_type"].value
 
         if input_type == "time_series":
@@ -40,7 +40,7 @@ class FFT(Node):
                 meta["channels"]["dim0"] = freq.tolist()
             else:  # if 2D
                 meta["channels"]["dim1"] = freq.tolist()
-        
+
         elif input_type == "image":
             if data.data.ndim == 2:  # Grayscale image
                 fft_result = np.fft.fft2(data.data)
@@ -55,5 +55,4 @@ class FFT(Node):
             # Meta data remains the same for image since we're not really modifying the "channels" in the image case
             meta = deepcopy(data.meta)
 
-        
         return {"mag": (psd, meta), "phase": (phase, meta)}

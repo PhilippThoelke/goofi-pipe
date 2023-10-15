@@ -15,13 +15,26 @@ class SpectroMorphology(Node):
     def config_params():
         return {
             "Parameters": {
-                "method": StringParam("SpectralCentroid", options=['SpectralCentroid', 'SpectralCrestFactor', 'SpectralDecrease',
-         'SpectralFlatness', 'SpectralFlux', 'SpectralKurtosis',
-         'SpectralMfccs', 'SpectralPitchChroma', 'SpectralRolloff',
-         'SpectralSkewness', 'SpectralSlope', 'SpectralSpread',
-         'SpectralTonalPowerRatio']),
+                "method": StringParam(
+                    "SpectralCentroid",
+                    options=[
+                        "SpectralCentroid",
+                        "SpectralCrestFactor",
+                        "SpectralDecrease",
+                        "SpectralFlatness",
+                        "SpectralFlux",
+                        "SpectralKurtosis",
+                        "SpectralMfccs",
+                        "SpectralPitchChroma",
+                        "SpectralRolloff",
+                        "SpectralSkewness",
+                        "SpectralSlope",
+                        "SpectralSpread",
+                        "SpectralTonalPowerRatio",
+                    ],
+                ),
                 "window": IntParam(100, 10, 10000),
-                "overlap": IntParam(50, 1, 1000)
+                "overlap": IntParam(50, 1, 1000),
             }
         }
 
@@ -36,19 +49,14 @@ class SpectroMorphology(Node):
         if data.data.ndim > 1:
             raise ValueError("Data must be 1D")
 
-        method = self.params['Parameters']['method'].value
-        window = self.params['Parameters']['window'].value
-        overlap = self.params['Parameters']['overlap'].value
-        v, t = computeFeatureCl_new(data.data, method, data.meta['sfreq'], window=window, overlap=overlap)
+        method = self.params["Parameters"]["method"].value
+        window = self.params["Parameters"]["window"].value
+        overlap = self.params["Parameters"]["overlap"].value
+        v, t = computeFeatureCl_new(data.data, method, data.meta["sfreq"], window=window, overlap=overlap)
         return {"spectro": (v, data.meta)}
 
-def computeFeatureCl_new(
-    afAudioData,
-    cFeatureName,
-    f_s,
-    window=4000,
-    overlap=1
-     ):
+
+def computeFeatureCl_new(afAudioData, cFeatureName, f_s, window=4000, overlap=1):
     """Calculate spectromorphological metrics on time series.
 
     Parameters
@@ -76,11 +84,5 @@ def computeFeatureCl_new(
     t : array
         Timestamps.
     """
-    [v, t] = pyACA.computeFeature(
-                   cFeatureName,
-                   afAudioData,
-                   f_s,
-                   None,
-                   window,
-                   overlap)
+    [v, t] = pyACA.computeFeature(cFeatureName, afAudioData, f_s, None, window, overlap)
     return (v, t)

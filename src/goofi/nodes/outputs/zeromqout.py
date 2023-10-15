@@ -8,21 +8,17 @@ from goofi.node import Node
 
 
 class ZeroMQOut(Node):
-
     def config_params():
-        return {"zero_mq":{
-            'address': '127.0.0.1',
-            'port': 6543
-        }}
-    
+        return {"zero_mq": {"address": "127.0.0.1", "port": 6543}}
+
     def config_input_slots():
         return {"data": DataType.ARRAY}
-    
+
     def setup(self):
-        if not hasattr(self, 'context'):
+        if not hasattr(self, "context"):
             self.context = zmq.Context()
 
-        if hasattr(self, 'socket'):
+        if hasattr(self, "socket"):
             try:
                 self.socket.close()
             except:
@@ -32,7 +28,7 @@ class ZeroMQOut(Node):
         self.socket = self.context.socket(zmq.PAIR)
         self.socket.bind(f"tcp://{self.params.zero_mq.address.value}:{self.params.zero_mq.port.value}")
 
-    def process(self, data:Data):
+    def process(self, data: Data):
         if data is None:
             return
         data = data.data.astype(np.float32)

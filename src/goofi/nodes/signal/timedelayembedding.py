@@ -21,7 +21,6 @@ class TimeDelayEmbedding(Node):
         if input_array is None or input_array.data is None:
             return None
 
-        
         delay = self.params["embedding"]["delay"].value
         embedding_dimension = self.params["embedding"]["embedding_dimension"].value
         moire_embedding = self.params["embedding"]["moire_embedding"].value

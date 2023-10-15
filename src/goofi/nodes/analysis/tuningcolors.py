@@ -11,16 +11,16 @@ class TuningColors(Node):
         return {"data": DataType.ARRAY}
 
     def config_output_slots():
-        return {"hue": DataType.ARRAY, "saturation": DataType.ARRAY, "value": DataType.ARRAY,
-                "color_names": DataType.STRING}
+        return {"hue": DataType.ARRAY, "saturation": DataType.ARRAY, "value": DataType.ARRAY, "color_names": DataType.STRING}
 
     def config_params():
         return {
             "Biocolors": {
-                "color_names_mode": StringParam("name", options=['name', 'HEX']),
+                "color_names_mode": StringParam("name", options=["name", "HEX"]),
                 "n_first_colors": IntParam(3, 1, 6),
             }
         }
+
     def setup(self):
         from biotuner.biocolors import audible2visible, scale2freqs, wavelength_to_rgb
         from biotuner.biotuner_object import dyad_similarity
@@ -79,29 +79,29 @@ class TuningColors(Node):
         # frequency value, saturation representing the consonance, and luminance set to a fixed value
         hsvs = hsv_all[1:]
         color_names = []
-        color_names_mode = self.params['Biocolors']['color_names_mode'].value
-        if color_names_mode == 'name':
+        color_names_mode = self.params["Biocolors"]["color_names_mode"].value
+        if color_names_mode == "name":
             for hsv in hsvs:
                 rgb = tuple(map(lambda x: int(x * 255), colorsys.hsv_to_rgb(*hsv)))
                 color_names.append(rgb2name(rgb))
             color_names = color_names[: self.params["Biocolors"]["n_first_colors"].value]
-            color_names =' '.join(color_names)
-            
-        elif color_names_mode == 'HEX':
+            color_names = " ".join(color_names)
+
+        elif color_names_mode == "HEX":
             for hsv in hsvs:
                 rgb = tuple(map(lambda x: int(x * 255), colorsys.hsv_to_rgb(*hsv)))
                 hex_value = "#{:02x}{:02x}{:02x}".format(rgb[0], rgb[1], rgb[2])
                 color_names.append(hex_value)
             color_names = color_names[: self.params["Biocolors"]["n_first_colors"].value]
-            color_names = ' '.join(color_names)
-        
+            color_names = " ".join(color_names)
+
         # select n_first_colors
-        
+
         return {
             "hue": (np.array([x[0] for x in hsvs]), data.meta),
             "saturation": (np.array([x[1] for x in hsvs]), data.meta),
             "value": (np.array([x[2] for x in hsvs]), data.meta),
-            "color_names": (color_names, data.meta)
+            "color_names": (color_names, data.meta),
         }
 
 
@@ -115,9 +115,7 @@ def rgb2name(rgb):
     Returns:
         str: The name of the closest color in the dictionary
     """
-    colors = {
-        k: webcolors.hex_to_rgb(k) for k in webcolors.constants.CSS3_HEX_TO_NAMES.keys()
-    }
+    colors = {k: webcolors.hex_to_rgb(k) for k in webcolors.constants.CSS3_HEX_TO_NAMES.keys()}
     closest_color = min(
         colors,
         key=lambda color: sum((a - b) ** 2 for a, b in zip(rgb, colors[color])),

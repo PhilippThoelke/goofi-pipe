@@ -40,7 +40,7 @@ class Bioelements(Node):
         elems = elems[: self.params["bioelements"]["n_elements"].value]
         spec_regions = spec_regions[: self.params["bioelements"]["n_elements"].value]
         types = types[: self.params["bioelements"]["n_elements"].value]
-        
+
         # remove duplicates
         elems = list(dict.fromkeys(elems))
         spec_regions = list(dict.fromkeys(spec_regions))

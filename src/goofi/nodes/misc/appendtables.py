@@ -1,12 +1,10 @@
 from goofi.data import Data, DataType
 from goofi.node import Node
 
+
 class AppendTables(Node):
     def config_input_slots():
-        return {
-            "table1": DataType.TABLE,
-            "table2": DataType.TABLE
-        }
+        return {"table1": DataType.TABLE, "table2": DataType.TABLE}
 
     def config_output_slots():
         return {"output_table": DataType.TABLE}

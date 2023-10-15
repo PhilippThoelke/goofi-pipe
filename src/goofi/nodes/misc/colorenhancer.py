@@ -4,6 +4,7 @@ from goofi.data import Data, DataType
 from goofi.node import Node
 from goofi.params import FloatParam
 
+
 class ColorEnhancer(Node):
     def config_input_slots():
         return {"image": DataType.ARRAY}
@@ -17,7 +18,7 @@ class ColorEnhancer(Node):
                 "contrast": FloatParam(1.0, 0.1, 10.0, doc="Multiplier for contrast adjustment. 1.0 means no change."),
                 "brightness": FloatParam(0.0, -0.9, 0.9, doc="Additive brightness adjustment. 0.0 means no change."),
                 "gamma": FloatParam(1.0, 0.1, 5.0, doc="Gamma correction value. 1.0 means no change."),
-                "color_boost": FloatParam(1.0, 0.5, 3.0, doc="Multiplier for boosting colors. 1.0 means no change.")
+                "color_boost": FloatParam(1.0, 0.5, 3.0, doc="Multiplier for boosting colors. 1.0 means no change."),
             }
         }
 

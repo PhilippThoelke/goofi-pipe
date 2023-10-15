@@ -5,8 +5,8 @@ from goofi.params import BoolParam, IntParam, StringParam
 import numpy as np
 from scipy.stats import rankdata
 
-class StaticBaseline(Node):
 
+class StaticBaseline(Node):
     def config_input_slots():
         return {"data": DataType.ARRAY}
 
@@ -17,7 +17,7 @@ class StaticBaseline(Node):
         return {
             "baseline": {
                 "n_seconds": IntParam(30, 1, 120),
-                "method": StringParam("quantile", options=['mean']),
+                "method": StringParam("quantile", options=["mean"]),
                 "baseline_computation": BoolParam(trigger=True),
             }
         }
@@ -74,7 +74,6 @@ class StaticBaseline(Node):
                 std = np.std(self.window[i])
                 normalized[i, :] = (val[i, :] - mean) / (std + 1e-8)
             return normalized
-
 
     def quantile_transform(self, val):
         # Check for dimension

@@ -11,8 +11,7 @@ class Bioplanets(Node):
         return {"peaks": DataType.ARRAY}
 
     def config_output_slots():
-        return {"planets": DataType.TABLE,
-                "top_planets": DataType.STRING}
+        return {"planets": DataType.TABLE, "top_planets": DataType.STRING}
 
     def config_params():
         return {
@@ -26,6 +25,7 @@ class Bioplanets(Node):
         # load the dataframe here to avoid loading it on startup
         self.planets_data = pd.read_csv(join(self.assets_path, "planets_peaks_prominence02.csv"))
         self.desired_planets = ["venus", "earth", "mars", "jupiter", "saturn"]
+
     def process(self, peaks: Data):
         if peaks is None:
             return None
@@ -40,8 +40,7 @@ class Bioplanets(Node):
         # Filter out planets that have no peaks
         planet_peaks_count = {planet: len(peaks) for planet, peaks in results.items() if len(peaks) > 0}
         sorted_planets = sorted(planet_peaks_count, key=planet_peaks_count.get, reverse=True)
-        top_planets_str = ' '.join(sorted_planets[:self.params["bioplanets"]["n_top_planets"].value])
-
+        top_planets_str = " ".join(sorted_planets[: self.params["bioplanets"]["n_top_planets"].value])
 
         planets = {}
         for i in self.desired_planets:
@@ -51,6 +50,7 @@ class Bioplanets(Node):
 
 
 hertz_to_nm_fn, find_matching_spectral_lines_fn = None, None
+
 
 def bioplanets_realtime(peaks, df, tolerance):
     desired_planets = ["venus", "earth", "mars", "jupiter", "saturn"]
@@ -74,11 +74,11 @@ def bioplanets_realtime(peaks, df, tolerance):
     wavelengths_by_planet = {}
     for planet in desired_planets:
         # Filter wavelengths for a given planet
-        wavelengths = res_filtered[res_filtered['planet'] == planet]['wavelength'].tolist()
+        wavelengths = res_filtered[res_filtered["planet"] == planet]["wavelength"].tolist()
 
         # Round each wavelength to two decimal places
         wavelengths = [round(w, 2) for w in wavelengths]
-        
+
         # Remove duplicates by converting to a set, then back to a list
         unique_wavelengths = list(set(wavelengths))
 

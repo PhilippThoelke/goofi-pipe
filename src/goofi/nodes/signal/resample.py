@@ -47,13 +47,13 @@ class Resample(Node):
         # Resample the signal based on its dimension
         if signal.ndim == 1:
             resampled_signal = resample_poly(signal, up, down, padtype="line")
-            if "dim0" in data.meta['channels']:
-                del data.meta['channels']['dim0']
+            if "dim0" in data.meta["channels"]:
+                del data.meta["channels"]["dim0"]
         elif signal.ndim == 2:
-            if "dim0" in data.meta['channels']:
-                del data.meta['channels']['dim0']
-            if "dim1" in data.meta['channels']:
-                del data.meta['channels']['dim1']
+            if "dim0" in data.meta["channels"]:
+                del data.meta["channels"]["dim0"]
+            if "dim1" in data.meta["channels"]:
+                del data.meta["channels"]["dim1"]
 
             rows, cols = signal.shape
             resampled_signal = np.zeros((rows, int(cols * up / down)))
@@ -66,4 +66,3 @@ class Resample(Node):
         data.meta["sfreq"] = new_sfreq
 
         return {"out": (resampled_signal, data.meta)}
-

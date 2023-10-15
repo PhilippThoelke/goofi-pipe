@@ -5,24 +5,21 @@ from goofi.data import DataType
 from goofi.node import Node
 from goofi.params import BoolParam
 
-class ProbabilityMatrix(Node):
 
+class ProbabilityMatrix(Node):
     def config_params():
-        return {
-            "common": {
-                "autotrigger": BoolParam(True)
-            }
-        }
+        return {"common": {"autotrigger": BoolParam(True)}}
 
     def config_input_slots():
         return {"input_data": DataType.ARRAY}
-    
+
     def config_params():
         return {
             "Probability": {
                 "Reset": BoolParam(trigger=True),
             }
         }
+
     def config_output_slots():
         return {"data": DataType.ARRAY}
 
@@ -69,7 +66,6 @@ class ProbabilityMatrix(Node):
         if self.params.Probability.Reset.value:
             self.setup()
         return {"data": (self.transition_matrix, {"sfreq": self.params.common.autotrigger.value})}
-
 
     def autotrigger_changed(self, value):
         self.setup()

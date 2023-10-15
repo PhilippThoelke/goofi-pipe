@@ -3,8 +3,8 @@ from goofi.params import StringParam, FloatParam
 from goofi.data import Data, DataType
 from goofi.node import Node
 
-class LoadFile(Node):
 
+class LoadFile(Node):
     def config_output_slots():
         return {"data_output": DataType.ARRAY}
 
@@ -13,9 +13,9 @@ class LoadFile(Node):
             "file": {
                 "filename": StringParam("earth", doc="The name of the file to load"),
                 "type": StringParam("spectrum", options=["spectrum"]),
-                "freq_multiplier": FloatParam(1.0, doc="Multiplier to adjust the frequency values")
+                "freq_multiplier": FloatParam(1.0, doc="Multiplier to adjust the frequency values"),
             },
-            "common": {"autotrigger": True}
+            "common": {"autotrigger": True},
         }
 
     def setup(self):
@@ -40,7 +40,7 @@ class LoadFile(Node):
                 assert data.shape[1] == 2, "Invalid time series shape"
                 self.time_series, self.meta = data[0], data[1]
                 assert isinstance(self.meta, dict), "Metadata should be a dictionary"
-            
+
             return {"data_output": (self.time_series, self.meta)}
 
         # Handle spectrum type
