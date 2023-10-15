@@ -28,6 +28,7 @@ class LSLClient(Node):
         if hasattr(self, "client"):
             self.disconnect()
         self.client = None
+        self.ch_names = None
 
         # initialize list of streams
         self.available_streams = None
@@ -51,16 +52,20 @@ class LSLClient(Node):
         if samples.size == 0:
             return None
 
-        ch_info = self.client.info().desc().child("channels").child("channel")
-        ch_type = self.client.info().type().lower()
-        ch_names = []
-        for k in range(1, self.client.info().channel_count() + 1):
-            ch_names.append(ch_info.child_value("label") or "{} {:03d}".format(ch_type.upper(), k))
-            ch_info = ch_info.next_sibling()
+        try:
+            ch_info = self.client.info().desc().child("channels").child("channel")
+            ch_type = self.client.info().type().lower()
+            ch_names = []
+            for k in range(1, self.client.info().channel_count() + 1):
+                ch_names.append(ch_info.child_value("label") or "{} {:03d}".format(ch_type.upper(), k))
+                ch_info = ch_info.next_sibling()
+            self.ch_names = ch_names
+        except OSError:
+            pass
 
         meta = {
             "sfreq": self.client.info().nominal_srate(),
-            "channels": {"dim0": ch_names},
+            "channels": {"dim0": self.ch_names},
             "available_streams": {info.source_id(): info.name() for info in self.available_streams},
         }
         return {"out": (samples, meta)}
