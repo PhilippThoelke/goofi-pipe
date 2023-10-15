@@ -2,8 +2,7 @@ import numpy as np
 
 from goofi.data import Data, DataType
 from goofi.node import Node
-from goofi.params import FloatParam, IntParam, BoolParam
-from biotuner.rhythm_construction import consonant_euclid, find_optimal_offsets
+from goofi.params import BoolParam, FloatParam, IntParam
 
 
 class Biorhythms(Node):
