@@ -1,8 +1,8 @@
 import numpy as np
 from scipy import stats
+
 from goofi.data import Data, DataType
 from goofi.node import Node
-from goofi.params import FloatParam
 
 
 class Correlation(Node):
@@ -15,12 +15,27 @@ class Correlation(Node):
         return {"pearson": DataType.ARRAY}
 
     def config_params():
-        return {}
+        return {"correlation": {"axis": -1}}
 
     def process(self, data1: Data, data2: Data):
-        if data1 is None or data1.data is None or data2 is None or data2.data is None:
+        if data1 is None or data2 is None:
             return None
 
-        r, p = stats.pearsonr(data1.data, data2.data)
+        meta = data1.meta
 
-        return {"pearson": (np.array(r), data1.meta)}
+        # broadcast data to same shape
+        data1, data2 = np.broadcast_arrays(data1.data, data2.data)
+        data = np.stack([data1, data2], axis=0)
+
+        if data.ndim > 3:
+            raise ValueError("Correlation only works for 1D and 2D data")
+
+        # update axis param
+        axis = self.params.correlation.axis.value
+        if axis >= 0:
+            axis += 1
+
+        # calculate correlation along axis
+        r = np.apply_along_axis(lambda x: stats.pearsonr(*x.reshape(2, -1))[0], axis, data)[0]
+
+        return {"pearson": (r, meta)}
