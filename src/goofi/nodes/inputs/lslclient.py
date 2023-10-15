@@ -1,8 +1,15 @@
 import socket
+import traceback
 from typing import Any, Dict, Tuple
 
 import numpy as np
-import pylsl
+
+try:
+    import pylsl
+except RuntimeError:
+    # pylsl is not available, print the error
+    traceback.print_exc()
+    pylsl = None
 
 from goofi.data import DataType
 from goofi.node import Node
@@ -25,6 +32,9 @@ class LSLClient(Node):
 
     def setup(self):
         """Initialize and start the LSL client."""
+        if pylsl is None:
+            raise RuntimeError("pylsl is not available.")
+
         if hasattr(self, "client"):
             self.disconnect()
         self.client = None
