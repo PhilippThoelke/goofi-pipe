@@ -3,7 +3,7 @@ from scipy.stats import pearsonr
 from sklearn.feature_selection import mutual_info_regression
 from goofi.data import Data, DataType
 from goofi.node import Node
-from goofi.params import FloatParam, IntParam, StringParam
+from goofi.params import FloatParam, IntParam, StringParam, BoolParam
 
 
 class Connectivity(Node):
@@ -20,8 +20,8 @@ class Connectivity(Node):
             "classical": {
                 "method": StringParam(
                     "wPLI",
-                    options=["coherence", "imag_coherence", "wPLI", "PLI", "PLV", "covariance", "pearson", "mutual_info"],
-                ),
+                    options=["coherence", "imag_coherence", "wPLI", "PLI", "PLV", "covariance", "pearson", "mutual_info"]),
+                
             },
             "biotuner": {
                 "method": StringParam(
@@ -33,7 +33,11 @@ class Connectivity(Node):
                 "precision": FloatParam(0.1, 0.01, 10.0, doc="Precision of the peak extraction in Hz"),
                 "peaks_function": StringParam(
                     "EMD", options=["EMD", "fixed", "harmonic_recurrence", "EIMC"], doc="Peak extraction function"
-                ),
+                ),},
+            "Adjacency": {
+                "Binarize": BoolParam(False, doc="Binarize the connectivity matrix"),
+                "threshold": FloatParam(0.5, 0.0, 1.0, doc="Threshold for binarization"),
+            
             },
         }
 
@@ -61,6 +65,12 @@ class Connectivity(Node):
             method = self.params["classical"]["method"].value
             matrix = compute_classical_connectivity(data.data, method)
 
+        binarize = self.params["Adjacency"]["Binarize"].value
+        threshold = self.params["Adjacency"]["threshold"].value
+
+        if binarize:
+            matrix[matrix < threshold] = 0
+            matrix[matrix >= threshold] = 1
         return {"matrix": (matrix, data.meta)}
 
 
