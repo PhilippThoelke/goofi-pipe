@@ -19,17 +19,16 @@ class Join(Node):
         if a is None or b is None:
             return None
 
+        result_meta = deepcopy(a.meta)
         if self.params.join.method.value == "concatenate":
             # concatenate a and b
             result = np.concatenate([a.data, b.data], axis=self.params.join.axis.value)
 
-            if "channels" in a.meta and "channels" in b.meta:
-                result_meta = deepcopy(a.meta)
+            if "dim0" in a.meta["channels"] and "dim0" in b.meta["channels"]:
                 result_meta["channels"]["dim0"] = a.meta["channels"]["dim0"] + b.meta["channels"]["dim0"]
         elif self.params.join.method.value == "stack":
             # stack a and b
             result = np.stack([a.data, b.data], axis=self.params.join.axis.value)
-            result_meta = deepcopy(a.meta)
         else:
             raise ValueError(f"Unknown join method {self.params.join.method.value}. Supported are 'concatenate' and 'stack'.")
 
