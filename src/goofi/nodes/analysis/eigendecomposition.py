@@ -1,6 +1,4 @@
 import numpy as np
-from scipy.stats import pearsonr
-from sklearn.feature_selection import mutual_info_regression
 from goofi.data import Data, DataType
 from goofi.node import Node
 from goofi.params import StringParam
