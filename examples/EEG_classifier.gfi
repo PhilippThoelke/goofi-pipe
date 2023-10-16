@@ -1,5 +1,5 @@
 links:
-- node_in: classifier0
+- node_in: psd0
   node_out: buffer0
   slot_in: data
   slot_out: out
@@ -7,26 +7,38 @@ links:
   node_out: buffer1
   slot_in: array
   slot_out: out
-- node_in: buffer0
-  node_out: lslclient0
-  slot_in: val
-  slot_out: out
 - node_in: buffer1
   node_out: classifier0
   slot_in: val
   slot_out: probs
-- node_in: math0
+- node_in: reshape1
   node_out: classifier0
-  slot_in: data
+  slot_in: array
   slot_out: feature_importances
+- node_in: select0
+  node_out: lslclient0
+  slot_in: data
+  slot_out: out
+- node_in: buffer0
+  node_out: select0
+  slot_in: val
+  slot_out: out
+- node_in: reshape0
+  node_out: psd0
+  slot_in: array
+  slot_out: psd
+- node_in: classifier0
+  node_out: reshape0
+  slot_in: data
+  slot_out: out
 nodes:
   buffer0:
     _type: Buffer
     category: signal
     gui_kwargs:
       pos:
-      - 486
-      - 179
+      - 119
+      - 182
     params:
       buffer:
         axis:
@@ -37,7 +49,7 @@ nodes:
           _value: false
           trigger: true
         size:
-          _value: 1
+          _value: 600
           vmax: 5000
           vmin: 1
       common:
@@ -53,8 +65,8 @@ nodes:
     category: signal
     gui_kwargs:
       pos:
-      - 891
-      - 180
+      - 1012
+      - 198
     params:
       buffer:
         axis:
@@ -81,8 +93,8 @@ nodes:
     category: analysis
     gui_kwargs:
       pos:
-      - 691
-      - 175
+      - 806
+      - 188
     params:
       KNeighbors:
         n_neighbors:
@@ -152,6 +164,9 @@ nodes:
           _value: 2
           vmax: 10
           vmin: 1
+        train:
+          _value: false
+          trigger: true
       common:
         autotrigger:
           _value: false
@@ -165,8 +180,8 @@ nodes:
     category: inputs
     gui_kwargs:
       pos:
-      - 285
-      - 124
+      - -260
+      - 125
     params:
       common:
         autotrigger:
@@ -191,8 +206,8 @@ nodes:
     category: inputs
     gui_kwargs:
       pos:
-      - 286
-      - 182
+      - -292
+      - 177
     params:
       common:
         autotrigger:
@@ -212,13 +227,13 @@ nodes:
         stream_name:
           _value: ''
           options: null
-  math0:
-    _type: Math
-    category: array
+  psd0:
+    _type: PSD
+    category: signal
     gui_kwargs:
       pos:
-      - 894
-      - 369
+      - 320
+      - 181
     params:
       common:
         autotrigger:
@@ -228,47 +243,39 @@ nodes:
           _value: 30.0
           vmax: 60.0
           vmin: 0.0
-      map:
-        input_max:
+      psd:
+        f_max:
+          _value: 60.0
+          vmax: 10000.0
+          vmin: 1.0
+        f_min:
+          _value: 1.0
+          vmax: 9999.0
+          vmin: 0.01
+        method:
+          _value: welch
+          options:
+          - fft
+          - welch
+        noverlap:
+          _value: 0
+          vmax: 500
+          vmin: 0
+        precision:
           _value: 1.0
           vmax: 10.0
-          vmin: -10.0
-        input_min:
-          _value: 0.0
-          vmax: 10.0
-          vmin: -10.0
-        output_max:
-          _value: 1.0
-          vmax: 10.0
-          vmin: -10.0
-        output_min:
-          _value: 0.0
-          vmax: 10.0
-          vmin: -10.0
-      math:
-        multiply:
-          _value: 15.0
-          vmax: 10.0
-          vmin: -10.0
-        post_add:
-          _value: 0.0
-          vmax: 10.0
-          vmin: -10.0
-        pre_add:
-          _value: 0.0
-          vmax: 10.0
-          vmin: -10.0
-        round:
-          _value: -1
+          vmin: 0.01
+        smooth_welch:
+          _value: 1
           vmax: 10
-          vmin: -1
+          vmin: 1
   reduce0:
     _type: Reduce
     category: array
     gui_kwargs:
       pos:
-      - 1094
-      - 182
+      - 1215
+      - 200
     params:
       common:
         autotrigger:
@@ -291,3 +298,80 @@ nodes:
           - min
           - max
           - std
+  reshape0:
+    _type: Reshape
+    category: array
+    gui_kwargs:
+      pos:
+      - 594
+      - 186
+    params:
+      common:
+        autotrigger:
+          _value: false
+          trigger: false
+        max_frequency:
+          _value: 30.0
+          vmax: 60.0
+          vmin: 0.0
+      reshape:
+        new_shape_pos1:
+          _value: -1
+          vmax: 3
+          vmin: -1
+        new_shape_pos2:
+          _value: 1
+          vmax: 3
+          vmin: -1
+  reshape1:
+    _type: Reshape
+    category: array
+    gui_kwargs:
+      pos:
+      - 1015
+      - 398
+    params:
+      common:
+        autotrigger:
+          _value: false
+          trigger: false
+        max_frequency:
+          _value: 30.0
+          vmax: 60.0
+          vmin: 0.0
+      reshape:
+        new_shape_pos1:
+          _value: 61
+          vmax: 3
+          vmin: -1
+        new_shape_pos2:
+          _value: 60
+          vmax: 3
+          vmin: -1
+  select0:
+    _type: Select
+    category: array
+    gui_kwargs:
+      pos:
+      - -81
+      - 173
+    params:
+      common:
+        autotrigger:
+          _value: false
+          trigger: false
+        max_frequency:
+          _value: 30.0
+          vmax: 60.0
+          vmin: 0.0
+      select:
+        axis:
+          _value: 0
+          vmax: 3
+          vmin: -1
+        exclude:
+          _value: T9,T10,Iz
+          options: null
+        include:
+          _value: ''
+          options: null
