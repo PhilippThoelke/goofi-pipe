@@ -48,18 +48,19 @@ class PCA(Node):
 
         samples_to_keep = int(self.params.Control.buffer_size.value * sfreq)
 
-        if self.buffer is None:
-            self.buffer = data_array
-        else:
-            self.buffer = np.hstack((self.buffer, data_array))
-
-        if self.buffer.shape[1] > samples_to_keep:
-            self.buffer = self.buffer[:, -samples_to_keep:]
-            if not self.buffer_full:
-                self.buffer_full = True
+        if not self.buffer_full:
+            if self.buffer is None:
+                self.buffer = data_array
             else:
-                # Buffer was already full previously, so return the last computed principal components.
-                return {"principal_components": self.last_principal_components}
+                self.buffer = np.hstack((self.buffer, data_array))
+
+            if self.buffer.shape[1] > samples_to_keep:
+                self.buffer = self.buffer[:, -samples_to_keep:]
+                if not self.buffer_full:
+                    self.buffer_full = True
+                else:
+                    # Buffer was already full previously, so return the last computed principal components.
+                    return {"principal_components": self.last_principal_components}
 
         if self.buffer.shape[1] < 100:
             return None
