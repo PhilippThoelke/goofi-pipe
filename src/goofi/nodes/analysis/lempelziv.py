@@ -30,16 +30,20 @@ class LempelZiv(Node):
             # no data, skip processing
             return None
 
-        if self.params.lempel_ziv.binarization.value == "mean":
-            # binarize using the mean
-            binarized = data.data > np.mean(data.data, axis=self.params.lempel_ziv.axis.value, keepdims=True)
-        elif self.params.lempel_ziv.binarization.value == "median":
-            # binarize using the median
-            binarized = data.data > np.median(data.data, axis=self.params.lempel_ziv.axis.value, keepdims=True)
-        else:
-            raise ValueError("Unknown binarization method")
+        # read parameters
+        binarize_mode = self.params.lempel_ziv.binarization.value
+        axis = self.params.lempel_ziv.axis.value
 
-        # compute normalized Lempel-Ziv complexity
-        lzc = np.apply_along_axis(self.compute_lzc, self.params.lempel_ziv.axis.value, binarized, normalize=True)
+        # binarize data
+        if binarize_mode == "mean":
+            binarized = data.data > np.mean(data.data, axis=axis, keepdims=True) # mean split
+        elif binarize_mode == "median":
+            binarized = data.data > np.median(data.data, axis=axis, keepdims=True) # median split
 
+        # compute Lempel-Ziv complexity
+        lzc = np.apply_along_axis(self.compute_lzc, axis,  binarized, normalize=True)
+        #                         ^^^^^^^^^^^^^^^^  ^^^^   ^^^^^^^^^  ^^^^^^^^^^^^^^
+        #                         fn to apply       axis   data       args to fn
+
+        # return Lempel-Ziv complexity and incoming metadata
         return {"lzc": (lzc, data.meta)}
