@@ -18,11 +18,26 @@ class Operation(Node):
     def process(self, a: Data, b: Data):
         if a is None or b is None:
             return None
-        if "channels" in a.meta and "channels" in b.meta:
-            if a.meta["channels"] != b.meta["channels"]:
-                raise Warning("Channels are not the same, metadata from a is used")
-            new_meta = deepcopy(a.meta)
+        
+
         operation = self.params.operation.operation.value
+        if operation == "matmul":
+            new_meta = deepcopy(a.meta)
+            # matmul is n x m * m x p -> n x p
+            if "dim0" in a.meta["channels"]:
+                new_meta["channels"]["dim0"] = a.meta["channels"]["dim0"]
+            elif "dim0" in new_meta["channels"]:
+                del new_meta["channels"]["dim0"]
+
+            if "dim1" in b.meta["channels"]:
+                new_meta["channels"]["dim1"] = b.meta["channels"]["dim1"]
+            elif "dim1" in new_meta["channels"]:
+                del new_meta["channels"]["dim1"]
+        else:
+            if "channels" in a.meta and "channels" in b.meta:
+                if a.meta["channels"] != b.meta["channels"]:
+                    print("Channels are not the same, metadata from a is used")
+                new_meta = deepcopy(a.meta)
 
         if operation == "add":
             result = a.data + b.data
