@@ -3,6 +3,7 @@ import numpy as np
 from goofi.data import Data, DataType
 from goofi.node import Node
 from goofi.params import IntParam
+from copy import deepcopy
 
 
 class Reshape(Node):
@@ -27,6 +28,9 @@ class Reshape(Node):
         a = self.params.reshape.new_shape_pos1.value
         b = self.params.reshape.new_shape_pos2.value
 
+        # TODO: allow for N-dimensional arrays
         result = np.reshape(array.data, (a, b))
 
+        # TODO: properly handle channel names
+        del array.meta["channels"]
         return {"out": (result, array.meta)}
