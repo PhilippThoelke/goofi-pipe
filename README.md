@@ -117,6 +117,11 @@ This patch highlights:
 
 - **Spectrogram**: Created using the `PSD` node followed by a `Buffer`, it provides a time-resolved view of the EEG signal's frequency content.
 
+## Principal Component Analysis (PCA)
+![PCA](https://github.com/PhilippThoelke/goofi-pipe/assets/36135990/416a4bf7-0433-441c-a311-c58943d0e433)
+
+Using PCA (Principal Component Analysis) allows us to reduce the dimensionality of raw EEG data, while retaining most of the variance. We use the first three components and visualize their trajectory, allowing us to identify patterns in the data over time.
+
 ## Realtime Classification
 
 leverage the multimodal framework of goofi, state-of-the-art machine learning classifiers can be built on-the-fly to predict behavior from an array of different sources. Here's a brief walkthrough of three distinct examples:
