@@ -122,7 +122,7 @@ This patch highlights:
 leverage the multimodal framework of goofi, state-of-the-art machine learning classifiers can be built on-the-fly to predict behavior from an array of different sources. Here's a brief walkthrough of three distinct examples:
 
 ### 1. Raw EEG Signal Classification
-![EEG Signal Classification](https://github.com/PhilippThoelke/goofi-pipe/assets/49297774/68daa9b0-813d-4193-9e26-68e1b506a356)
+![EEG Signal Classification](https://github.com/PhilippThoelke/goofi-pipe/assets/36135990/2da6b555-9f79-40c7-9bd8-1f863dcf4137)
 This patch captures raw EEG signals using the `EEGrecording` and `LslStream`module. The classifier module allows
 to capture data from different states indicated by the user from *n* features, which in the present case are the 64 EEG channels. Some classifiers allow for visualization of feature importance. Here we show a topomap of the distribution of features importances on the scalp. The classifier outputs probability of being in each of the states in the training data. This prediction is smoothed using a buffer for less jiterry results.  
 ![Classifier parameters](https://github.com/PhilippThoelke/goofi-pipe/assets/49297774/da2a86e3-efc8-4088-8d52-fb8c528dfb87)
