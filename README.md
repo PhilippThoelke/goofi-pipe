@@ -120,7 +120,7 @@ This patch highlights:
 ## Principal Component Analysis (PCA)
 ![PCA](https://github.com/PhilippThoelke/goofi-pipe/assets/36135990/d239eed8-4552-4256-9caf-d7c2fbb937e9)
 
-Using PCA (Principal Component Analysis) allows us to reduce the dimensionality of raw EEG data, while retaining most of the variance. We use the first three components and visualize their trajectory, allowing us to identify patterns in the data over time.
+Using PCA (Principal Component Analysis) allows us to reduce the dimensionality of raw EEG data, while retaining most of the variance. We use the first three components and visualize their trajectory, allowing us to identify patterns in the data over time. The topographical maps show the contrbution of each channel to the first four principal components (PCs).
 
 ## Realtime Classification
 
