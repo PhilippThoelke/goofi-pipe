@@ -3,7 +3,7 @@ from goofi.data import Data, DataType
 from goofi.node import Node
 import numpy as np
 
-
+#TODO: deal meta data output
 class PowerBand(Node):
     def config_input_slots():
         return {"data": DataType.ARRAY}
@@ -27,8 +27,10 @@ class PowerBand(Node):
         f_min = self.params["powerband"]["f_min"].value
         f_max = self.params["powerband"]["f_max"].value
         power_type = self.params["powerband"]["power_type"].value
-
-        freq = data.meta["freq"]
+        if 'dim1' in data.meta['channels']:
+            freq = np.array(data.meta['channels']["dim1"])
+        else:
+            freq = np.array(data.meta['channels']["dim0"])
 
         # Selecting the range of frequencies
         valid_indices = np.where((freq >= f_min) & (freq <= f_max))[0]
