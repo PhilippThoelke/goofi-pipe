@@ -13,3 +13,5 @@ pyzmq
 webcolors
 pylsl
 mediapipe
+librosa==0.9.2
+panns_inference
