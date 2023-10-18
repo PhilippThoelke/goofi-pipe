@@ -7,11 +7,9 @@ from goofi.params import FloatParam, IntParam, StringParam, BoolParam
 
 class AudioTagging(Node):
     def config_input_slots():
-        # Defining two input slots for two input signals
         return {"audioIn": DataType.ARRAY}
 
     def config_output_slots():
-        # Defining two output slots for the resampled signals
         return {"tags": DataType.STRING,
                 'probabilities': DataType.ARRAY,
                 'embedding': DataType.ARRAY}
@@ -31,7 +29,6 @@ class AudioTagging(Node):
         if audioIn.data is None:
             return None
         
-        #check if sf is 32k
         if audioIn.meta["sfreq"] != 32000:
             raise ValueError("Sampling frequency must be 32k")
         
