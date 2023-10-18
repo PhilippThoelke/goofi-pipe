@@ -1,29 +1,84 @@
 from sklearn.metrics import pairwise_distances
-
-from goofi.data import Data, DataType
+import numpy as np
 from goofi.node import Node
-
+from goofi.params import FloatParam, BoolParam, IntParam
+from goofi.data import DataType, Data
+from itertools import groupby
 
 class Recurrence(Node):
     def config_input_slots():
         return {"input_array": DataType.ARRAY}
 
     def config_output_slots():
-        return {"recurrence_matrix": DataType.ARRAY}
+        return {
+            "recurrence_matrix": DataType.ARRAY,
+            "RR": DataType.ARRAY,
+            "DET": DataType.ARRAY,
+            "LAM": DataType.ARRAY
+        }
+
+    def config_params():
+        return {
+            "recurrence": {
+                "relative_threshold": FloatParam(0.1, 0.0, 1.0, doc="Relative threshold for binarizing the distance matrix as a fraction of the maximum distance"),
+                "binarize": BoolParam(True, doc="Flag to determine if distance matrix should be binarized"),
+                "min_diag_length": IntParam(2, 1, 100, doc="Minimum length of diagonal lines to be considered for DET and LAM calculation"),
+            }
+        }
 
     def process(self, input_array: Data):
         if input_array is None:
             return None
 
-        if input_array.data.shape[0] < 2:
+        # Get the parameters
+        relative_threshold = self.params["recurrence"]["relative_threshold"].value
+        binarize = self.params["recurrence"]["binarize"].value
+
+        # Check the shape of the array
+        data = input_array.data
+        if len(data.shape) == 1:
+            # Reshape 1D array to 2D column vector
+            data = data[:, np.newaxis]
+
+        if data.shape[0] < 2:
             raise ValueError("Not enough data points to compute recurrence matrix.")
 
         # Compute pairwise distance
-        distance_matrix = pairwise_distances(input_array.data)
-        # Handling potential NaN or Inf values
-        # if np.any(np.isnan(distance_matrix)) or np.any(np.isinf(distance_matrix)):
-        #    print("Warning: The distance matrix contains NaN or Inf values. They will be replaced with a large number.")
-        #    distance_matrix = np.nan_to_num(distance_matrix, nan=np.inf)
-        #    distance_matrix = np.clip(distance_matrix, a_min=None, a_max=np.finfo(np.float32).max)
+        distance_matrix = pairwise_distances(data)
+        
+        # Calculate the actual threshold
+        threshold = relative_threshold * np.max(distance_matrix)
 
-        return {"recurrence_matrix": (distance_matrix, input_array.meta)}
+        # Binarize the distance matrix if required
+        if binarize:
+            recurrence_matrix = (distance_matrix <= threshold).astype(int)
+        else:
+            recurrence_matrix = distance_matrix
+
+        # Calculate RQA metrics
+        RR = np.mean(recurrence_matrix)  # Recurrence Rate
+        # Get all diagonal lengths using the new method
+        diagonal_lengths = self.get_diagonal_lengths(recurrence_matrix)
+        DET = sum([l**2 for l in diagonal_lengths]) / float(recurrence_matrix.size)  # Determinism
+        vertical_lengths = [len(list(group)) for i in range(recurrence_matrix.shape[0]) for key, group in groupby(recurrence_matrix[i, :]) if key]
+        LAM = sum([l**2 for l in vertical_lengths]) / float(recurrence_matrix.size)  # Laminarity
+
+        return {
+            "recurrence_matrix": (recurrence_matrix, input_array.meta),
+            "RR": (np.array(RR), {}),
+            "DET": (np.array(DET), {}),
+            "LAM": (np.array(LAM), {})
+        }
+        
+    def get_diagonal_lengths(self, matrix):
+        N = matrix.shape[0]
+        lengths = []
+        for d in range(-N+2, N-1):  # Loop over all diagonals
+            diag = np.diagonal(matrix, offset=d)
+            for key, group in groupby(diag):
+                if key:
+                    length = len(list(group))
+                    if length >= self.params["recurrence"]["min_diag_length"].value: 
+                        lengths.append(length)
+        return lengths
+
