@@ -1,7 +1,7 @@
 import numpy as np
 from goofi.data import Data, DataType
 from goofi.node import Node
-from goofi.params import StringParam
+from goofi.params import StringParam, BoolParam
 from scipy.sparse.csgraph import laplacian
 from scipy.linalg import eigh
 from copy import deepcopy
@@ -26,9 +26,10 @@ class EigenDecomposition(Node):
                     options=[
                         "eig",
                         "eigh",
-                        "eigh_general",
-                    ],
-                ),
+                        "eigh_general"]),
+                "sign_shift": BoolParam(False),
+                "order": StringParam("descending", options=["descending", "ascending"]),
+                    
             }
         }
 
@@ -55,13 +56,17 @@ class EigenDecomposition(Node):
         if method == "eig":
             eigenvalues, eigenvectors = np.linalg.eig(matrix_data)
 
+        if self.params.Eigen.order.value == "descending":
+            idx = eigenvalues.argsort()[::-1]
+        elif self.params.Eigen.order.value == "ascending":
+            idx = eigenvalues.argsort()
         # reordering eigenvalues and eigenvectors and channel names (which are strings)
-        idx = eigenvalues.argsort()[::-1]
         eigenvalues = eigenvalues[idx]
         eigenvectors = eigenvectors[:, idx]
 
-        signs = np.sign(np.sum(eigenvectors, axis=0))
-        eigenvectors *= signs
+        if self.params.Eigen.sign_shift.value:
+            signs = np.sign(np.sum(eigenvectors, axis=0))
+            eigenvectors *= signs
 
         if "dim0" in matrix.meta["channels"]:
             matrix.meta["channels"]["dim0"] = [matrix.meta["channels"]["dim0"][i] for i in idx]
