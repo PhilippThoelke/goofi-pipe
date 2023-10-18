@@ -2,7 +2,7 @@ import numpy as np
 
 from goofi.data import Data, DataType
 from goofi.node import Node
-from goofi.params import FloatParam, IntParam
+from goofi.params import FloatParam, IntParam, BoolParam
 
 
 class Math(Node):
@@ -19,6 +19,8 @@ class Math(Node):
                 "multiply": FloatParam(1.0, -10.0, 10.0),
                 "post_add": FloatParam(0.0, -10.0, 10.0),
                 "round": IntParam(-1, -1, 10),
+                "sqrt": BoolParam(False),
+                "squared": BoolParam(False),
             },
             "map": {
                 "input_min": FloatParam(0.0, -10.0, 10.0),
@@ -52,8 +54,12 @@ class Math(Node):
             self.params["map"]["output_min"].value,
             self.params["map"]["output_max"].value,
         )
-
+        if self.params["math"]["sqrt"].value:
+            signal = np.sqrt(signal)
+        if self.params["math"]["squared"].value:
+            signal = np.square(signal)
         return {"out": (signal, data.meta)}
+        
 
     @staticmethod
     def rescale(signal, input_min, input_max, output_min, output_max):
