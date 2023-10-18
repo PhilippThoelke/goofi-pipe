@@ -16,15 +16,17 @@ class Fractality(Node):
         return {
             "method": {
                 "name": StringParam(
-                    "fractal_higuchi",
+                    "hurst",
                     options=[
-                        "fractal_katz",
+                        "hurst",
+                        "fractal_correlation",
                         "fractal_petrosian",
-                        "fractal_linelength",
                         "fractal_psdslope",
-                        "fractal_nld",
                         "fractal_higuchi",
-                        "box_counting",
+                        "fractal_katz",
+                        "fractal_linelength",
+                        "fractal_nld",
+                        "box_counting_2d",
                     ],
                 ),
             },
@@ -34,6 +36,10 @@ class Fractality(Node):
                 "scales_num": IntParam(10, 5, 100, doc="Number of steps in the logspace for box_counting"),
             },
             "fractal_higuchi": {"k_max": IntParam(10, 1, 100, doc="Maximum k value for fractal_higuchi method")},
+            "fractal_correlation": {
+                "delay": IntParam(1, 1, 100, doc="Delay for fractal_correlation method"),
+                "dimension": IntParam(2, 1, 100, doc="Dimension for fractal_correlation method"),
+            },
         }
 
     def process(self, data_input: Data):
@@ -54,8 +60,12 @@ class Fractality(Node):
         elif method == "fractal_nld":
             result, _ = nk.fractal_nld(data_input.data)
         elif method == "fractal_higuchi":
-            result, _ = nk.fractal_higuchi(data_input.data, k_max=self.params["method"]["k_max"].value)
-        elif method == "box_counting":
+            result, _ = nk.fractal_higuchi(data_input.data, k_max=self.params["fractal_higuchi"]["k_max"].value)
+        elif method == "hurst":
+            result, _ = nk.fractal_hurst(data_input.data)
+        elif method == "fractal_correlation":
+            result, _ = nk.fractal_correlation(data_input.data)
+        elif method == "box_counting_2d":
             result = self.box_counting(data_input.data)
             print(result)
 
