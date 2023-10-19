@@ -1,5 +1,6 @@
 import numpy as np
-
+import pickle
+from os.path import join
 from goofi.data import Data, DataType
 from goofi.node import Node
 from goofi.params import FloatParam, IntParam, StringParam, BoolParam
@@ -15,8 +16,22 @@ class AudioTagging(Node):
                 'embedding': DataType.ARRAY}
 
     def config_params():
-        return {"selection": {"threshold": FloatParam(0.5, 0.0, 1.0),
-                             "number_of_tags": IntParam(3, 1, 527),}}
+        return {
+            "selection": {
+                "threshold": FloatParam(0.5, 0.0, 1.0),
+                "number_of_tags": IntParam(3, 1, 527),
+                "all_categories": BoolParam(True),
+                "human_sounds": BoolParam(False),
+                "animal": BoolParam(False),
+                "music": BoolParam(False),
+                "sounds_of_things": BoolParam(False),
+                "natural_sounds": BoolParam(False),
+                "source_ambiguous_sounds": BoolParam(False),
+                "channel_environment_and_background": BoolParam(False),
+            },
+            
+        }
+
     
     def setup(self):
         import librosa
@@ -24,11 +39,14 @@ class AudioTagging(Node):
         from panns_inference import AudioTagging, SoundEventDetection, labels
         self.at = AudioTagging(checkpoint_path=None, device='cpu')
         self.labels = labels
+        audio_tags_path = join(self.assets_path, "audio_tags_structure.pkl")
+        with open(audio_tags_path, "rb") as f:
+            self.audio_tags = pickle.load(f)
 
     def process(self, audioIn: Data):
         if audioIn.data is None:
             return None
-        
+            
         if audioIn.meta["sfreq"] != 32000:
             raise ValueError("Sampling frequency must be 32k")
         
@@ -43,10 +61,31 @@ class AudioTagging(Node):
         probabilities = clipwise_output[0][best_labels]
         embedding = embedding.squeeze()
         
-        formatted_tags = "\n".join([x for i, x in enumerate(tags[:n_tags-1]) if probabilities[i]>threshold])
-        formatted_probs = np.array([x for i, x in enumerate(probabilities[:n_tags-1]) if probabilities[i]>threshold])
+        if self.params["selection"]["all_categories"].value:
+            # If all_categories is set to True, include all tags
+            active_categories = [tag for sublist in self.audio_tags.values() for tag in sublist]
+        else:
+            active_categories = []
+            if self.params["selection"]["human_sounds"].value:
+                active_categories.extend(self.audio_tags["Human sounds"])
+            if self.params["selection"]["animal"].value:
+                active_categories.extend(self.audio_tags["Animal"])
+            if self.params["selection"]["music"].value:
+                active_categories.extend(self.audio_tags["Music"])
+            if self.params["selection"]["sounds_of_things"].value:
+                active_categories.extend(self.audio_tags["Sounds of things"])
+            if self.params["selection"]["natural_sounds"].value:
+                active_categories.extend(self.audio_tags["Natural sounds"])
+            if self.params["selection"]["source_ambiguous_sounds"].value:
+                active_categories.extend(self.audio_tags["Source-ambiguous sounds"])
+            if self.params["selection"]["channel_environment_and_background"].value:
+                active_categories.extend(self.audio_tags["Channel, environment and background"])
         
-    
+        # Filter based on active categories
+        indices = [i for i, x in enumerate(tags) if x in active_categories and probabilities[i] > threshold]
+        formatted_tags = "\n".join(tags[i] for i in indices[:n_tags-1])
+        formatted_probs = np.array([probabilities[i] for i in indices[:n_tags-1]])
+        
         return {"tags": (formatted_tags, audioIn.meta),
                 "probabilities": (formatted_probs, audioIn.meta),
                 "embedding": (embedding, audioIn.meta)}
