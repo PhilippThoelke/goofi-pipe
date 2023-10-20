@@ -1,10 +1,12 @@
+from copy import deepcopy
+
 import numpy as np
+from scipy.linalg import eigh
+from scipy.sparse.csgraph import laplacian
+
 from goofi.data import Data, DataType
 from goofi.node import Node
-from goofi.params import StringParam, BoolParam
-from scipy.sparse.csgraph import laplacian
-from scipy.linalg import eigh
-from copy import deepcopy
+from goofi.params import BoolParam, StringParam
 
 
 class EigenDecomposition(Node):
@@ -21,15 +23,9 @@ class EigenDecomposition(Node):
         return {
             "Eigen": {
                 "laplacian": StringParam("none", options=["none", "unnormalized", "normalized"]),
-                "method": StringParam(
-                    "eig",
-                    options=[
-                        "eig",
-                        "eigh",
-                        "eigh_general"]),
+                "method": StringParam("eig", options=["eig", "eigh", "eigh_general"]),
                 "sign_shift": BoolParam(False),
                 "order": StringParam("descending", options=["descending", "ascending"]),
-                    
             }
         }
 
@@ -73,4 +69,8 @@ class EigenDecomposition(Node):
 
         copied_meta = deepcopy(matrix.meta)
         del copied_meta["channels"]
-        return {"eigenvalues": (np.array(eigenvalues), copied_meta), "eigenvectors": (np.array(eigenvectors), matrix.meta)}
+
+        return {
+            "eigenvalues": (np.array(eigenvalues).astype(np.float32), copied_meta),
+            "eigenvectors": (np.array(eigenvectors).astype(np.float32), matrix.meta),
+        }
