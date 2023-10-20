@@ -7,6 +7,7 @@ from goofi.data import Data, DataType
 from goofi.node import Node
 from goofi.params import IntParam, BoolParam, StringParam, FloatParam
 import numpy as np
+from os.path import join
 
 
 class Classifier(Node):
@@ -32,6 +33,10 @@ class Classifier(Node):
                     "SVM", options=["NaiveBayes", "SVM", "RandomForest", "LogisticRegression", "KNeighbors"]
                 ),
                 "clear_training": BoolParam(False, trigger=True, doc="Clear the training set"),
+                "loadname": StringParam('datafile'),
+                "load_data": BoolParam(False, trigger=True),
+                "savename": StringParam('savename'),
+                "save_data": BoolParam(False, trigger=True)
             },
             "NaiveBayes": {"var_smoothing": FloatParam(1e-9, 1e-12, 1e-6)},
             "SVM": {
@@ -61,11 +66,17 @@ class Classifier(Node):
         self.training_labels = []
         self.classifier = None
         self.classifier_trained = False
+        
 
     def process(self, data: Data):
+        
         if data is None:
             return None
-
+        self.loadname = self.params.classification['loadname'].value
+        self.savename = self.params.classification['savename'].value
+        self.loadpath = join(self.data_path, self.loadname)
+        self.savepath = join(self.data_path, self.savename)
+        
         if self.params.classification.add_to_training.value:
             transposed_data = data.data.T
             self.training_data.extend(transposed_data)
@@ -75,6 +86,34 @@ class Classifier(Node):
             # print("Added to training set.")  # Debug statement
             return None
 
+        if self.params.classification.load_data.value:
+            try:
+                loaded_data = np.load(self.loadpath + '.npz')
+                self.training_data = loaded_data['training_data'].tolist()
+                self.training_labels = loaded_data['training_labels'].tolist()
+                print(f"Loaded training data from {self.loadpath}.")  # Debug statement
+            except Exception as e:
+                print(f"Error during loading data: {e}")  # Debug statement
+                return None
+            
+            # Automatically train when data is loaded
+            self.params.classification.train.value = True
+
+        if self.params.classification.save_data.value:
+            try:
+                np.savez(self.savepath, training_data=self.training_data, training_labels=self.training_labels)
+                print(f"Saved training data to {self.savepath}.")  # Debug statement
+            except Exception as e:
+                print(f"Error during saving data: {e}")  # Debug statement
+                return None
+
+        if self.params.classification.clear_training.value:
+            self.training_data = []
+            self.training_labels = []
+            self.classifier = None
+            self.classifier_trained = False
+            print("Training set cleared.")
+            
         if self.params.classification.clear_training.value:
             self.training_data = []
             self.training_labels = []
