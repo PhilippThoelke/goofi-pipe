@@ -61,6 +61,9 @@ class AudioStream(Node):
     def audio_sampling_frequency_changed(self, value):
         self.setup()
 
+    def audio_device_changed(self, value):
+        self.setup()
+
     @staticmethod
     def list_audio_devices():
         """Returns a list of available audio devices."""
