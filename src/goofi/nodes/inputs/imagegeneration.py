@@ -13,6 +13,8 @@ class ImageGeneration(Node):
     def config_params():
         return {
             "image_generation": {
+                "model_id": StringParam("dall-e", options=["stabilityai/stable-diffusion-2-1", "dall-e"]),
+                "openai_key": StringParam("openai.key"),
                 "inference_steps": IntParam(50, 5, 100),
                 "guidance_scale": FloatParam(7.5, 0.1, 20),
                 "use_fixers": BoolParam(True, doc="Use textural inversion (nfixer and nrealfixer) for better image quality."),
@@ -40,34 +42,49 @@ class ImageGeneration(Node):
         return {"img": DataType.ARRAY}
 
     def setup(self):
-        self.torch, self.diffusers = import_libs()
+        if self.params.image_generation.model_id.value == "stabilityai/stable-diffusion-2-1":
+            self.torch, self.diffusers = import_libs()
 
-        model_id = "stabilityai/stable-diffusion-2-1"
+            # load StableDiffusion model
+            if self.params.img2img.enabled.value:
+                # TODO: make sure this works without internet access
+                self.sd_pipe = self.diffusers.StableDiffusionImg2ImgPipeline.from_pretrained(
+                    self.params.image_generation.model_id, torch_dtype=self.torch.float16
+                )
+            else:
+                # TODO: make sure this works without internet access
+                self.sd_pipe = self.diffusers.StableDiffusionPipeline.from_pretrained(
+                    self.params.image_generation.model_id_id, torch_dtype=self.torch.float16
+                )
+            # set device
+            self.sd_pipe.to(self.params.image_generation.device.value)
 
-        # load StableDiffusion model
-        if self.params.img2img.enabled.value:
-            # TODO: make sure this works without internet access
-            self.sd_pipe = self.diffusers.StableDiffusionImg2ImgPipeline.from_pretrained(
-                model_id, torch_dtype=self.torch.float16
-            )
+            # initialize scheduler
+            self.image_generation_scheduler_changed(self.params.image_generation.scheduler.value)
+
+            # load textural inversions
+            if self.params.image_generation.use_fixers.value:
+                self.sd_pipe.load_textual_inversion(join(self.assets_path, "nfixer.pt"))
+                self.sd_pipe.load_textual_inversion(join(self.assets_path, "nrealfixer.pt"))
+
+            # initialize last image
+            if not hasattr(self, "last_img"):
+                self.last_img = None
+                self.reset_last_img()
+        elif self.params.image_generation.model_id.value == "dall-e":
+            self.base64, self.openai = import_libs("dall-e")
+
+            # load Dall-E model
+            if self.params.img2img.enabled.value:
+                self.dalle_pipe = self.openai.Image.create_edit
+            else:
+                self.dalle_pipe = self.openai.Image.create
+            # initialize last image
+            if not hasattr(self, "last_img"):
+                self.last_img = None
+                self.reset_last_img()
         else:
-            # TODO: make sure this works without internet access
-            self.sd_pipe = self.diffusers.StableDiffusionPipeline.from_pretrained(model_id, torch_dtype=self.torch.float16)
-        # set device
-        self.sd_pipe.to(self.params.image_generation.device.value)
-
-        # initialize scheduler
-        self.image_generation_scheduler_changed(self.params.image_generation.scheduler.value)
-
-        # load textural inversions
-        if self.params.image_generation.use_fixers.value:
-            self.sd_pipe.load_textual_inversion(join(self.assets_path, "nfixer.pt"))
-            self.sd_pipe.load_textual_inversion(join(self.assets_path, "nrealfixer.pt"))
-
-        # initialize last image
-        if not hasattr(self, "last_img"):
-            self.last_img = None
-            self.reset_last_img()
+            raise ValueError(f"Unknown model: {self.params.image_generation.model_id.value}")
 
     def process(self, prompt: Data, negative_prompt: Data, base_image: Data) -> Dict[str, Tuple[np.ndarray, Dict[str, Any]]]:
         if prompt is None:
@@ -78,6 +95,61 @@ class ImageGeneration(Node):
             # reset the last image to zeros
             self.reset_last_img()
 
+        if self.params.img2img.enabled.value:
+            # update the last image
+            if base_image is None:
+                base_image = self.last_img
+            else:
+                base_image = base_image.data
+            # resize
+            if self.params.img2img.resize_input.value:
+                # resize input image to match the last image
+                base_image = cv2.resize(
+                    base_image, (self.params.image_generation.width.value, self.params.image_generation.height.value)
+                )
+                if base_image.ndim == 3:
+                    # add batch dimension
+                    base_image = np.expand_dims(base_image, 0)
+            
+            # convert to uint8 
+            base_image = (base_image * 255).astype(np.uint8)
+            base_image = cv2.cvtColor(base_image, cv2.COLOR_RGB2RGBA)
+            # convert to bytes
+            base_image = cv2.imencode(".png", base_image)[1].tobytes()
+
+        # remote pipes
+        if self.params.image_generation.model_id.value == "dall-e":
+            size = f"{self.params.image_generation.width.value}x{self.params.image_generation.height.value}"
+            if self.params.img2img.enabled.value:
+                # raise error because img2img is not working yet
+                raise NotImplementedError("img2img is not working yet.")
+                # run the Dall-E img2img pipeline
+                response = self.dalle_pipe(image=base_image,
+                                           prompt=prompt,
+                                           n=1,
+                                           size=size,
+                                           response_format="b64_json",)
+            else:
+                # run the Dall-E txt2img pipeline
+                response = self.dalle_pipe(prompt=prompt,
+                                           n=1,
+                                           size=size,
+                                           response_format="b64_json",)
+            img = response["data"][0]["b64_json"]
+            # Decode base64 to bytes
+            decoded_bytes = self.base64.b64decode(img)
+            # Convert bytes to numpy array using OpenCV
+            img_array = cv2.imdecode(np.frombuffer(decoded_bytes, np.uint8), cv2.IMREAD_COLOR)
+            img_array = img_array.astype(np.float32) / 255.0
+            # Ensure correct shape
+            if img_array.shape != (self.params.image_generation.width.value, self.params.image_generation.height.value, 3):
+                img_array = cv2.resize(img_array, (self.params.image_generation.width.value, self.params.image_generation.height.value))
+            # Add batch dimension
+            img = np.expand_dims(img_array, 0)
+            # save last image
+            self.last_img = np.array(img[0])
+            return {"img": (img, {"prompt": prompt, "negative_prompt": negative_prompt if negative_prompt is not None else None})} 
+        
         # set seed
         if self.params.image_generation.seed.value != -1:
             self.torch.manual_seed(self.params.image_generation.seed.value)
@@ -86,23 +158,14 @@ class ImageGeneration(Node):
         negative_prompt = negative_prompt.data if negative_prompt is not None else ""
         if self.params.image_generation.use_fixers.value:
             negative_prompt = " ".join([negative_prompt, "nfixer nrealfixer"])
-
+        
+        # local pipes
         with self.torch.inference_mode():
             if self.params.img2img.enabled.value:
                 if base_image is None:
                     base_image = self.last_img
                 else:
                     base_image = base_image.data
-
-                if self.params.img2img.resize_input.value:
-                    # resize input image to match the last image
-                    base_image = cv2.resize(
-                        base_image, (self.params.image_generation.width.value, self.params.image_generation.height.value)
-                    )
-
-                if base_image.ndim == 3:
-                    # add batch dimension
-                    base_image = np.expand_dims(base_image, 0)
 
                 # run the img2img stable diffusion pipeline
                 img, _ = self.sd_pipe(
@@ -178,23 +241,38 @@ class ImageGeneration(Node):
         self.setup()
 
 
-def import_libs():
-    try:
-        import torch
-    except ImportError:
-        raise ImportError(
-            "You need to install torch to use the ImageGeneration node with Stable Diffusion: "
-            "https://pytorch.org/get-started/locally/"
-        )
-
-    try:
-        import diffusers
-    except ImportError:
-        raise ImportError(
-            "You need to install diffusers to use the ImageGeneration node with Stable Diffusion: pip install diffusers"
-        )
-
-    return torch, diffusers
+def import_libs(checks):
+    if checks == "stabilityai/stable-diffusion-2-1":
+        try:
+            import torch
+        except ImportError:
+            raise ImportError(
+                "You need to install torch to use the ImageGeneration node with Stable Diffusion: "
+                "https://pytorch.org/get-started/locally/"
+            )
+        try:
+            import diffusers
+        except ImportError:
+            raise ImportError(
+                "You need to install diffusers to use the ImageGeneration node with Stable Diffusion: pip install diffusers"
+            )
+        return torch, diffusers
+    elif checks == "dall-e":
+        try:
+            import openai
+        except ImportError:
+            raise ImportError(
+                "You need to install openai to use the ImageGeneration node with Dall-E: pip install openai"
+            )
+        try:
+            import base64
+        except ImportError:
+            raise ImportError(
+                "You need to import base64 to use the ImageGeneration node with Dall-E"
+            )
+        return base64, openai
+    else:
+        raise ValueError(f"Unknown model: {checks}")
 
 
 SCHEDULER_MAPPING = {
