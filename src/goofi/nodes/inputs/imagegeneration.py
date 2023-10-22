@@ -43,7 +43,7 @@ class ImageGeneration(Node):
 
     def setup(self):
         if self.params.image_generation.model_id.value == "stabilityai/stable-diffusion-2-1":
-            self.torch, self.diffusers = import_libs()
+            self.torch, self.diffusers = import_libs("stabilityai/stable-diffusion-2-1")
 
             # load StableDiffusion model
             if self.params.img2img.enabled.value:
