@@ -13,7 +13,7 @@ class ImageGeneration(Node):
     def config_params():
         return {
             "image_generation": {
-                "model_id": StringParam("dall-e", options=["stabilityai/stable-diffusion-2-1", "dall-e"]),
+                "model_id": StringParam("stabilityai/stable-diffusion-2-1", options=["stabilityai/stable-diffusion-2-1", "dall-e"]),
                 "openai_key": StringParam("openai.key"),
                 "inference_steps": IntParam(50, 5, 100),
                 "guidance_scale": FloatParam(7.5, 0.1, 20),
@@ -44,17 +44,16 @@ class ImageGeneration(Node):
     def setup(self):
         if self.params.image_generation.model_id.value == "stabilityai/stable-diffusion-2-1":
             self.torch, self.diffusers = import_libs("stabilityai/stable-diffusion-2-1")
-
             # load StableDiffusion model
             if self.params.img2img.enabled.value:
                 # TODO: make sure this works without internet access
                 self.sd_pipe = self.diffusers.StableDiffusionImg2ImgPipeline.from_pretrained(
-                    self.params.image_generation.model_id, torch_dtype=self.torch.float16
+                    self.params.image_generation.model_id.value, torch_dtype=self.torch.float16
                 )
             else:
                 # TODO: make sure this works without internet access
                 self.sd_pipe = self.diffusers.StableDiffusionPipeline.from_pretrained(
-                    self.params.image_generation.model_id_id, torch_dtype=self.torch.float16
+                    self.params.image_generation.model_id.value, torch_dtype=self.torch.float16
                 )
             # set device
             self.sd_pipe.to(self.params.image_generation.device.value)
@@ -150,49 +149,50 @@ class ImageGeneration(Node):
             self.last_img = np.array(img[0])
             return {"img": (img, {"prompt": prompt, "negative_prompt": negative_prompt if negative_prompt is not None else None})} 
         
-        # set seed
-        if self.params.image_generation.seed.value != -1:
-            self.torch.manual_seed(self.params.image_generation.seed.value)
-
-        # add textural inversions to the negative prompt
-        negative_prompt = negative_prompt.data if negative_prompt is not None else ""
-        if self.params.image_generation.use_fixers.value:
-            negative_prompt = " ".join([negative_prompt, "nfixer nrealfixer"])
-        
         # local pipes
-        with self.torch.inference_mode():
-            if self.params.img2img.enabled.value:
-                if base_image is None:
-                    base_image = self.last_img
+        elif self.params.image_generation.model_id.value == 'stabilityai/stable-diffusion-2-1':
+            # set seed
+            if self.params.image_generation.seed.value != -1:
+                self.torch.manual_seed(self.params.image_generation.seed.value)
+
+            # add textural inversions to the negative prompt
+            negative_prompt = negative_prompt.data if negative_prompt is not None else ""
+            if self.params.image_generation.use_fixers.value:
+                negative_prompt = " ".join([negative_prompt, "nfixer nrealfixer"])
+
+            with self.torch.inference_mode():
+                if self.params.img2img.enabled.value:
+                    if base_image is None:
+                        base_image = self.last_img
+                    else:
+                        base_image = base_image.data
+
+                    # run the img2img stable diffusion pipeline
+                    img, _ = self.sd_pipe(
+                        image=base_image,
+                        strength=self.params.img2img.strength.value,
+                        prompt=prompt,
+                        negative_prompt=negative_prompt,
+                        num_inference_steps=self.params.image_generation.inference_steps.value,
+                        guidance_scale=self.params.image_generation.guidance_scale.value,
+                        return_dict=False,
+                        output_type="np",
+                    )
                 else:
-                    base_image = base_image.data
+                    if base_image is not None:
+                        raise ValueError("base_image is not supported in text2img mode. Enable img2img or disconnect base_image.")
 
-                # run the img2img stable diffusion pipeline
-                img, _ = self.sd_pipe(
-                    image=base_image,
-                    strength=self.params.img2img.strength.value,
-                    prompt=prompt,
-                    negative_prompt=negative_prompt,
-                    num_inference_steps=self.params.image_generation.inference_steps.value,
-                    guidance_scale=self.params.image_generation.guidance_scale.value,
-                    return_dict=False,
-                    output_type="np",
-                )
-            else:
-                if base_image is not None:
-                    raise ValueError("base_image is not supported in text2img mode. Enable img2img or disconnect base_image.")
-
-                # run the text2img stable diffusion pipeline
-                img, _ = self.sd_pipe(
-                    prompt=prompt,
-                    negative_prompt=negative_prompt,
-                    width=self.params.image_generation.width.value,
-                    height=self.params.image_generation.height.value,
-                    num_inference_steps=self.params.image_generation.inference_steps.value,
-                    guidance_scale=self.params.image_generation.guidance_scale.value,
-                    return_dict=False,
-                    output_type="np",
-                )
+                    # run the text2img stable diffusion pipeline
+                    img, _ = self.sd_pipe(
+                        prompt=prompt,
+                        negative_prompt=negative_prompt,
+                        width=self.params.image_generation.width.value,
+                        height=self.params.image_generation.height.value,
+                        num_inference_steps=self.params.image_generation.inference_steps.value,
+                        guidance_scale=self.params.image_generation.guidance_scale.value,
+                        return_dict=False,
+                        output_type="np",
+                    )
 
         # remove the batch dimension
         img = np.array(img[0])
