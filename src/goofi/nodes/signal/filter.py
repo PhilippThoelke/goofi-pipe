@@ -1,8 +1,9 @@
-from scipy.signal import butter, cheby1, ellip, filtfilt, lfilter, lfilter_zi
 import numpy as np
+from scipy.signal import butter, cheby1, ellip, filtfilt, lfilter, lfilter_zi
+
+from goofi.data import Data, DataType
 from goofi.node import Node
-from goofi.params import StringParam, FloatParam, IntParam, BoolParam
-from goofi.data import DataType, Data
+from goofi.params import BoolParam, FloatParam, IntParam, StringParam
 
 
 class Filter(Node):
