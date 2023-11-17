@@ -74,8 +74,8 @@ class Classifier(Node):
             return None
         self.loadname = self.params.classification['loadname'].value
         self.savename = self.params.classification['savename'].value
-        self.loadpath = join(self.data_path, self.loadname)
-        self.savepath = join(self.data_path, self.savename)
+        self.loadpath = join(self.assets_path, self.loadname)
+        self.savepath = join(self.assets_path, self.savename)
         
         if self.params.classification.add_to_training.value:
             transposed_data = data.data.T
