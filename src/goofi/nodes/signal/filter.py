@@ -1,5 +1,5 @@
 import numpy as np
-from scipy.signal import butter, cheby1, ellip, filtfilt, lfilter, lfilter_zi
+from scipy.signal import butter, cheby1, detrend, ellip, filtfilt, lfilter, lfilter_zi
 
 from goofi.data import Data, DataType
 from goofi.node import Node
@@ -53,6 +53,9 @@ class Filter(Node):
                     doc="Padding refers to the fraction of the signal to pad at the beginning and end of the signal",
                 ),
             },
+            "signal": {
+                "detrend":False,
+                "demean":False,}
         }
 
     def setup(self):
@@ -66,6 +69,12 @@ class Filter(Node):
         nyq = 0.5 * sfreq
 
         filtered_data = data.data  # Initialize
+
+        # Detrend and demean
+        if self.params["signal"]["detrend"].value:
+            filtered_data = detrend(filtered_data)
+        if self.params["signal"]["demean"].value:
+            filtered_data = detrend(filtered_data, type="constant")
 
         # Bandpass Filtering
         if self.params["bandpass"]["apply"].value:
