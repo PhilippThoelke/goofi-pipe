@@ -1,10 +1,10 @@
 from typing import Any, List, Tuple
 
-from oscpy.client import send_bundle
+from oscpy.client import send_bundle, send_message
 
 from goofi.data import Data, DataType
 from goofi.node import Node
-from goofi.params import IntParam
+from goofi.params import BoolParam, IntParam
 
 
 class OSCOut(Node):
@@ -12,7 +12,7 @@ class OSCOut(Node):
         return {"data": DataType.TABLE}
 
     def config_params():
-        return {"osc": {"address": "localhost", "port": IntParam(8000, 0, 65535), "prefix": "/goofi"}}
+        return {"osc": {"address": "localhost", "port": IntParam(8000, 0, 65535), "prefix": "/goofi", "bundle": BoolParam(False, doc="Some software doesn't deal well with OSC bundles")}}
 
     def process(self, data: Data):
         if data is None or len(data.data) == 0:
@@ -21,8 +21,13 @@ class OSCOut(Node):
         # convert the data to a list of OSC messages
         messages = generate_messages(data, self.params.osc.prefix.value)
 
-        # send the data as an OSC bundle
-        send_bundle(messages, self.params.osc.address.value, self.params.osc.port.value)
+        if self.params.osc.bundle.value:
+            # send the data as an OSC bundle
+            send_bundle(messages, self.params.osc.address.value, self.params.osc.port.value)
+        else:
+            # send the data as individual OSC messages
+            for addr, val in messages:
+                send_message(addr, val, self.params.osc.address.value, self.params.osc.port.value)
 
 
 def generate_messages(data: Data, prefix: str = "") -> List[Tuple[bytes, List[Any]]]:
