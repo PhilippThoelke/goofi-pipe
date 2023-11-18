@@ -76,7 +76,6 @@ class LSLClient(Node):
         meta = {
             "sfreq": self.client.info().nominal_srate(),
             "channels": {"dim0": self.ch_names},
-            "available_streams": {info.source_id(): info.name() for info in self.available_streams},
         }
         return {"out": (samples, meta)}
 
