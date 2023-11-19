@@ -12,7 +12,14 @@ class OSCOut(Node):
         return {"data": DataType.TABLE}
 
     def config_params():
-        return {"osc": {"address": "localhost", "port": IntParam(8000, 0, 65535), "prefix": "/goofi", "bundle": BoolParam(False, doc="Some software doesn't deal well with OSC bundles")}}
+        return {
+            "osc": {
+                "address": "localhost",
+                "port": IntParam(8000, 0, 65535),
+                "prefix": "/goofi",
+                "bundle": BoolParam(False, doc="Some software doesn't deal well with OSC bundles"),
+            }
+        }
 
     def process(self, data: Data):
         if data is None or len(data.data) == 0:

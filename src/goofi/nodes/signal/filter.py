@@ -54,8 +54,9 @@ class Filter(Node):
                 ),
             },
             "signal": {
-                "detrend":False,
-                "demean":False,}
+                "detrend": False,
+                "demean": False,
+            },
         }
 
     def setup(self):

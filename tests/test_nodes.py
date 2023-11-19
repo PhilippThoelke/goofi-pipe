@@ -34,7 +34,7 @@ def test_create_local(node: Type[Node], timeout: float = 20.0):
 def test_create(node: Type[Node]):
     if node.__name__ == "AudioStream" or node.__name__ == "AudioOut":
         pytest.skip("Github Actions does not support audio devices.")
-        
+
     node.create().terminate()
 
 

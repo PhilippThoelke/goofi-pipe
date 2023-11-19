@@ -118,7 +118,7 @@ class LSLClient(Node):
         self.available_streams = pylsl.resolve_streams()
         print("\nAvailable LSL streams:")
         for info in self.available_streams:
-            print(f"  Source: \"{info.source_id()}\" with stream \"{info.name()}\" (hostname: {info.hostname()})")
+            print(f'  Source: "{info.source_id()}" with stream "{info.name()}" (hostname: {info.hostname()})')
         print()
 
     def lsl_stream_source_name_changed(self, value: str) -> None:

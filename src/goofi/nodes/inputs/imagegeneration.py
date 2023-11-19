@@ -13,7 +13,9 @@ class ImageGeneration(Node):
     def config_params():
         return {
             "image_generation": {
-                "model_id": StringParam("stabilityai/stable-diffusion-2-1", options=["stabilityai/stable-diffusion-2-1", "dall-e"]),
+                "model_id": StringParam(
+                    "stabilityai/stable-diffusion-2-1", options=["stabilityai/stable-diffusion-2-1", "dall-e"]
+                ),
                 "openai_key": StringParam("openai.key"),
                 "inference_steps": IntParam(50, 5, 100),
                 "guidance_scale": FloatParam(7.5, 0.1, 20),
@@ -109,8 +111,8 @@ class ImageGeneration(Node):
                 if base_image.ndim == 3:
                     # add batch dimension
                     base_image = np.expand_dims(base_image, 0)
-            
-            # convert to uint8 
+
+            # convert to uint8
             base_image = (base_image * 255).astype(np.uint8)
             base_image = cv2.cvtColor(base_image, cv2.COLOR_RGB2RGBA)
             # convert to bytes
@@ -123,17 +125,21 @@ class ImageGeneration(Node):
                 # raise error because img2img is not working yet
                 raise NotImplementedError("img2img is not working yet.")
                 # run the Dall-E img2img pipeline
-                response = self.dalle_pipe(image=base_image,
-                                           prompt=prompt,
-                                           n=1,
-                                           size=size,
-                                           response_format="b64_json",)
+                response = self.dalle_pipe(
+                    image=base_image,
+                    prompt=prompt,
+                    n=1,
+                    size=size,
+                    response_format="b64_json",
+                )
             else:
                 # run the Dall-E txt2img pipeline
-                response = self.dalle_pipe(prompt=prompt,
-                                           n=1,
-                                           size=size,
-                                           response_format="b64_json",)
+                response = self.dalle_pipe(
+                    prompt=prompt,
+                    n=1,
+                    size=size,
+                    response_format="b64_json",
+                )
             img = response["data"][0]["b64_json"]
             # Decode base64 to bytes
             decoded_bytes = self.base64.b64decode(img)
@@ -142,15 +148,19 @@ class ImageGeneration(Node):
             img_array = img_array.astype(np.float32) / 255.0
             # Ensure correct shape
             if img_array.shape != (self.params.image_generation.width.value, self.params.image_generation.height.value, 3):
-                img_array = cv2.resize(img_array, (self.params.image_generation.width.value, self.params.image_generation.height.value))
+                img_array = cv2.resize(
+                    img_array, (self.params.image_generation.width.value, self.params.image_generation.height.value)
+                )
             # Add batch dimension
             img = np.expand_dims(img_array, 0)
             # save last image
             self.last_img = np.array(img[0])
-            return {"img": (img, {"prompt": prompt, "negative_prompt": negative_prompt if negative_prompt is not None else None})} 
-        
+            return {
+                "img": (img, {"prompt": prompt, "negative_prompt": negative_prompt if negative_prompt is not None else None})
+            }
+
         # local pipes
-        elif self.params.image_generation.model_id.value == 'stabilityai/stable-diffusion-2-1':
+        elif self.params.image_generation.model_id.value == "stabilityai/stable-diffusion-2-1":
             # set seed
             if self.params.image_generation.seed.value != -1:
                 self.torch.manual_seed(self.params.image_generation.seed.value)
@@ -180,7 +190,9 @@ class ImageGeneration(Node):
                     )
                 else:
                     if base_image is not None:
-                        raise ValueError("base_image is not supported in text2img mode. Enable img2img or disconnect base_image.")
+                        raise ValueError(
+                            "base_image is not supported in text2img mode. Enable img2img or disconnect base_image."
+                        )
 
                     # run the text2img stable diffusion pipeline
                     img, _ = self.sd_pipe(
@@ -261,15 +273,11 @@ def import_libs(checks):
         try:
             import openai
         except ImportError:
-            raise ImportError(
-                "You need to install openai to use the ImageGeneration node with Dall-E: pip install openai"
-            )
+            raise ImportError("You need to install openai to use the ImageGeneration node with Dall-E: pip install openai")
         try:
             import base64
         except ImportError:
-            raise ImportError(
-                "You need to import base64 to use the ImageGeneration node with Dall-E"
-            )
+            raise ImportError("You need to import base64 to use the ImageGeneration node with Dall-E")
         return base64, openai
     else:
         raise ValueError(f"Unknown model: {checks}")

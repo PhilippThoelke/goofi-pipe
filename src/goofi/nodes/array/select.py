@@ -46,7 +46,7 @@ class Select(Node):
                     raise ValueError("Only one slice can be selected at a time.")
                 if len(exclude) > 0:
                     raise ValueError("Excluding channels is not supported with slice notation.")
-                slice_parts = include[0].split(':')
+                slice_parts = include[0].split(":")
                 start, stop, step = (int(x) if x else None for x in slice_parts + [None] * (3 - len(slice_parts)))
                 idxs = chs[slice(start, stop, step)]
             else:

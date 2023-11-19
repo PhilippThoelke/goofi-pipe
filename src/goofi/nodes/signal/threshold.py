@@ -26,7 +26,7 @@ class Threshold(Node):
                 "min_delay": FloatParam(0.0, doc="Minimum delay between two threshold crossings in seconds"),
             },
         }
-    
+
     def setup(self):
         self.last_trigger = 0
         self.trigger_ready = True
@@ -51,7 +51,7 @@ class Threshold(Node):
             if not self.params.threshold.trigger_on_false.value:
                 # no threshold exceeded and trigger_on_false is False
                 return None
-        
+
         if time.time() - self.last_trigger < self.params.threshold.min_delay.value:
             # threshold exceeded but min_delay not reached
             return None

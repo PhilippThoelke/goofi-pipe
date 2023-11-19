@@ -20,8 +20,8 @@ class Connectivity(Node):
             "classical": {
                 "method": StringParam(
                     "wPLI",
-                    options=["coherence", "imag_coherence", "wPLI", "PLI", "PLV", "covariance", "pearson", "mutual_info"]),
-                
+                    options=["coherence", "imag_coherence", "wPLI", "PLI", "PLV", "covariance", "pearson", "mutual_info"],
+                ),
             },
             "biotuner": {
                 "method": StringParam(
@@ -33,11 +33,11 @@ class Connectivity(Node):
                 "precision": FloatParam(0.1, 0.01, 10.0, doc="Precision of the peak extraction in Hz"),
                 "peaks_function": StringParam(
                     "EMD", options=["EMD", "fixed", "harmonic_recurrence", "EIMC"], doc="Peak extraction function"
-                ),},
+                ),
+            },
             "Adjacency": {
                 "Binarize": BoolParam(False, doc="Binarize the connectivity matrix"),
                 "threshold": FloatParam(0.5, 0.0, 1.0, doc="Threshold for binarization"),
-            
             },
         }
 

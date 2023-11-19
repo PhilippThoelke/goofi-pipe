@@ -18,7 +18,6 @@ class Operation(Node):
     def process(self, a: Data, b: Data):
         if a is None or b is None:
             return None
-        
 
         operation = self.params.operation.operation.value
         if operation == "matmul":
