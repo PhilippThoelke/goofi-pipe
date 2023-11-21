@@ -1,8 +1,9 @@
 import cv2
-from goofi.params import FloatParam, StringParam, IntParam
+import numpy as np
+
 from goofi.data import Data, DataType
 from goofi.node import Node
-import numpy as np
+from goofi.params import FloatParam, IntParam, StringParam
 
 
 class EdgeDetector(Node):
@@ -19,7 +20,6 @@ class EdgeDetector(Node):
                 "threshold1": FloatParam(50.0, 0.0, 300.0, doc="First threshold for the hysteresis procedure for canny"),
                 "threshold2": FloatParam(150.0, 0.0, 300.0, doc="Second threshold for the hysteresis procedure for canny"),
             },
-            "common": {"autotrigger": True},
         }
 
     def process(self, image: Data):

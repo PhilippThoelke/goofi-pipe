@@ -5,17 +5,17 @@ from goofi.node import Node
 class SetMeta(Node):
     def config_input_slots():
         return {"array": DataType.ARRAY}
-    
+
     def config_output_slots():
         return {"out": DataType.ARRAY}
-    
+
     def config_params():
         return {"meta": {"key": "key", "value": "value", "type": "float"}}
-                         
+
     def process(self, array: Data):
         if array is None:
             return None
-        
+
         val = self.params.meta.value.value
 
         if self.params.meta.type.value == "int":

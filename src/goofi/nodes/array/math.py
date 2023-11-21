@@ -59,7 +59,6 @@ class Math(Node):
         if self.params["math"]["squared"].value:
             signal = np.square(signal)
         return {"out": (signal, data.meta)}
-        
 
     @staticmethod
     def rescale(signal, input_min, input_max, output_min, output_max):

@@ -36,12 +36,12 @@ class LempelZiv(Node):
 
         # binarize data
         if binarize_mode == "mean":
-            binarized = data.data > np.mean(data.data, axis=axis, keepdims=True) # mean split
+            binarized = data.data > np.mean(data.data, axis=axis, keepdims=True)  # mean split
         elif binarize_mode == "median":
-            binarized = data.data > np.median(data.data, axis=axis, keepdims=True) # median split
+            binarized = data.data > np.median(data.data, axis=axis, keepdims=True)  # median split
 
         # compute Lempel-Ziv complexity
-        lzc = np.apply_along_axis(self.compute_lzc, axis,  binarized, normalize=True)
+        lzc = np.apply_along_axis(self.compute_lzc, axis, binarized, normalize=True)
         #                         ^^^^^^^^^^^^^^^^  ^^^^   ^^^^^^^^^  ^^^^^^^^^^^^^^
         #                         fn to apply       axis   data       args to fn
 

@@ -11,9 +11,7 @@ class AudioTagging(Node):
         return {"audioIn": DataType.ARRAY}
 
     def config_output_slots():
-        return {"tags": DataType.STRING,
-                'probabilities': DataType.ARRAY,
-                'embedding': DataType.ARRAY}
+        return {"tags": DataType.STRING, "probabilities": DataType.ARRAY, "embedding": DataType.ARRAY}
 
     def config_params():
         return {
@@ -29,15 +27,14 @@ class AudioTagging(Node):
                 "source_ambiguous_sounds": BoolParam(False),
                 "channel_environment_and_background": BoolParam(False),
             },
-            
         }
 
-    
     def setup(self):
         import librosa
         import panns_inference
         from panns_inference import AudioTagging, SoundEventDetection, labels
-        self.at = AudioTagging(checkpoint_path=None, device='cpu')
+
+        self.at = AudioTagging(checkpoint_path=None, device="cpu")
         self.labels = labels
         audio_tags_path = join(self.assets_path, "audio_tags_structure.pkl")
         with open(audio_tags_path, "rb") as f:
@@ -46,13 +43,13 @@ class AudioTagging(Node):
     def process(self, audioIn: Data):
         if audioIn.data is None:
             return None
-            
+
         if audioIn.meta["sfreq"] != 32000:
             raise ValueError("Sampling frequency must be 32k")
-        
+
         threshold = self.params["selection"]["threshold"].value
         n_tags = self.params["selection"]["number_of_tags"].value
-        audioIn.data = audioIn.data.reshape(1,-1)
+        audioIn.data = audioIn.data.reshape(1, -1)
 
         (clipwise_output, embedding) = self.at.inference(audioIn.data)
 
@@ -60,7 +57,7 @@ class AudioTagging(Node):
         tags = np.array(self.labels)[best_labels]
         probabilities = clipwise_output[0][best_labels]
         embedding = embedding.squeeze()
-        
+
         if self.params["selection"]["all_categories"].value:
             # If all_categories is set to True, include all tags
             active_categories = [tag for sublist in self.audio_tags.values() for tag in sublist]
@@ -80,12 +77,14 @@ class AudioTagging(Node):
                 active_categories.extend(self.audio_tags["Source-ambiguous sounds"])
             if self.params["selection"]["channel_environment_and_background"].value:
                 active_categories.extend(self.audio_tags["Channel, environment and background"])
-        
+
         # Filter based on active categories
         indices = [i for i, x in enumerate(tags) if x in active_categories and probabilities[i] > threshold]
-        formatted_tags = "\n".join(tags[i] for i in indices[:n_tags-1])
-        formatted_probs = np.array([probabilities[i] for i in indices[:n_tags-1]])
-        
-        return {"tags": (formatted_tags, audioIn.meta),
-                "probabilities": (formatted_probs, audioIn.meta),
-                "embedding": (embedding, audioIn.meta)}
+        formatted_tags = "\n".join(tags[i] for i in indices[: n_tags - 1])
+        formatted_probs = np.array([probabilities[i] for i in indices[: n_tags - 1]])
+
+        return {
+            "tags": (formatted_tags, audioIn.meta),
+            "probabilities": (formatted_probs, audioIn.meta),
+            "embedding": (embedding, audioIn.meta),
+        }
