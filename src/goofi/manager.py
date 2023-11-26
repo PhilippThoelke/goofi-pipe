@@ -2,6 +2,7 @@ import importlib
 import time
 from copy import deepcopy
 from os import path
+from threading import Thread
 from typing import Any, Dict, Optional
 
 import yaml
@@ -108,9 +109,13 @@ class Manager:
     `use_multiprocessing` : bool
         Whether to use multiprocessing for nodes that support it. If `False`, all nodes will be created in the
         same process as the manager.
+    `duration` : float
+        The duration to run the manager for. If `0`, runs indefinitely.
     """
 
-    def __init__(self, filepath: Optional[str] = None, headless: bool = True, use_multiprocessing: bool = True) -> None:
+    def __init__(
+        self, filepath: Optional[str] = None, headless: bool = True, use_multiprocessing: bool = True, duration: float = 0
+    ) -> None:
         # TODO: add proper logging
         print("Starting goofi-pipe...")
         # preload all nodes to avoid delays
@@ -129,13 +134,58 @@ class Manager:
         self._save_path = None
         self._unsaved_changes = False
 
+        # start the blocking non-daemon post-initialization thread to leave the main thread free for the GUI (limitation of MacOS)
+        Thread(target=self.post_init, args=(filepath, duration), daemon=False).start()
+
         # initialize the GUI
+        # NOTE: this is a blocking call, so it must be the last thing we do
         if not self.headless:
             Window(self)
+
+    def post_init(self, filepath: Optional[str] = None, duration: float = 0) -> None:
+        """
+        Wait until everything is initialized and run post-initialization tasks (e.g. loading a .gfi file) since the GUI
+        potentially blocks the main thread.
+
+        This function is called in a separate thread and will block until the manager is terminated. This is to avoid blocking
+        the main thread. We leave the main thread to the GUI, which is necessary on MacOS.
+
+        ### Parameters
+        `filepath` : Optional[str]
+            The path to the file to load from. If `None`, does not load a file.
+        `duration` : float
+            The duration to run the manager for. If `0`, runs indefinitely.
+        """
+        # wait for the GUI to initialize
+        if not self.headless:
+            win = None
+            while win is None:
+                # try to get the window instance from the main thread
+                try:
+                    win = Window()
+                except RuntimeError:
+                    # the window is not initialized yet, wait a bit
+                    time.sleep(0.01)
+
+            # make sure the GUI has finished initializing
+            while not win._initialized:
+                time.sleep(0.01)
 
         # load the manager state from a file
         if filepath is not None:
             self.load(filepath)
+
+        if duration > 0:
+            # run for a fixed duration
+            time.sleep(duration)
+            self.terminate()
+
+        try:
+            # run indefinitely
+            while self.running:
+                time.sleep(1)
+        except KeyboardInterrupt:
+            self.terminate()
 
     def load(self, filepath: str) -> None:
         """
@@ -504,7 +554,6 @@ def main(duration: float = 0, args=None):
         A list of arguments to pass to the manager. If `None`, uses `sys.argv[1:]`.
     """
     import argparse
-    import time
 
     comm_choices = list(Connection.get_backends().keys())
 
@@ -518,20 +567,8 @@ def main(duration: float = 0, args=None):
 
     Connection.set_backend(args.comm)
 
-    # create manager
-    manager = Manager(filepath=args.filepath, headless=args.headless, use_multiprocessing=not args.no_multiprocessing)
-
-    if duration > 0:
-        # run for a fixed duration
-        time.sleep(duration)
-        manager.terminate()
-
-    try:
-        # run indefinitely
-        while manager.running:
-            time.sleep(1)
-    except KeyboardInterrupt:
-        manager.terminate()
+    # create and run the manager (this blocks until the manager is terminated)
+    Manager(filepath=args.filepath, headless=args.headless, use_multiprocessing=not args.no_multiprocessing, duration=duration)
 
 
 if __name__ == "__main__":
