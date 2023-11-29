@@ -13,9 +13,7 @@ class ImageGeneration(Node):
     def config_params():
         return {
             "image_generation": {
-                "model_id": StringParam(
-                    "stabilityai/stable-diffusion-2-1", options=["stabilityai/stable-diffusion-2-1", "dall-e"]
-                ),
+                "model_id": StringParam("dall-e-3", options=["stabilityai/stable-diffusion-2-1", "dall-e-2", "dall-e-3"]),
                 "openai_key": StringParam("openai.key"),
                 "inference_steps": IntParam(50, 5, 100),
                 "guidance_scale": FloatParam(7.5, 0.1, 20),
@@ -72,14 +70,14 @@ class ImageGeneration(Node):
             if not hasattr(self, "last_img"):
                 self.last_img = None
                 self.reset_last_img()
-        elif self.params.image_generation.model_id.value == "dall-e":
+        elif self.params.image_generation.model_id.value in ["dall-e-2", "dall-e-3"]:
             self.base64, self.openai = import_libs("dall-e")
 
             # load Dall-E model
             if self.params.img2img.enabled.value:
-                self.dalle_pipe = self.openai.Image.create_edit
+                self.dalle_pipe = self.openai.OpenAI().images.edit
             else:
-                self.dalle_pipe = self.openai.Image.create
+                self.dalle_pipe = self.openai.OpenAI().images.generate
             # initialize last image
             if not hasattr(self, "last_img"):
                 self.last_img = None
@@ -119,7 +117,7 @@ class ImageGeneration(Node):
             base_image = cv2.imencode(".png", base_image)[1].tobytes()
 
         # remote pipes
-        if self.params.image_generation.model_id.value == "dall-e":
+        if self.params.image_generation.model_id.value in ["dall-e-3", "dall-e-2"]:
             size = f"{self.params.image_generation.width.value}x{self.params.image_generation.height.value}"
             if self.params.img2img.enabled.value:
                 # raise error because img2img is not working yet
@@ -133,14 +131,21 @@ class ImageGeneration(Node):
                     response_format="b64_json",
                 )
             else:
-                # run the Dall-E txt2img pipeline
-                response = self.dalle_pipe(
-                    prompt=prompt,
-                    n=1,
-                    size=size,
-                    response_format="b64_json",
-                )
-            img = response["data"][0]["b64_json"]
+                try:
+                    # run the Dall-E txt2img pipeline
+                    response = self.dalle_pipe(model=self.params.image_generation.model_id.value,
+                                               prompt=prompt,
+                                               n=1,
+                                               size=size,
+                                               quality="standard",
+                                               response_format="b64_json",)
+                except self.openai.BadRequestError as e:
+                    if e.response.status_code == 400:
+                        print(f"Error code 400: the size of the image is not supported by the model."
+                              f"\nYour Model: {self.params.image_generation.model_id.value}"
+                              f"\n1024x1024 is minimum for Dall-E3")
+                        
+            img = response.data[0].b64_json
             # Decode base64 to bytes
             decoded_bytes = self.base64.b64decode(img)
             # Convert bytes to numpy array using OpenCV
@@ -206,17 +211,17 @@ class ImageGeneration(Node):
                         output_type="np",
                     )
 
-        # remove the batch dimension
-        img = np.array(img[0])
-        # save last image
-        self.last_img = img
+            # remove the batch dimension
+            img = np.array(img[0])
+            # save last image
+            self.last_img = img
 
-        return {
-            "img": (
-                img,
-                {"prompt": prompt, "negative_prompt": negative_prompt if negative_prompt is not None else None},
-            )
-        }
+            return {
+                "img": (
+                    img,
+                    {"prompt": prompt, "negative_prompt": negative_prompt if negative_prompt is not None else None},
+                )
+            }
 
     def reset_last_img(self):
         """Reset the last image."""
