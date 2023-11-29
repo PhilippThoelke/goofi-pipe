@@ -13,13 +13,7 @@ class ImageGeneration(Node):
     def config_params():
         return {
             "image_generation": {
-<<<<<<< HEAD
-                "model_id": StringParam(
-                    "stabilityai/stable-diffusion-2-1", options=["stabilityai/stable-diffusion-2-1", "dall-e"]
-                ),
-=======
                 "model_id": StringParam("dall-e-3", options=["stabilityai/stable-diffusion-2-1", "dall-e-2", "dall-e-3"]),
->>>>>>> 3e57ed3 (dalle-3)
                 "openai_key": StringParam("openai.key"),
                 "inference_steps": IntParam(50, 5, 100),
                 "guidance_scale": FloatParam(7.5, 0.1, 20),
@@ -137,24 +131,21 @@ class ImageGeneration(Node):
                     response_format="b64_json",
                 )
             else:
-                # run the Dall-E txt2img pipeline
-<<<<<<< HEAD
-                response = self.dalle_pipe(
-                    prompt=prompt,
-                    n=1,
-                    size=size,
-                    response_format="b64_json",
-                )
-            img = response["data"][0]["b64_json"]
-=======
-                response = self.dalle_pipe(model=self.params.image_generation.model_id.value,
-                                           prompt=prompt,
-                                           n=1,
-                                           size=size,
-                                           quality="standard",
-                                           response_format="b64_json",)
+                try:
+                    # run the Dall-E txt2img pipeline
+                    response = self.dalle_pipe(model=self.params.image_generation.model_id.value,
+                                               prompt=prompt,
+                                               n=1,
+                                               size=size,
+                                               quality="standard",
+                                               response_format="b64_json",)
+                except self.openai.BadRequestError as e:
+                    if e.response.status_code == 400:
+                        print(f"Error code 400: the size of the image is not supported by the model."
+                              f"\nYour Model: {self.params.image_generation.model_id.value}"
+                              f"\n1024x1024 is minimum for Dall-E3")
+                        
             img = response.data[0].b64_json
->>>>>>> 3e57ed3 (dalle-3)
             # Decode base64 to bytes
             decoded_bytes = self.base64.b64decode(img)
             # Convert bytes to numpy array using OpenCV
