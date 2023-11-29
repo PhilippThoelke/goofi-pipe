@@ -399,14 +399,19 @@ class Window:
     """
 
     _instance = None
+    _initialized = False
 
     def __new__(cls, manager=None):
         if cls._instance is None:
-            # instantiate the window thread
+            # make sure the window is created in the main thread (required by MacOS)
+            if threading.current_thread() != threading.main_thread():
+                raise RuntimeError("Window must be created in the main thread.")
+
+            # instantiate the window
             # TODO: add proper logging
             print("Starting graphical user interface.")
             cls._instance = super(Window, cls).__new__(cls)
-            threading.Thread(target=cls._instance._initialize, args=(manager,), daemon=True).start()
+            cls._instance._initialize(manager)
         return cls._instance
 
     @running
@@ -1074,7 +1079,12 @@ class Window:
         # TODO: set the goofi-pipe icon as the window icon
         dpg.setup_dearpygui()
         dpg.show_viewport()
+
+        # we are done initializing, start the event loop (blocking)
+        self._initialized = True
         dpg.start_dearpygui()
+
+        # cleanup after event loop
         dpg.destroy_context()
 
         # TODO: add proper logging
