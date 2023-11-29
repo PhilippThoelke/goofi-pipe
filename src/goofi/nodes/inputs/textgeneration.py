@@ -56,7 +56,6 @@ class TextGeneration(Node):
         )
 
         generated_text = response.choices[0].message.content
-        print(generated_text)
 
         if keep_conversation:
             # Store the latest response to maintain conversation
