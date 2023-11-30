@@ -16,8 +16,6 @@ class EmotionRecognition(Node):
     def config_output_slots():
         return {
             "emotion_probabilities": DataType.ARRAY,
-            "face_box": DataType.ARRAY,
-            "landmarks": DataType.ARRAY,
             "action_units": DataType.ARRAY, 
             "main_emotion": DataType.STRING
         }
@@ -42,51 +40,55 @@ class EmotionRecognition(Node):
         self.emotion_names = ["anger", "disgust", "fear", "happiness", "sadness", "surprise", "neutral"]
 
     def process(self, image: Data):
-        if image is None:
+        if image is None or image.data is None:
+            logging.warning("No image data to process.")
             return {
                 "emotion_probabilities": None,
                 "face_box": None,
                 "landmarks": None,
-                "action_units": None
+                "action_units": None,
+                "main_emotion": None
             }
 
-        # Check if image data is of type uint8 and scale appropriately if not
+        # Convert image data to the format expected by py-feat Detector
         if image.data.dtype != np.uint8:
-            #logging.info("Scaling and converting image data to uint8.")
             image_data = ((image.data - image.data.min()) * (255.0 / (image.data.max() - image.data.min()))).astype(np.uint8)
         else:
             image_data = image.data
         image_data = cv2.cvtColor(image_data, cv2.COLOR_BGR2RGB)
-        
-        # Use a temporary file, ensuring it is deleted after use
-        with tempfile.NamedTemporaryFile(delete=False, suffix='.jpg') as temp_image:
-            cv2.imwrite(temp_image.name, image_data)
-        
-        assert os.path.exists(temp_image.name), f"File {temp_image.name} does not exist."
 
-        try:
-            # Detect faces and their attributes using the file path
-            predictions = self.detector.detect_image(temp_image.name)
-            logging.info(f"Predictions: {predictions}")
-        finally:
-            # Make sure to remove the temporary file after detection
-            os.remove(temp_image.name)
-
-        if predictions.facebox is None:
+        # Detect faces and their attributes using the image data
+        detected_faces = self.detector.detect_faces(image_data)
+        if not detected_faces:
             logging.warning("No face detected in the image.")
-            # You may want to handle this case separately
-            # For example, by returning default values or by raising an exception
+            return {
+                "emotion_probabilities": None,
+                "action_units": None,
+                "main_emotion": None
+            }
 
-        # Extract and convert outputs to the appropriate types
-        emotion_probabilities = predictions.emotions.values.flatten().tolist() if predictions.emotions is not None else None
-        face_box = predictions.facebox.values.flatten().tolist() if predictions.facebox is not None else None
-        landmarks = predictions.landmarks.values.flatten().tolist() if predictions.landmarks is not None else None
-        action_units = predictions.aus.values.flatten().tolist() if predictions.aus is not None else None
+        detected_landmarks = self.detector.detect_landmarks(image_data, detected_faces)
+        
+        # Detect action units
+        if detected_landmarks:
+            action_units = self.detector.detect_aus(image_data, detected_landmarks)
+        else:
+            action_units = None
+            
+        # Detect emotions
+        emotions = self.detector.detect_emotions(image_data, detected_faces, detected_landmarks)
+
+        # Process the emotions array
+        if emotions is not None and len(emotions) > 0:
+            emotion_probabilities = emotions[0]  # Assuming you're interested in the first detected face
+            main_emotion_index = np.argmax(emotion_probabilities)
+            main_emotion = self.emotion_names[main_emotion_index]
+        else:
+            emotion_probabilities = None
+            main_emotion = None
 
         return {
-            "main_emotion": (self.emotion_names[np.argmax(emotion_probabilities)], {}),
             "emotion_probabilities": (np.array(emotion_probabilities), {}),
-            "face_box": (np.array(face_box), {}),
-            "landmarks": (np.array(landmarks),{}),
-            "action_units": (np.array(action_units), {})
+            "action_units": (np.array(action_units), {}),
+            "main_emotion": (main_emotion, {})
         }
