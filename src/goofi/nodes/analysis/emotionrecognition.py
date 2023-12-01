@@ -44,7 +44,7 @@ class EmotionRecognition(Node):
             n_jobs=1
         )
         self.emotion_names = ["anger", "disgust", "fear", "happiness", "sadness", "surprise", "neutral"]
-
+        self.last_emotion = None
     def process(self, image: Data):
         if image is None or image.data is None:
             logging.warning("No image data to process.")
@@ -83,7 +83,7 @@ class EmotionRecognition(Node):
             action_units = self.detector.detect_aus(image_data, detected_landmarks)
         else:
             action_units = None
-        self.last_emotion = None
+        
         # Detect emotions
         emotions = self.detector.detect_emotions(image_data, detected_faces, detected_landmarks)
         threshold = self.params["emotion_recognition"]["threshold"].value
