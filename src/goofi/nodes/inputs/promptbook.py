@@ -187,5 +187,12 @@ prompts = {
     "I will provide the names of planets, elements and colors (either HEX or naming format) at the end of the prompt."
     "Be purely descriptive, your response does not have to be a complete sentence. "
     "Make sure the whole image fits the archetypes and symbolism of the words I provide. BE VERY SHORT "
-    "AND CONCISE. LIMIT YOURSELF TO A MAXIMUM OF 60 WORDS.SPECIFY NOT TO PUT TEXT IN THE IMAGE.",
+    "AND CONCISE. LIMIT YOURSELF TO A MAXIMUM OF 60 WORDS.",
+    "FACE_GENERATION_PROMPT": "Create a prompt for a text-to-image model to generate faces. The faces should be inspired by the texture of given elements,"
+    "if provided, and should reflect a specific emotion, if mentioned. Use evocative and descriptive words to detail the texture and emotional state. The "
+    "prompt should be concise, focusing on the essence of the elements and emotions. Use rich, imaginative adjectives to convey the texture and mood. Define " 
+    "the artstyle, inspired by the emotions and elements, and describe the lighting and perspective using cinematic terminology.  Ensure the entire image captures "
+    "the symbolic essence of the provided words. Include relevant artists at the end of the prompt, whose work resonates with the symbolism of the guiding words. "
+    "Keep the prompt VERY SHORT AND CONCISE, limited to a MAXIMUM OF 60 WORDS."
+
 }

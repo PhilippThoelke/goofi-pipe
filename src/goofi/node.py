@@ -479,6 +479,17 @@ class Node(ABC):
             The path to the assets folder of the node.
         """
         return join(dirname(dirname(dirname(__file__))), "assets")
+    
+    @property
+    def data_path(self) -> str:
+        """
+        Returns the absolute path to the data folder of goofi-pipe.
+
+        ### Returns
+        `str`
+            The path to the data folder of the node.
+        """
+        return join(dirname(dirname(dirname(__file__))), "data")
 
     @property
     @require_init
