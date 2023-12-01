@@ -40,9 +40,20 @@ class AudioOut(Node):
 
         if self.stream is None:
             raise RuntimeError("Audio output stream is not available.")
-
+        
         # set data type to float32
         samples = data.data.astype(np.float32).T
+        # Handle Mono to Stereo or Stereo to Mono Conversion
+        # Verify that the samples array has the correct number of dimensions
+        if samples.data.ndim == 1:
+            # Mono audio: duplicate the channel for stereo output
+            samples = np.stack((samples.data, samples.data), axis=-1)
+        elif samples.data.ndim == 2 and samples.data.shape[1] == 1:
+            # Also handle the case where the array is 2D but has only one channel
+            samples = np.concatenate((samples.data, samples.data), axis=1)
+        else:
+            # For already stereo or multi-channel data, use as is
+            samples = samples.data
 
         if self.last_sample is None:
             self.last_sample = samples[-1]
