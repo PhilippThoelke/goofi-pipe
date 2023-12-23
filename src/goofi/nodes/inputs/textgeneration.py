@@ -3,7 +3,7 @@ import threading
 from goofi.node import Node
 from goofi.params import FloatParam, IntParam, StringParam
 from goofi.data import Data, DataType
-client = openai.OpenAI()
+
 
 class TextGeneration(Node):
     def config_input_slots():
@@ -27,6 +27,7 @@ class TextGeneration(Node):
         key = self.params["text_generation"]["openai_key"].value
         with open(key, "r") as f:
             openai.api_key = f.read().strip()
+        self.client = openai.OpenAI()
         self.messages = []  # Initialize conversation history
 
     def process(self, prompt: Data):
@@ -48,7 +49,7 @@ class TextGeneration(Node):
         else:
             self.messages = [{"role": "user", "content": prompt_}]  # Reset conversation history
 
-        response = client.chat.completions.create(
+        response = self.client.chat.completions.create(
             model=model,
             messages=self.messages,
             temperature=temperature,
