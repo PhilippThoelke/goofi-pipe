@@ -6,7 +6,7 @@ import numpy as np
 from goofi.params import StringParam, FloatParam
 from goofi.data import Data, DataType
 import librosa
-client = openai.OpenAI()
+
 
 class SpeechSynthesis(Node):
     def config_input_slots():
