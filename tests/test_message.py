@@ -1,10 +1,13 @@
+from multiprocessing import Manager as MPManager
+
 import pytest
 
 from goofi.connection import Connection
 from goofi.data import Data, DataType
 from goofi.message import Message, MessageType
 
-Connection.set_backend("mp")
+mp_manager = MPManager()
+Connection.set_backend("mp", mp_manager)
 
 EXAMPLE_CONTENT = {
     MessageType.ADD_OUTPUT_PIPE: {

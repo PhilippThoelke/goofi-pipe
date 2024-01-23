@@ -1,4 +1,5 @@
 import time
+from multiprocessing import Manager as MPManager
 
 import pytest
 import yaml
@@ -18,7 +19,8 @@ from .utils import (
     make_custom_node,
 )
 
-Connection.set_backend("mp")
+mp_manager = MPManager()
+Connection.set_backend("mp", mp_manager)
 
 
 def test_abstract_node():
