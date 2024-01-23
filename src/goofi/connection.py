@@ -4,6 +4,7 @@ import tempfile
 import threading
 import time
 from abc import ABC, abstractmethod
+from multiprocessing import Manager as MultiprocessingManager
 from multiprocessing import Pipe
 from multiprocessing.connection import _ConnectionBase
 from typing import Dict, Tuple, Type
@@ -12,15 +13,18 @@ import zmq
 
 
 class Connection(ABC):
-    _CONNECTION_IDS = set()
+    _CONNECTION_IDS = None
     _BACKEND = None
 
     def __init__(self) -> None:
+        if Connection._CONNECTION_IDS is None:
+            raise RuntimeError("Connection._CONNECTION_IDS is None. Call Connection.set_backend() first.")
+
         # register a unique id for the connection
         self._id = 0
         while self._id in Connection._CONNECTION_IDS:
             self._id += 1
-        Connection._CONNECTION_IDS.add(self._id)
+        Connection._CONNECTION_IDS.append(self._id)
 
     @staticmethod
     def get_backends() -> Dict[str, Type["Connection"]]:
@@ -34,11 +38,24 @@ class Connection(ABC):
         }
 
     @staticmethod
-    def set_backend(backend: str) -> None:
+    def set_backend(backend: str, mp_manager: MultiprocessingManager) -> None:
+        """
+        Set the backend to use for creating connections and initialize a shared set of connection ids.
+
+        ### Parameters
+        `backend` : str
+            The backend to use. Choose from "zmq-tcp", "zmq-ipc" or "mp".
+        `mp_manager` : multiprocessing.Manager
+            The multiprocessing manager to use for creating shared objects.
+        """
         assert (
             backend in Connection.get_backends().keys()
         ), f"Invalid backend: {backend}. Choose from {list(Connection.get_backends().keys())}"
         Connection._BACKEND = backend
+
+        # initialize a shared set of connection ids
+        assert Connection._CONNECTION_IDS is None, "Connection._CONNECTION_IDS is not None."
+        Connection._CONNECTION_IDS = mp_manager.list()
 
     @staticmethod
     def create() -> Tuple["Connection", "Connection"]:
@@ -148,12 +165,6 @@ class MultiprocessingConnection(Connection):
         self.close()
         self.conn._handle = None
 
-        # remove the connection id from the set of connection ids
-        try:
-            Connection._CONNECTION_IDS.remove(self._id)
-        except KeyError:
-            pass
-
 
 class ZeroMQConnection(Connection, ABC):
     def __init__(self, push_endpoint: str, pull_endpoint: str = None) -> None:
@@ -257,12 +268,6 @@ class ZeroMQConnection(Connection, ABC):
     def __del__(self) -> None:
         """Destructor to close the connection and free any resources associated with it."""
         self.close()
-
-        # remove the connection id from the set of connection ids
-        try:
-            Connection._CONNECTION_IDS.remove(self._id)
-        except KeyError:
-            pass
 
     @staticmethod
     @abstractmethod

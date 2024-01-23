@@ -729,6 +729,15 @@ class Window:
                 with dpg.group(horizontal=True):
                     dpg.add_button(label="Yes", callback=confirm_callback, user_data=(win, True))
                     dpg.add_button(label="Cancel", callback=confirm_callback, user_data=(win, False))
+        except RuntimeError as e:
+            # something went wrong, open error dialog
+            w, h = dpg.get_viewport_width(), dpg.get_viewport_height()
+            pos = (w / 2 - w / 8, h / 2 - h / 12)
+            with dpg.window(label="Error", width=w / 4, height=h / 6, pos=pos) as win:
+                dpg.add_text(str(e))
+
+                # add button
+                dpg.add_button(label="Ok", callback=lambda _, __: dpg.delete_item(win))
 
     def _get_file(self, callback: Callable, message: Optional[str] = None) -> None:
         """

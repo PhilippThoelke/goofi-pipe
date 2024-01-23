@@ -1,6 +1,7 @@
 import importlib
 import time
 from copy import deepcopy
+from multiprocessing import Manager as MPManager
 from os import path
 from threading import Thread
 from typing import Any, Dict, Optional
@@ -203,7 +204,7 @@ class Manager:
             raise FileNotFoundError(f"File '{filepath}' does not exist.")
 
         # TODO: add proper logging
-        print(f"Loading manager state from '{filepath}'.")
+        print(f"Loading manager state from '{filepath}'...")
 
         # load the yaml file
         with open(filepath, "r") as f:
@@ -221,6 +222,9 @@ class Manager:
         # store the save path
         self.save_path = filepath
         self.unsaved_changes = False
+
+        # TODO: add proper logging
+        print("Finished loading manager state.")
 
     @mark_unsaved_changes
     def add_node(
@@ -274,7 +278,12 @@ class Manager:
             ref = node.create_local(initial_params=params)[0]
 
         # add the node to the container
-        name = self.nodes.add_node(node_type.lower(), ref)
+        if name is None:
+            # default name is the node type
+            name = self.nodes.add_node(node_type.lower(), ref)
+        else:
+            # force the given name
+            name = self.nodes.add_node(name, ref, force_name=True)
 
         # add the node to the gui
         if not self.headless and notify_gui:
@@ -424,7 +433,7 @@ class Manager:
             raise FileExistsError(f"File {filepath} already exists.")
 
         # TODO: add proper logging
-        print(f"Saving manager state to '{filepath}'.")
+        print(f"Saving manager state...")
 
         # wait for all nodes to respond, if their serialization_pending flag is set
         start = time.time()
@@ -440,7 +449,7 @@ class Manager:
 
             # check if we got a response in time
             if self.nodes[name].serialized_state is None:
-                raise ValueError(f"Node {name} does not have a serialized state. Recreate the node and try again.")
+                raise RuntimeError(f"Node {name} does not have a serialized state. Recreate the node and try again.")
 
             if not self.headless:
                 # retrieve the GUI state
@@ -498,6 +507,9 @@ class Manager:
         # write the yaml to the file
         with open(filepath, "w") as f:
             f.write(manager_yaml)
+
+        # TODO: add proper logging
+        print(f"Successfuly saved manager state to '{filepath}'.")
 
         # store the save path
         self.save_path = filepath
@@ -559,10 +571,17 @@ def main(duration: float = 0, args=None):
     parser.add_argument("--comm", choices=comm_choices, default="mp", help="node communication backend")
     args = parser.parse_args(args)
 
-    Connection.set_backend(args.comm)
+    with MPManager() as manager:
+        # set the communication backend
+        Connection.set_backend(args.comm, manager)
 
-    # create and run the manager (this blocks until the manager is terminated)
-    Manager(filepath=args.filepath, headless=args.headless, use_multiprocessing=not args.no_multiprocessing, duration=duration)
+        # create and run the manager (this blocks until the manager is terminated)
+        Manager(
+            filepath=args.filepath,
+            headless=args.headless,
+            use_multiprocessing=not args.no_multiprocessing,
+            duration=duration,
+        )
 
 
 if __name__ == "__main__":

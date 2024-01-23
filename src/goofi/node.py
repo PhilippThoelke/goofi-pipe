@@ -403,7 +403,7 @@ class Node(ABC):
             self.process_flag.set()
 
     @classmethod
-    def create(cls, initial_params: Optional[Dict[str, Dict[str, Any]]] = None) -> NodeRef:
+    def create(cls, initial_params: Optional[Dict[str, Dict[str, Any]]] = None, retries: int = 3) -> NodeRef:
         """
         Create a new node instance in a separate process and return a reference to the node.
 
@@ -424,10 +424,22 @@ class Node(ABC):
         # integrate initial parameters if they are provided
         if initial_params is not None:
             params.update(initial_params)
-        conn1, conn2 = Connection.create()
-        # instantiate the node in a separate process
-        proc = Process(target=cls, args=(conn2, in_slots, out_slots, params, False), daemon=True)
-        proc.start()
+
+        tries = 0
+        while True:
+            try:
+                conn1, conn2 = Connection.create()
+
+                # instantiate the node in a separate process
+                proc = Process(target=cls, args=(conn2, in_slots, out_slots, params, False), daemon=True)
+                proc.start()
+                break
+            except Exception as e:
+                tries += 1
+                if tries >= retries:
+                    raise e
+                time.sleep(0.1)
+
         # create the node reference
         return NodeRef(
             conn1,

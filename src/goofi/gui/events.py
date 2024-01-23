@@ -245,28 +245,29 @@ def copy_selected_nodes(win, timeout: float = 0.1):
     positions = [dpg.get_item_pos(n) for n in dpg.get_selected_nodes(win.node_editor)]
     avg_pos = [sum(p[0] for p in positions) / len(positions), sum(p[1] for p in positions) / len(positions)]
 
-    # request the serialized state from each node
-    for node in nodes.values():
-        node.serialize()
-
-    # wait for all nodes to respond, i.e. their serialized_state is not None
+    # wait for all nodes to respond, if their serialization_pending flag is set
     start = time.time()
     serialized_nodes = []
     for (item, node), pos in zip(nodes.items(), positions):
-        while node.serialized_state is None and time.time() - start < timeout:
+        while node.serialization_pending and time.time() - start < timeout:
             # wait for the node to respond or for the timeout to be reached
             time.sleep(0.01)
-
-        # check if we got a response in time
-        if node.serialized_state is None:
-            # TODO: add proper logging
-            print(f"Node {node} did not respond to serialize request.")
-            return
 
         # get node name
         names = [name for name, gui_node in win.nodes.items() if gui_node.item == item]
         assert len(names) == 1, f"The following nodes seem to be duplicates: {names}"
         name = names[0]
+
+        # check if we got a response in time
+        if node.serialization_pending:
+            # TODO: add proper logging
+            print(f"WARNING: Node {name} timed out while waiting for serialization. Node state is possibly outdated.")
+
+        if node.serialized_state is None:
+            # TODO: add proper logging
+            print(f"ERROR: Node {name} does not have a serialized state. Copying is not possible.")
+            win.node_clipboard = None
+            return
 
         # get links connected to input slots of the current node
         input_links = []
