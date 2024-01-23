@@ -19,8 +19,12 @@ from .utils import (
     make_custom_node,
 )
 
-mp_manager = MPManager()
-Connection.set_backend("mp", mp_manager)
+try:
+    mp_manager = MPManager()
+    Connection.set_backend("mp", mp_manager)
+except AssertionError:
+    # Connection backend is already set
+    pass
 
 
 def test_abstract_node():

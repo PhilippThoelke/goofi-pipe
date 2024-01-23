@@ -6,8 +6,12 @@ from goofi.connection import Connection
 from goofi.data import Data, DataType
 from goofi.message import Message, MessageType
 
-mp_manager = MPManager()
-Connection.set_backend("mp", mp_manager)
+try:
+    mp_manager = MPManager()
+    Connection.set_backend("mp", mp_manager)
+except AssertionError:
+    # Connection backend is already set
+    pass
 
 EXAMPLE_CONTENT = {
     MessageType.ADD_OUTPUT_PIPE: {
