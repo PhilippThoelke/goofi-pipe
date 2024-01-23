@@ -1,7 +1,8 @@
+import numpy as np
+
 from goofi.data import Data, DataType
 from goofi.node import Node
 from goofi.params import BoolParam
-import numpy as np
 
 
 class WelfordsZTransform(Node):
@@ -68,9 +69,9 @@ class WelfordsZTransform(Node):
                         normalized_value[idx[0], idx[1]] = delta / std_dev
                 else:
                     if val.ndim == 1:
-                        normalized_value[idx] = 0
+                        normalized_value[idx] = outlier_stds * np.sign(delta)
                     else:
-                        normalized_value[idx[0], idx[1]] = 0
+                        normalized_value[idx[0], idx[1]] = outlier_stds * np.sign(delta)
 
             self.mean[key] = {"mean": new_mean, "count": count}
 
