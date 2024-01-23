@@ -10,7 +10,7 @@ try:
     mp_manager = MPManager()
     Connection.set_backend("mp", mp_manager)
 except AssertionError:
-    # Connection backend is already set
+    # connection backend is already set
     pass
 
 EXAMPLE_CONTENT = {

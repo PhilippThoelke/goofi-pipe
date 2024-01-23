@@ -1,5 +1,6 @@
 import platform
 import time
+from multiprocessing import Manager as MPManager
 from os import path
 
 import pytest
@@ -43,7 +44,12 @@ def test_simple(comm_backend):
         # TODO: make sure zmq backend works
         pytest.skip("ZeroMQ backend still has some issues.")
 
-    Connection.set_backend(comm_backend)
+    try:
+        mp_manager = MPManager()
+        Connection.set_backend("mp", mp_manager)
+    except AssertionError:
+        # connection backend is already set
+        pass
 
     manager = create_simple_manager()
     my_conn, node_conn = Connection.create()
