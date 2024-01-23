@@ -426,22 +426,21 @@ class Manager:
         # TODO: add proper logging
         print(f"Saving manager state to '{filepath}'.")
 
-        # request all nodes to serialized their state
-        for name in self.nodes:
-            self.nodes[name].serialize()
-
-        # wait for all nodes to respond, i.e. their serialized_state is not None
+        # wait for all nodes to respond, if their serialization_pending flag is set
         start = time.time()
         serialized_nodes = {}
         for name in self.nodes:
-            while self.nodes[name].serialized_state is None and time.time() - start < timeout:
+            while self.nodes[name].serialization_pending and time.time() - start < timeout:
                 # wait for the node to respond or for the timeout to be reached
                 time.sleep(0.01)
 
+            if self.nodes[name].serialization_pending:
+                # TODO: add proper logging
+                print(f"WARNING: Node {name} timed out while waiting for serialization. Node state is possibly outdated.")
+
             # check if we got a response in time
             if self.nodes[name].serialized_state is None:
-                # TODO: add proper logging
-                print(f"ERROR: Node {name} did not respond to serialization request. Attempting to proceed anyway.")
+                raise ValueError(f"Node {name} does not have a serialized state. Recreate the node and try again.")
 
             if not self.headless:
                 # retrieve the GUI state

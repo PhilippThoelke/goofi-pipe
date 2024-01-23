@@ -139,6 +139,19 @@ class Node(ABC):
                 self.connection.try_send(Message(MessageType.PROCESSING_ERROR, {"error": error_message}))
                 time.sleep(0.1)
 
+    def _serialize(self):
+        """Serialize the node's type, output connections, and parameters, and send the serialized data to the manager."""
+        # serialize output connections and the node's parameters
+        out_conns = {name: slot.connections for name, slot in self.output_slots.items()}
+        params = self.params.serialize()
+        # return the serialized data
+        self.connection.try_send(
+            Message(
+                MessageType.SERIALIZE_RESPONSE,
+                {"_type": type(self).__name__, "category": self.category(), "out_conns": out_conns, "params": params},
+            )
+        )
+
     def _messaging_loop(self):
         """
         This method runs in a separate thread and handles incoming messages from the manager, or other nodes.
@@ -200,6 +213,10 @@ class Node(ABC):
                     self_conn = True
 
                 slot.connections.append((msg.content["slot_name_in"], conn, self_conn))
+
+                if not self_conn:
+                    # notify the manager that the connection was added
+                    self._serialize()
             elif msg.type == MessageType.REMOVE_OUTPUT_PIPE:
                 # clear the data in the input slot
                 msg.content["node_connection"].try_send(
@@ -220,6 +237,9 @@ class Node(ABC):
                             },
                         )
                     )
+
+                # notify the manager of the updated connections
+                self._serialize()
             elif msg.type == MessageType.DATA:
                 # received data from another node
                 if msg.content["slot_name"] not in self.input_slots:
@@ -243,6 +263,9 @@ class Node(ABC):
                     raise ValueError(f"Parameter '{param_name}' doesn't exist in group '{group}'.")
                 self.params[group][param_name].value = param_value
 
+                # notify the manager that the parameter was updated
+                self._serialize()
+
                 # call the callback if it exists
                 if hasattr(self, f"{group}_{param_name}_changed"):
                     try:
@@ -255,17 +278,9 @@ class Node(ABC):
                                 {"error": f"Parameter callback for {group}.{param_name} failed: {e}"},
                             )
                         )
+
             elif msg.type == MessageType.SERIALIZE_REQUEST:
-                # serialize output connections and the node's parameters
-                out_conns = {name: slot.connections for name, slot in self.output_slots.items()}
-                params = self.params.serialize()
-                # return the serialized data
-                self.connection.try_send(
-                    Message(
-                        MessageType.SERIALIZE_RESPONSE,
-                        {"_type": type(self).__name__, "category": self.category(), "out_conns": out_conns, "params": params},
-                    )
-                )
+                self._serialize()
             else:
                 # TODO: handle the incoming message
                 raise NotImplementedError(f"Message type {msg.type} not implemented.")
@@ -479,7 +494,7 @@ class Node(ABC):
             The path to the assets folder of the node.
         """
         return join(dirname(dirname(dirname(__file__))), "assets")
-    
+
     @property
     def data_path(self) -> str:
         """
