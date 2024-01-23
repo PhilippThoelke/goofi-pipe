@@ -573,7 +573,11 @@ def main(duration: float = 0, args=None):
 
     with MPManager() as manager:
         # set the communication backend
-        Connection.set_backend(args.comm, manager)
+        try:
+            Connection.set_backend(args.comm, manager)
+        except AssertionError:
+            # connection backend is already set (occurrs when running tests)
+            pass
 
         # create and run the manager (this blocks until the manager is terminated)
         Manager(
