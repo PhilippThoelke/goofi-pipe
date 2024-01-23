@@ -467,12 +467,7 @@ class Manager:
                 for slot_name_in, conn in conns:
                     # find the node that matches the output connection of the current slot
                     for node_name_in in serialized_nodes.keys():
-                        # prevent corrupting the save file if an illegal self-connection is present
-                        if node_name_in == node_name_out:
-                            # TODO: add proper logging
-                            print(f"WARNING: Illegal self-connection: {node_name_out} to {node_name_in}.")
-                            continue
-
+                        # check if the connection matches the current node
                         if conn == self.nodes[node_name_in].connection:
                             # verify that the input slot exists
                             if slot_name_in not in self.nodes[node_name_in].input_slots:
