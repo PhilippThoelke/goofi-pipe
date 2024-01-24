@@ -1,4 +1,5 @@
 import os
+import platform
 import pprint
 import threading
 import time
@@ -856,7 +857,9 @@ class Window:
                                 user_data=(self, node, slot, "y"),
                             )
                         dpg.add_separator()
-                        self.metadata_view[slot] = dpg.add_text("")
+                        self.metadata_view[slot] = dpg.add_input_text(
+                            default_value="", multiline=True, readonly=True, width=-1, height=-1
+                        )
 
         # show parameters window
         dpg.configure_item(self.side_panel_win, show=True)
@@ -878,7 +881,11 @@ class Window:
     def resize_callback(self, _, size: Tuple[int, int]) -> None:
         """Callback from DearPyGui that the viewport was resized."""
         # resize window to fill viewport
-        dpg.configure_item(self.window, width=size[0], height=size[1])
+        if platform.system() == "Windows":
+            # frame border seems to be different on Windows
+            dpg.configure_item(self.window, width=size[0] - 16, height=size[1] - 39)
+        else:
+            dpg.configure_item(self.window, width=size[0], height=size[1])
 
         if self.selected_node is None:
             # no node selected, resize node editor to fill viewport
