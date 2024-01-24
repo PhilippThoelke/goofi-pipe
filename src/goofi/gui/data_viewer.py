@@ -481,6 +481,8 @@ class TableViewer(DataViewer):
     def __init__(self, content_window: int, container: ViewerContainer) -> None:
         super().__init__(DataType.TABLE, content_window, container)
 
+        self.width = dpg.get_item_width(self.content_window)
+
         # create table
         self.table = dpg.add_table(parent=self.content_window, header_row=False, policy=dpg.mvTable_SizingFixedFit)
         dpg.add_table_column(parent=self.table)
@@ -512,14 +514,19 @@ class TableViewer(DataViewer):
         # populate rows with data
         for row, (key, val) in zip(self.rows, data.data.items()):
             # truncate value text
-            val = str(val.data)
-            if len(val) > 20:
-                val = val[:20] + "..."
+            val = str(val.data).replace("\n", " ")
+            cut = int(self.width / 7 - 6)
+            if len(val) > cut:
+                val = val[: cut - 3] + "..."
 
             # update key and value cells
             key_cell, val_cell = dpg.get_item_user_data(row)
             dpg.set_value(key_cell, key)
             dpg.set_value(val_cell, val)
+
+    def set_size(self) -> None:
+        """This function sets the size of the table."""
+        self.width = dpg.get_item_width(self.content_window)
 
 
 DTYPE_VIEWER_MAP = {
