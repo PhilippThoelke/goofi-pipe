@@ -138,6 +138,7 @@ class GUINode:
             with dpg.theme_component():
                 dpg.add_theme_color(dpg.mvThemeCol_WindowBg, [200, 200, 200, 255], category=dpg.mvThemeCat_Core)
                 dpg.add_theme_color(dpg.mvThemeCol_Text, [0, 0, 0, 255], category=dpg.mvThemeCat_Core)
+                dpg.add_theme_color(dpg.mvThemeCol_FrameBg, [0, 0, 0, 0], category=dpg.mvThemeCat_Core)
 
         with dpg.window(
             width=size[0],
@@ -154,7 +155,7 @@ class GUINode:
             dpg.add_separator()
 
             txt = "All good!" if self._error_msg is None else self._error_msg
-            dpg.add_text(txt)
+            dpg.add_input_text(multiline=True, default_value=txt.strip(), readonly=True, width=-1, height=-1)
 
             dpg.bind_item_theme(win.node_info_window, win_theme)
 
