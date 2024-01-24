@@ -460,7 +460,7 @@ class StringViewer(DataViewer):
         super().__init__(DataType.STRING, content_window, container)
 
         # create text item
-        self.text = dpg.add_text("", parent=self.content_window)
+        self.text = dpg.add_text("", parent=self.content_window, wrap=dpg.get_item_width(self.content_window))
 
     def update(self, data: Data) -> None:
         """
@@ -471,6 +471,10 @@ class StringViewer(DataViewer):
             The data message.
         """
         dpg.set_value(self.text, data.data)
+
+    def set_size(self) -> None:
+        """This function sets the size of the text item."""
+        dpg.configure_item(self.text, wrap=dpg.get_item_width(self.content_window))
 
 
 class TableViewer(DataViewer):
