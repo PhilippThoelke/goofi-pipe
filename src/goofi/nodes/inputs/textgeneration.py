@@ -1,8 +1,6 @@
-import openai
-import threading
+from goofi.data import Data, DataType
 from goofi.node import Node
 from goofi.params import FloatParam, IntParam, StringParam
-from goofi.data import Data, DataType
 
 
 class TextGeneration(Node):
@@ -24,6 +22,8 @@ class TextGeneration(Node):
         }
 
     def setup(self):
+        import openai
+
         key = self.params["text_generation"]["openai_key"].value
         with open(key, "r") as f:
             openai.api_key = f.read().strip()

@@ -1,8 +1,8 @@
 import numpy as np
-from sklearn.cluster import KMeans, AgglomerativeClustering
+
 from goofi.data import Data, DataType
 from goofi.node import Node
-from goofi.params import IntParam, StringParam, FloatParam
+from goofi.params import FloatParam, IntParam, StringParam
 
 
 class Clustering(Node):
@@ -27,13 +27,19 @@ class Clustering(Node):
             }
         }
 
+    def setup(self):
+        from sklearn.cluster import AgglomerativeClustering, KMeans
+
+        self.AgglomerativeClustering = AgglomerativeClustering
+        self.KMeans = KMeans
+
     def process(self, matrix: Data):
         if matrix is None:
             return None
         max_iter = self.params.Clustering["max_iter"].value
         tolerance = self.params.Clustering["tolerance"].value
         if self.params.Clustering["algorithm"].value == "KMeans":
-            model = KMeans(n_clusters=self.params.Clustering["n_clusters"].value, max_iter=max_iter, tol=tolerance)
+            model = self.KMeans(n_clusters=self.params.Clustering["n_clusters"].value, max_iter=max_iter, tol=tolerance)
             labels = model.fit_predict(matrix.data)
             centers = model.cluster_centers_
             labels = labels.astype(np.float64)
@@ -43,7 +49,7 @@ class Clustering(Node):
             }
 
         elif self.params.Clustering["algorithm"].value == "Agglomerative":
-            model = AgglomerativeClustering(
+            model = self.AgglomerativeClustering(
                 n_clusters=self.params.Clustering["n_clusters"].value,
                 affinity=self.params.Clustering["affinity"].value,
                 linkage=self.params.Clustering["linkage"].value,

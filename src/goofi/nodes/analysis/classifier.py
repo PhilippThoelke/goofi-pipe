@@ -1,13 +1,10 @@
-from sklearn.naive_bayes import GaussianNB
-from sklearn.svm import SVC
-from sklearn.ensemble import RandomForestClassifier
-from sklearn.linear_model import LogisticRegression
-from sklearn.neighbors import KNeighborsClassifier
+from os.path import join
+
+import numpy as np
+
 from goofi.data import Data, DataType
 from goofi.node import Node
-from goofi.params import IntParam, BoolParam, StringParam, FloatParam
-import numpy as np
-from os.path import join
+from goofi.params import BoolParam, FloatParam, IntParam, StringParam
 
 
 class Classifier(Node):
@@ -62,6 +59,18 @@ class Classifier(Node):
         }
 
     def setup(self):
+        from sklearn.ensemble import RandomForestClassifier
+        from sklearn.linear_model import LogisticRegression
+        from sklearn.naive_bayes import GaussianNB
+        from sklearn.neighbors import KNeighborsClassifier
+        from sklearn.svm import SVC
+
+        self.RandomForestClassifier = RandomForestClassifier
+        self.LogisticRegression = LogisticRegression
+        self.GaussianNB = GaussianNB
+        self.KNeighborsClassifier = KNeighborsClassifier
+        self.SVC = SVC
+
         self.training_data = []
         self.training_labels = []
         self.classifier = None
@@ -127,24 +136,24 @@ class Classifier(Node):
             classifier_choice = self.params.classification.classifier_choice.value
 
             if classifier_choice == "NaiveBayes":
-                self.classifier = GaussianNB(var_smoothing=self.params.NaiveBayes.var_smoothing.value)
+                self.classifier = self.GaussianNB(var_smoothing=self.params.NaiveBayes.var_smoothing.value)
             elif classifier_choice == "SVM":
-                self.classifier = SVC(
+                self.classifier = self.SVC(
                     C=self.params.SVM.C.value,
                     kernel=self.params.SVM.kernel.value,
                     gamma=self.params.SVM.gamma.value,
                     probability=True,
                 )
             elif classifier_choice == "RandomForest":
-                self.classifier = RandomForestClassifier(
+                self.classifier = self.RandomForestClassifier(
                     n_estimators=self.params.RandomForest.n_estimators.value,
                     max_depth=self.params.RandomForest.max_depth.value,
                     min_samples_split=self.params.RandomForest.min_samples_split.value,
                 )
             elif classifier_choice == "LogisticRegression":
-                self.classifier = LogisticRegression(C=self.params.LogisticRegression.C.value)
+                self.classifier = self.LogisticRegression(C=self.params.LogisticRegression.C.value)
             elif classifier_choice == "KNeighbors":
-                self.classifier = KNeighborsClassifier(n_neighbors=self.params.KNeighbors.n_neighbors.value)
+                self.classifier = self.KNeighborsClassifier(n_neighbors=self.params.KNeighbors.n_neighbors.value)
 
         if self.params.classification.train.value:
             # check if there are enough samples for each class
@@ -189,11 +198,11 @@ class Classifier(Node):
 
     def get_feature_importances(self):
         """Retrieve feature importances from the classifier."""
-        if isinstance(self.classifier, RandomForestClassifier):
+        if isinstance(self.classifier, self.RandomForestClassifier):
             return self.classifier.feature_importances_
-        elif isinstance(self.classifier, LogisticRegression):
+        elif isinstance(self.classifier, self.LogisticRegression):
             return self.classifier.coef_[0]
-        elif isinstance(self.classifier, SVC) and self.params.SVM.kernel.value == "linear":
+        elif isinstance(self.classifier, self.SVC) and self.params.SVM.kernel.value == "linear":
             return self.classifier.coef_[0]
         else:
             print("Feature importances not available for the current classifier or configuration.")
