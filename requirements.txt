@@ -18,3 +18,4 @@ panns_inference
 networkx
 deeptime
 py-feat
+edgeofpy
