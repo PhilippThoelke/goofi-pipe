@@ -199,8 +199,11 @@ def toggle_log_plot(_1, _2, data):
     node.output_draw_handlers[slot].toggle_log_plot(axis)
 
 
-def param_updated(_, value, user_data):
-    """A callback function for updating a parameter value."""
+def param_updated(a, value, user_data):
+    """
+    A GUI callback function for updating a parameter value. This is called by DearPyGui when
+    a parameter is updated, and passed the update to the node.
+    """
     group, name, node = user_data[:3]
 
     if len(user_data) == 4:
@@ -223,7 +226,8 @@ def param_updated(_, value, user_data):
 
     # send the updated parameter to the node
     node.update_param(group, name, value)
-
+    # mark manager state as dirty
+    Window().manager.unsaved_changes = True
 
 def add_param(parent: int, group: str, name: str, param: Param, node: NodeRef) -> None:
     """
