@@ -1,6 +1,6 @@
 from goofi.data import Data, DataType
 from goofi.node import Node
-from goofi.params import FloatParam, IntParam, StringParam
+from goofi.params import FloatParam, StringParam
 import requests
 import numpy as np
 from os.path import join
@@ -8,11 +8,7 @@ from os.path import join
 
 class MeteoMedia(Node):
     def config_input_slots():
-        return {
-            "latitude": DataType.ARRAY,
-            "longitude": DataType.ARRAY,
-            "location_name": DataType.STRING
-        }
+        return {"latitude": DataType.ARRAY, "longitude": DataType.ARRAY, "location_name": DataType.STRING}
 
     def config_output_slots():
         return {"weather_data_table": DataType.TABLE}
@@ -20,14 +16,15 @@ class MeteoMedia(Node):
     def config_params():
         return {
             "TomorrowAPI": {
-                "key": StringParam("YOUR_API_KEY", doc = "you can also add a file in the assets folder : tomorrowkey.txt")},
-            "common": {"autotrigger": True,
-                       'max_frequency': FloatParam(0.1, 0.1, 30.0),},
-            }   
-    
+                "key": StringParam("YOUR_API_KEY", doc="you can also add a file in the assets folder : tomorrowkey.txt")
+            },
+            "common": {
+                "autotrigger": True,
+                "max_frequency": FloatParam(0.1, 0.1, 30.0),
+            },
+        }
 
     def process(self, latitude: Data, longitude: Data, location_name: Data):
-        
         if latitude is None or longitude is None:
             return None
         # Extract values from Data objects
@@ -50,7 +47,7 @@ class MeteoMedia(Node):
             headers = {"accept": "application/json"}
             response = requests.get(url, headers=headers)
             print(response.status_code)
-        
+
         else:
             url = f"https://api.tomorrow.io/v4/weather/realtime?location={location_name}&apikey={api_key}"
             headers = {"accept": "application/json"}
@@ -58,17 +55,18 @@ class MeteoMedia(Node):
             print(response.status_code)
         if response.status_code == 200:
             responses = response.json()
-            output_table = responses['data']['values']
+            output_table = responses["data"]["values"]
             output_table
-            print('HELLO')
+            print("HELLO")
             # convert all elements of the dictionary to a Data object
             for key, value in output_table.items():
                 output_table[key] = Data(DataType.ARRAY, np.array(value), {})
             print(output_table)
         else:
             # Handle error or empty response
-            output_table = {'ERROR': Data(DataType.ARRAY, np.array(response.status_code), {})}
+            output_table = {"ERROR": Data(DataType.ARRAY, np.array(response.status_code), {})}
 
         return {"weather_data_table": (output_table, {})}
+
 
 # Note: Replace YOUR_API_KEY with your actual API key from Tomorrow.io.

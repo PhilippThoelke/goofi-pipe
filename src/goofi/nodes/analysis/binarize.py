@@ -1,8 +1,9 @@
 import numpy as np
 from goofi.data import Data, DataType
 from goofi.node import Node
-from goofi.params import FloatParam, IntParam, StringParam, BoolParam
+from goofi.params import FloatParam, StringParam
 import edgeofpy as eop
+
 
 class Binarize(Node):
     def config_input_slots():
@@ -16,16 +17,14 @@ class Binarize(Node):
     def config_params():
         return {
             "parameters": {
-                "threshold_type": StringParam(
-                    'both',
-                    options=['both', 'above', 'below']),
-                "threshold": FloatParam(2.0, 0.0, 5.0)
+                "threshold_type": StringParam("both", options=["both", "above", "below"]),
+                "threshold": FloatParam(2.0, 0.0, 5.0),
             }
-            }
+        }
 
     def process(self, data: Data):
         if data.data is None:
-             return None
+            return None
 
         data.data = np.squeeze(data.data)
         if data.data.ndim == 1:

@@ -40,7 +40,7 @@ class AudioOut(Node):
 
         if self.stream is None:
             raise RuntimeError("Audio output stream is not available.")
-        
+
         # set data type to float32
         samples = data.data.astype(np.float32).T
         # Handle Mono to Stereo or Stereo to Mono Conversion

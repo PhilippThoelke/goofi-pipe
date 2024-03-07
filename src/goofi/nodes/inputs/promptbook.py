@@ -190,9 +190,8 @@ prompts = {
     "AND CONCISE. LIMIT YOURSELF TO A MAXIMUM OF 60 WORDS.",
     "FACE_GENERATION_PROMPT": "Create a prompt for a text-to-image model to generate faces. The faces should be inspired by the texture of given elements,"
     "if provided, and should reflect a specific emotion, if mentioned. Use evocative and descriptive words to detail the texture and emotional state. The "
-    "prompt should be concise, focusing on the essence of the elements and emotions. Use rich, imaginative adjectives to convey the texture and mood. Define " 
+    "prompt should be concise, focusing on the essence of the elements and emotions. Use rich, imaginative adjectives to convey the texture and mood. Define "
     "the artstyle, inspired by the emotions and elements, and describe the lighting and perspective using cinematic terminology.  Ensure the entire image captures "
     "the symbolic essence of the provided words. Include relevant artists at the end of the prompt, whose work resonates with the symbolism of the guiding words. "
-    "Keep the prompt VERY SHORT AND CONCISE, limited to a MAXIMUM OF 60 WORDS."
-
+    "Keep the prompt VERY SHORT AND CONCISE, limited to a MAXIMUM OF 60 WORDS.",
 }
