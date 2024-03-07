@@ -90,6 +90,4 @@ def bioplanets_realtime(peaks, df, tolerance):
 
         wavelengths_by_planet[planet] = unique_wavelengths
 
-        print(f"Wavelengths for {planet}: {unique_wavelengths}")
-
     return wavelengths_by_planet
