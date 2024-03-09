@@ -19,7 +19,9 @@ class SpeechSynthesis(Node):
         return {
             "speech_generation": {
                 "openai_key": StringParam("openai.key"),
-                "speed": FloatParam(1, 0.1, 2),
+                "speed": FloatParam(1.0, 0.1, 2.0),
+                "model": StringParam("tts-1", options=["tts-1", "tts-1-hd"]),
+                "voice": StringParam("alloy", options=["alloy", "echo", "fable", "onyx", "nova", "shimmer"]),
             }
         }
 
@@ -52,7 +54,12 @@ class SpeechSynthesis(Node):
         return {"speech": (speech, {}), "transcript": (transcript, {})}
 
     def synthesize_speech_stream(self, text, speed):
-        response = self.openai.audio.speech.create(model="tts-1", voice="alloy", input=text, speed=speed)
+        response = self.openai.audio.speech.create(
+            model=self.params.speech_generation.model.value,
+            voice=self.params.speech_generation.voice.value,
+            input=text,
+            speed=speed,
+        )
         # yield audio chunks
         for chunk in response.iter_bytes():
             yield chunk
