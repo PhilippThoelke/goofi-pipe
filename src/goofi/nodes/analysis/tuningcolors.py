@@ -51,7 +51,7 @@ class TuningColors(Node):
         # convert the scale to frequency values
         scale_freqs = self.scale2freqs(scale, fund)
         # compute the averaged consonance of each step
-        scale_cons, _ = self.tuning_cons_matrix(scale, self.dyad_similarity, ratio_type="all")
+        scale_cons, _, _ = self.tuning_cons_matrix(scale, self.dyad_similarity, ratio_type="all")
         # rescale to match RGB standards (0, 255)
         scale_cons = (np.array(scale_cons) - min_) * (1 / max_ - min_) * 255
         scale_cons = scale_cons.astype("uint8").astype(float) / 255
