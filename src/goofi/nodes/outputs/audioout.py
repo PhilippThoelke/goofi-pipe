@@ -15,8 +15,7 @@ class AudioOut(Node):
                 "sampling_rate": StringParam("44100", options=["44100", "48000"]),
                 "device": StringParam(AudioOut.list_audio_devices()[0], options=AudioOut.list_audio_devices()),
                 "transition_samples": 100,
-            },
-            "common": {"autotrigger": True},
+            }
         }
 
     def setup(self):
