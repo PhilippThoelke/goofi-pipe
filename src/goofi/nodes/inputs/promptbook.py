@@ -1,4 +1,4 @@
-from goofi.data import DataType, Data
+from goofi.data import Data, DataType
 from goofi.node import Node
 from goofi.params import StringParam
 
@@ -19,12 +19,12 @@ class PromptBook(Node):
         return {"out": DataType.STRING}
 
     def process(self, input_prompt: Data):
-        # Retrieving the selected prompt
+        # retrieving the selected prompt
         selected_prompt = self.params["Text_Generation"]["selected_prompt"].value
         prompt_ = prompts.get(selected_prompt, [])
         # append the input prompt to the selected prompt
         prompt_ = prompt_ + input_prompt.data
-        # Returning the value of the selected prompt
+        # returning the value of the selected prompt
         return {"out": (prompt_, {})}
 
 
@@ -33,17 +33,16 @@ prompts = {
     "symbolism and archetypes related to these words in the poem, DO NOT NAME THE WORDS DIRECTLY. "
     "Be creative in your imagery. You are going to write the poem line by line, meaning you should "
     "only respond with a single line in every response. Refer back to previous lines and combine "
-    "them with new symbols from a new list of words for inspiration. Limit every response to 10 "
-    "words at maximum. Strictly follow this limit! DO NOT NAME ANY OF THE PROVIDED WORDS. KEEP YOUR "
-    "RESPONSES SHORT AND CONCISE.",
+    "them with new symbols from a new list of words for inspiration. Strictly follow this limit! "
+    "DO NOT NAME ANY OF THE PROVIDED WORDS. KEEP YOUR RESPONSES SHORT AND CONCISE, DO NOT USE MORE THAN 10 WORDS!",
     "POETRY_INFORMED_PROMPT": "I want you to inspire yourself from a text2image prompt to write surrealist poetry. Only use the "
     "symbolism and archetypes related to these words in the poem. The idea is to describe poetically "
     "the image that is described in the prompt. DO NOT NAME THE WORDS DIRECTLY OR ANY ARTIST OR STYLE NAME. "
     "Be creative in your imagery. You are going to write the poem line by line, meaning you should "
     "only respond with a single line in every response. Refer back to previous lines and combine "
-    "them with new symbols from a new list of words for inspiration. Limit every response to 10 "
-    "words at maximum. Strictly follow this limit! DO NOT NAME ANY OF THE PROVIDED WORDS. KEEP YOUR "
-    "RESPONSES SHORT AND CONCISE.",
+    "them with new symbols from a new list of words for inspiration. "
+    "Strictly follow this limit! DO NOT NAME ANY OF THE PROVIDED WORDS. KEEP YOUR RESPONSES SHORT AND CONCISE, "
+    "DO NOT USE MORE THAN 10 WORDS!",
     "SCIENCE_INFORMED_PROMPT": "I want you to inspire yourself from a text2image prompt to write a systematic description "
     "of the described content in scientific terms, inspiring yourself from biology, neuroscience, "
     "anatomy, chemistry, physics and mathematics."
@@ -87,11 +86,11 @@ prompts = {
     "separated by commas. Be purely descriptive, your response does not have to be a complete sentence. "
     "Make sure the whole image fits the archetypes and symbolism of the words I provide. Include names of "
     "artists at the end of the prompt that embody the symbolism of the guiding words from the perspective "
-    "of an art historian. BE VERY SHORT AND CONCISE. LIMIT YOURSELF TO A MAXIMUM OF 60 WORDS.SPECIFY NOT TO PUT TEXT IN THE IMAGE.",
+    "of an art historian. BE VERY SHORT AND CONCISE. LIMIT YOURSELF TO A MAXIMUM OF 20 WORDS.",
     "TXT2IMG_PHOTO_PROMPT": "Your job is to come up with a prompt for a text-to-image model. The prompt should be concise and "
     "describe a simple scene with few descriptive words. Use creative, abstract and mystical adjectives, "
-    "but the image should be a realistic scene of a photograph. Do not systematically describe nature sceneries."
-    " Inspire yourself from unconventional and surprising archival photographs. "
+    "but the image should be a realistic scene of a photograph. Do not systematically describe nature sceneries. "
+    "Inspire yourself from unconventional and surprising archival photographs. "
     "Generate only a single prompt, which is more a collection of descriptors than a grammatical sentence. "
     "I will provide some guiding words to set the content and emotion of the image. Use the archetypes and "
     "symbolism attached to these words to come up with the prompt. Be sure to describe the artstyle "
@@ -99,7 +98,7 @@ prompts = {
     "the perspective using terms from cinematography. The style descriptors should mostly be single words "
     "separated by commas. Be purely descriptive, your response does not have to be a complete sentence. "
     "Make sure the whole image fits the archetypes and symbolism of the words I provide. Include names of "
-    "photographers at the end of the prompt. BE VERY SHORT AND CONCISE. LIMIT YOURSELF TO A MAXIMUM OF 60 WORDS. .SPECIFY NOT TO PUT TEXT IN THE IMAGE.",
+    "photographers at the end of the prompt. BE VERY SHORT AND CONCISE. LIMIT YOURSELF TO A MAXIMUM OF 20 WORDS.",
     "TXT2IMG_MACRO_PROMPT": "Your job is to come up with a prompt for a text-to-image model. The prompt should be concise and "
     "describe a microscopic view with few descriptive words. Use creative, abstract and mystical adjectives. "
     "Generate only a single prompt, which is more a collection of descriptors than a grammatical sentence. "
@@ -109,7 +108,7 @@ prompts = {
     " The style descriptors should mostly be single words "
     "separated by commas. Be purely descriptive, your response does not have to be a complete sentence. "
     "Make sure the whole image fits the archetypes and symbolism of the words I provide, while focusing on "
-    "the idea of a macrophotography image. BE VERY SHORT AND CONCISE. LIMIT YOURSELF TO A MAXIMUM OF 60 WORDS..SPECIFY NOT TO PUT TEXT IN THE IMAGE.",
+    "the idea of a macrophotography image. BE VERY SHORT AND CONCISE. LIMIT YOURSELF TO A MAXIMUM OF 20 WORDS.",
     "TXT2IMG_BRAIN_PROMPT": "Your job is to come up with a prompt for a text-to-image model. The prompt should be concise and "
     "describe a brain-themed image. Either a photo of a brain, a brain scan (e.g. MRI), microscopy of neurons "
     "or other images of biological neural networks. Name some brain regions."
@@ -118,7 +117,7 @@ prompts = {
     "Be sure to include descriptors of the type of image (photo, microscopy, diffusion weighted images, "
     "tractogram, scan, etc.). The style descriptors should mostly be single words separated by commas. "
     "Be purely descriptive, your response does not have to be a complete sentence. "
-    "BE VERY SHORT AND CONCISE. LIMIT YOURSELF TO A MAXIMUM OF 60 WORDS.SPECIFY NOT TO PUT TEXT IN THE IMAGE.",
+    "BE VERY SHORT AND CONCISE. LIMIT YOURSELF TO A MAXIMUM OF 20 WORDS.",
     "TXT2IMG_ANIMAL_PROMPT": "Your job is to come up with a prompt for a text-to-image model. The prompt should be concise and "
     "describe an invented animal with few descriptive words. Use creative, abstract and mystical adjectives. "
     "Generate only a single prompt, which is more a collection of descriptors than a grammatical sentence. "
@@ -131,7 +130,7 @@ prompts = {
     "artists at the end of the prompt that embody the symbolism of the guiding words from the perspective "
     "of an art historian. The first part of the prompt should be a clear description of an animal or creature. Either name a "
     "single animal that matches the symbolism, or come up with a hybrid of animals by listing up to 3 animals followed by the term "
-    "'hybrid'. BE VERY SHORT AND CONCISE. LIMIT YOURSELF TO A MAXIMUM OF 40 WORDS. SPECIFY NOT TO PUT TEXT IN THE IMAGE.",
+    "'hybrid'. BE VERY SHORT AND CONCISE. LIMIT YOURSELF TO A MAXIMUM OF 20 WORDS.",
     "TXT2IMG_CODEX_PROMPT": "Your job is to come up with a prompt for a text-to-image model. The prompt should be concise and "
     "describe an the content of a page from the Codex Seraphinianus book "
     " with few descriptive words. Use creative, abstract and mystical adjectives. "
@@ -141,9 +140,9 @@ prompts = {
     "I will provide some guiding words to set the properties of the page and its context. Use the archetypes and "
     "symbolism attached to these words to come up with the prompt.  Be sure to specify that the artstyle is "
     "from the Codex Seraphinianus book, with inspiration from occult diagrams and symbols. "
-    "Be purely descriptive, your response does not have to be a complete sentence. SPECIFY NOT TO PUT TEXT IN THE IMAGE."
+    "Be purely descriptive, your response does not have to be a complete sentence."
     "Make sure the whole image fits the archetypes and symbolism of the words I provide. BE VERY SHORT "
-    "AND CONCISE. LIMIT YOURSELF TO A MAXIMUM OF 60 WORDS.",
+    "AND CONCISE. LIMIT YOURSELF TO A MAXIMUM OF 20 WORDS.",
     "TXT2IMG_SCIENCE_PROMPT": "Your job is to come up with a prompt for a text-to-image model. The prompt should be concise and "
     "describe an the content of a page from the Codex Seraphinianus book "
     " with few descriptive words focused on the anatomy and organic mechanics of imaginary creature. "
@@ -156,7 +155,7 @@ prompts = {
     "from the Codex Seraphinianus book, with inspiration from occult diagrams and anatomical representations. "
     "Be purely descriptive, your response does not have to be a complete sentence. "
     "Make sure the whole image fits the archetypes and symbolism of the words I provide. BE VERY SHORT "
-    "AND CONCISE. LIMIT YOURSELF TO A MAXIMUM OF 60 WORDS. SPECIFY NOT TO PUT TEXT IN THE IMAGE.",
+    "AND CONCISE. LIMIT YOURSELF TO A MAXIMUM OF 20 WORDS.",
     "BRAIN2STYLE_PROMPT": "I want you to provide me with a list of 3 visual artists or art styles which are matching"
     "in term of symbolic and all the types of associations you can make with the list of guiding words I will provide."
     "Use an interpretation of the guiding words based on phenomenological thinkers, "
@@ -187,11 +186,11 @@ prompts = {
     "I will provide the names of planets, elements and colors (either HEX or naming format) at the end of the prompt."
     "Be purely descriptive, your response does not have to be a complete sentence. "
     "Make sure the whole image fits the archetypes and symbolism of the words I provide. BE VERY SHORT "
-    "AND CONCISE. LIMIT YOURSELF TO A MAXIMUM OF 60 WORDS.",
+    "AND CONCISE. LIMIT YOURSELF TO A MAXIMUM OF 20 WORDS.",
     "FACE_GENERATION_PROMPT": "Create a prompt for a text-to-image model to generate faces. The faces should be inspired by the texture of given elements,"
     "if provided, and should reflect a specific emotion, if mentioned. Use evocative and descriptive words to detail the texture and emotional state. The "
     "prompt should be concise, focusing on the essence of the elements and emotions. Use rich, imaginative adjectives to convey the texture and mood. Define "
     "the artstyle, inspired by the emotions and elements, and describe the lighting and perspective using cinematic terminology.  Ensure the entire image captures "
     "the symbolic essence of the provided words. Include relevant artists at the end of the prompt, whose work resonates with the symbolism of the guiding words. "
-    "Keep the prompt VERY SHORT AND CONCISE, limited to a MAXIMUM OF 60 WORDS.",
+    "Keep the prompt VERY SHORT AND CONCISE, limited to a MAXIMUM OF 20 WORDS.",
 }
