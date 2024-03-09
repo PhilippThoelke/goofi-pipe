@@ -16,7 +16,12 @@ class SpeechSynthesis(Node):
         return {"speech": DataType.ARRAY, "transcript": DataType.STRING}
 
     def config_params():
-        return {"speech_generation": {"openai_key": StringParam("openai.key"), "speed": FloatParam(0.25, 0.1, 2)}}
+        return {
+            "speech_generation": {
+                "openai_key": StringParam("openai.key"),
+                "speed": FloatParam(1, 0.1, 2),
+            }
+        }
 
     def setup(self):
         import librosa
@@ -29,11 +34,7 @@ class SpeechSynthesis(Node):
         with open(key, "r") as f:
             self.openai.api_key = f.read().strip()
 
-    def process(
-        self,
-        text: Data,
-        voice: Data,
-    ):
+    def process(self, text: Data, voice: Data):
         speech = None
         transcript = ""
 
@@ -42,18 +43,17 @@ class SpeechSynthesis(Node):
 
         if text is not None:
             audio_generator = self.synthesize_speech_stream(text.data, self.params["speech_generation"]["speed"].value)
-            speech = self.bytes_to_array(
-                b"".join([speech_bytes for speech_bytes in audio_generator])
-            )  # Convert bytes to numpy array
-
+            # convert bytes to numpy array
+            speech = self.bytes_to_array(b"".join([speech_bytes for speech_bytes in audio_generator]))
         elif voice is not None:
-            transcript = self.transcribe_voice(voice.data) or ""  # Ensure transcript is a string
+            # ensure transcript is a string
+            transcript = self.transcribe_voice(voice.data) or ""
 
         return {"speech": (speech, {}), "transcript": (transcript, {})}
 
     def synthesize_speech_stream(self, text, speed):
         response = self.openai.audio.speech.create(model="tts-1", voice="alloy", input=text, speed=speed)
-        # This would be a generator yielding audio chunks
+        # yield audio chunks
         for chunk in response.iter_bytes():
             yield chunk
 
@@ -61,22 +61,22 @@ class SpeechSynthesis(Node):
         with io.BytesIO(audio_bytes) as audio_file:
             with sf.SoundFile(audio_file) as sf_file:
                 audio_array = np.array(sf_file.read(dtype="float32"))
-                # Resample if the sample rate is different from 44100 Hz
+                # resample if the sample rate is different from 44100 Hz
                 if sf_file.samplerate != 44100:
                     audio_array = self.resample_audio(audio_array, sf_file.samplerate, 44100)
                 return audio_array
 
     def resample_audio(self, audio, input_rate, output_rate):
-        # Resample audio from input_rate to output_rate
+        # resample audio from input_rate to output_rate
         return self.librosa.resample(audio, orig_sr=input_rate, target_sr=output_rate)
 
     def transcribe_voice(self, voice_buffer):
-        # Convert the numpy array buffer to a WAV file in memory
-        with io.BytesIO() as audio_file:
-            sf.write(audio_file, voice_buffer, 44100, format="wav")
-            audio_file.seek(0)
+        # convert the numpy array buffer to a WAV file in memory
+        with io.BytesIO() as audio_stream:
+            sf.write(audio_stream, voice_buffer, 44100, format="wav")
+            audio_stream.seek(0)
 
-            # Send the audio file to OpenAI for transcription
-            response = self.openai.Audio.transcriptions.create(model="whisper-1", file=audio_file)
+            # send the audio file to OpenAI for transcription
+            response = self.openai.Audio.transcriptions.create(model="whisper-1", file=audio_stream)
 
             return response["choices"][0]["text"]
