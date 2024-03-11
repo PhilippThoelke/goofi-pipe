@@ -34,7 +34,10 @@ class SpeechSynthesis(Node):
 
         key = self.params["speech_generation"]["openai_key"].value
         with open(key, "r") as f:
-            self.openai.api_key = f.read().strip()
+            key = f.read().strip()
+
+        self.openai.api_key = key
+        self.client = openai.OpenAI(api_key=key)
 
     def process(self, text: Data, voice: Data):
         speech = None
@@ -79,11 +82,11 @@ class SpeechSynthesis(Node):
 
     def transcribe_voice(self, voice_buffer):
         # convert the numpy array buffer to a WAV file in memory
-        with io.BytesIO() as audio_stream:
+        with open("tmp.wav", "wb") as audio_stream:
             sf.write(audio_stream, voice_buffer, 44100, format="wav")
-            audio_stream.seek(0)
 
+        with open("tmp.wav", "rb") as audio_stream:
             # send the audio file to OpenAI for transcription
-            response = self.openai.Audio.transcriptions.create(model="whisper-1", file=audio_stream)
+            response = self.client.audio.transcriptions.create(model="whisper-1", file=audio_stream)
 
-            return response["choices"][0]["text"]
+        return response.text
