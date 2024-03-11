@@ -1,9 +1,11 @@
 import time
+
+import numpy as np
+from scipy.stats import rankdata
+
 from goofi.data import Data, DataType
 from goofi.node import Node
 from goofi.params import BoolParam, IntParam, StringParam
-import numpy as np
-from scipy.stats import rankdata
 
 
 class StaticBaseline(Node):
@@ -17,7 +19,7 @@ class StaticBaseline(Node):
         return {
             "baseline": {
                 "n_seconds": IntParam(30, 1, 120),
-                "method": StringParam("quantile", options=["mean"]),
+                "method": StringParam("quantile", options=["quantile", "mean"]),
                 "baseline_computation": BoolParam(trigger=True),
             }
         }
