@@ -112,7 +112,7 @@ hilbert_fn, coherence_fn, pearsonr_fn, mutual_info_regression_fn = None, None, N
 
 def compute_classical_connectivity(data, method):
     # import the connectivity function here to avoid loading it on startup
-    global hilbert_fn, coherence_fn
+    global hilbert_fn, coherence_fn, pearsonr_fn, mutual_info_regression_fn
     if hilbert_fn is None:
         from scipy.signal import coherence, hilbert
         from scipy.stats import pearsonr
