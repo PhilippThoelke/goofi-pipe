@@ -1,8 +1,8 @@
 import numpy as np
+
 from goofi.data import Data, DataType
 from goofi.node import Node
 from goofi.params import FloatParam, StringParam
-import edgeofpy as eop
 
 
 class Binarize(Node):
@@ -22,6 +22,11 @@ class Binarize(Node):
             }
         }
 
+    def setup(self):
+        import edgeofpy as eop
+
+        self.eop = eop
+
     def process(self, data: Data):
         if data.data is None:
             return None
@@ -33,5 +38,5 @@ class Binarize(Node):
 
         thresh_type = self.params["parameters"]["threshold_type"].value
         thresh = self.params["parameters"]["threshold"].value
-        events = eop.binarized_events(data.data, threshold=thresh, thresh_type=thresh_type, null_value=0)
+        events = self.eop.binarized_events(data.data, threshold=thresh, thresh_type=thresh_type, null_value=0)
         return {"bin_data": (np.array(events), data.meta)}
