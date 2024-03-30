@@ -4,9 +4,9 @@ import tempfile
 import threading
 import time
 from abc import ABC, abstractmethod
-from multiprocessing import Manager as MultiprocessingManager
 from multiprocessing import Pipe
 from multiprocessing.connection import _ConnectionBase
+from multiprocessing.managers import BaseManager
 from typing import Dict, Tuple, Type
 
 import zmq
@@ -38,7 +38,7 @@ class Connection(ABC):
         }
 
     @staticmethod
-    def set_backend(backend: str, mp_manager: MultiprocessingManager) -> None:
+    def set_backend(backend: str, mp_manager: BaseManager) -> None:
         """
         Set the backend to use for creating connections and initialize a shared set of connection ids.
 
