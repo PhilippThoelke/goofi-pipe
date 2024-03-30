@@ -65,6 +65,7 @@ class Node(ABC):
     """
 
     NO_MULTIPROCESSING = False
+    MESSAGE_TIMEOUT = 500  # ms
 
     def __init__(
         self,
@@ -90,6 +91,9 @@ class Node(ABC):
         self.process_flag = Event()
         if self.params.common.autotrigger.value:
             self.process_flag.set()
+
+        # set up dict of possibly timed out output connections
+        self.pending_connections = {}
 
         # initialize data processing thread
         self.processing_thread = Thread(target=self._processing_loop, daemon=True)
@@ -379,13 +383,31 @@ class Node(ABC):
                         self.connection.try_send(Message(MessageType.PROCESSING_ERROR, {"error": error_message}))
                         continue
 
-                    try:
-                        conn.send(msg)
-                    except ConnectionError:
-                        # the target node is dead, remove the connection
-                        # TODO: forward removal of this connection to the manager
-                        self.output_slots[name].connections.remove((target_slot, conn, self_conn))
-                        continue
+                    if conn._id in self.pending_connections:
+                        # filter out dead threads
+                        self.pending_connections[conn._id] = [
+                            (thread, timestamp) for thread, timestamp in self.pending_connections[conn._id] if thread.is_alive()
+                        ]
+                        # check if the connection has timed out
+                        timeout_occurred = False
+                        for _, creation in self.pending_connections[conn._id]:
+                            if time.time() - creation > self.MESSAGE_TIMEOUT / 1000:
+                                # the connection has timed out, remove it
+                                # TODO: forward removal of this connection to the manager
+                                self.output_slots[name].connections.remove((target_slot, conn, self_conn))
+                                timeout_occurred = True
+                                continue
+
+                        if timeout_occurred:
+                            # skip sending the message if the connection has timed out
+                            continue
+                    else:
+                        self.pending_connections[conn._id] = []
+
+                    # send the message (in a separate thread because connections may time out and block)
+                    t = Thread(target=conn.send, args=(msg,), daemon=True)
+                    t.start()
+                    self.pending_connections[conn._id].append((t, time.time()))
 
     @staticmethod
     def _configure(cls) -> Tuple[Dict[str, InputSlot], Dict[str, OutputSlot], NodeParams]:
