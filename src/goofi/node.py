@@ -291,6 +291,9 @@ class Node(ABC):
         except Exception as e:
             self.connection.try_send(Message(MessageType.PROCESSING_ERROR, {"error": str(e)}))
 
+        # close input connection
+        self.connection.close()
+
     def _processing_loop(self):
         """
         This method runs in a separate thread and handles the processing of input data and sending of
