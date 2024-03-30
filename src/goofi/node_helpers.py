@@ -152,10 +152,10 @@ class NodeRef:
         A dictionary of output slots and their data types.
     `params` : NodeParams
         The parameters of the node.
+    `category` : str
+        The category of the node.
     `process` : Optional[Process]
         If the node is running in a separate process, this should be the process object. Defaults to None.
-    category : str
-        The category of the node.
     """
 
     connection: Connection
