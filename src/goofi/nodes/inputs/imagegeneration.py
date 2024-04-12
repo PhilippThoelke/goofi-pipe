@@ -143,11 +143,13 @@ class ImageGeneration(Node):
                     )
                 except self.openai.BadRequestError as e:
                     if e.response.status_code == 400:
-                        print(
+                        raise RuntimeError(
                             f"Error code 400: the size of the image is not supported by the model."
                             f"\nYour Model: {self.params.image_generation.model_id.value}"
                             f"\n1024x1024 is minimum for Dall-E3"
                         )
+                    raise e
+                    
 
             img = response.data[0].b64_json
             # Decode base64 to bytes

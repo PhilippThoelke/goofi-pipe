@@ -32,7 +32,10 @@ class coord2loc(Node):
     def process(self, latitude: Data, longitude: Data):
         if latitude is None or latitude.data is None or longitude is None or longitude.data is None:
             return None
-        # Check if both latitude and longitude data are provided
+        # check if the input is within the range of the latitude and longitude
+        if not (-90 <= latitude.data <= 90 and -180 <= longitude.data <= 180):
+            return {"coord_info": ({'info : ':Data(DataType.STRING, "Invalid coordinates", {})}, {})}
+        
         latitude = latitude.data
         longitude = longitude.data
 
@@ -79,5 +82,5 @@ class coord2loc(Node):
 
             return {"coord_info": (location_info, {})}
         else:
-            return {"coord_info": ({'info':Data(DataType.STRING, "No address found", {})}, {})}
+            return {"coord_info": ({'info':Data(DataType.STRING, "You're lost in the ocean", {})}, {})}
 
