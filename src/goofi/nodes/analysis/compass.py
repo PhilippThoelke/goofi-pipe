@@ -3,7 +3,7 @@ from goofi.data import Data, DataType
 from goofi.node import Node
 from goofi.params import FloatParam
 
-class compass(Node):
+class Compass(Node):
     """
     A Goofi node that calculates the angle from Cartesian coordinates derived from
     directional inputs (north, south, east, west).

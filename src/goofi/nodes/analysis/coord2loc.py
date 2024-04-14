@@ -4,7 +4,7 @@ from goofi.data import Data, DataType
 from goofi.node import Node
 from goofi.params import FloatParam
 
-class coord2loc(Node):
+class Coord2loc(Node):
     def config_input_slots():
         return {
             "latitude": DataType.ARRAY,
