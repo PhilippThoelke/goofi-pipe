@@ -35,10 +35,13 @@ class FOOOFaperiodic(Node):
         # Extract the PSD and freqs from the Data object
         psd = psd_data.data
 
-        if psd_data.data.ndim == 1:
-            freqs = np.array(psd_data.meta["channels"]["dim0"])
-        else:  # if 2D
-            freqs = np.array(psd_data.meta["channels"]["dim1"])
+        try:
+            if psd_data.data.ndim == 1:
+                freqs = np.array(psd_data.meta["channels"]["dim0"])
+            else:  # if 2D
+                freqs = np.array(psd_data.meta["channels"]["dim1"])
+        except KeyError:
+            raise ValueError("No frequency information. Make sure to pass a power spectrum with frequency information.")
 
         # Fit FOOOF model
         fm.fit(freqs, psd)
