@@ -1,4 +1,5 @@
-from os.path import join
+from os.path import join, exists
+from os import makedirs
 from typing import Any, Dict, Tuple
 
 import cv2
@@ -13,6 +14,7 @@ class ImageGeneration(Node):
     def config_params():
         return {
             "image_generation": {
+                "save_image": BoolParam(False, doc="Save the images in NumPy Arrays"),
                 "model_id": StringParam("dall-e-3", options=["stabilityai/stable-diffusion-2-1", "dall-e-2", "dall-e-3"]),
                 "openai_key": StringParam("openai.key"),
                 "inference_steps": IntParam(50, 5, 100),
@@ -110,18 +112,17 @@ class ImageGeneration(Node):
                     # add batch dimension
                     base_image = np.expand_dims(base_image, 0)
 
-            # convert to uint8
-            base_image = (base_image * 255).astype(np.uint8)
-            base_image = cv2.cvtColor(base_image, cv2.COLOR_RGB2RGBA)
-            # convert to bytes
-            base_image = cv2.imencode(".png", base_image)[1].tobytes()
-
         # remote pipes
         if self.params.image_generation.model_id.value in ["dall-e-3", "dall-e-2"]:
             size = f"{self.params.image_generation.width.value}x{self.params.image_generation.height.value}"
             if self.params.img2img.enabled.value:
                 # raise error because img2img is not working yet
                 raise NotImplementedError("img2img is not working yet.")
+                # convert to uint8
+                base_image = (base_image * 255).astype(np.uint8)
+                base_image = cv2.cvtColor(base_image, cv2.COLOR_RGB2RGBA)
+                # convert to bytes
+                base_image = cv2.imencode(".png", base_image)[1].tobytes()
                 # run the Dall-E img2img pipeline
                 response = self.dalle_pipe(
                     image=base_image,
@@ -150,6 +151,27 @@ class ImageGeneration(Node):
             decoded_bytes = self.base64.b64decode(img)
             # Convert bytes to numpy array using OpenCV
             img_array = cv2.imdecode(np.frombuffer(decoded_bytes, np.uint8), cv2.IMREAD_COLOR)
+            # save numpy array ; do not overwrite
+            if self.params.image_generation.save_image.value:
+                makedirs(join(self.assets_path, "imgs"), exist_ok=True)
+                # Remove all punctuation from the prompt
+                prompt_fn = ''.join(ch if ch.isalnum() or ch.isspace() else '_' for ch in prompt)
+                # Truncate filename if it's too long
+                MAX_FILENAME_LENGTH = 200
+                if len(prompt_fn) > MAX_FILENAME_LENGTH:
+                    prompt_fn = prompt_fn[:MAX_FILENAME_LENGTH]
+
+                # make sure it saves on Windows
+                filename = join(self.assets_path, "imgs", f"{prompt_fn.replace(' ', '_')}")
+                n = 0
+                while exists(f"{filename}_{n:02d}.png"):
+                    n += 1
+                # Save the image and check if it was successful
+                if cv2.imwrite(f"{filename}_{n:02d}.png", img_array):
+                    print(f"Saved image to {filename}_{n:02d}.png")
+                else:
+                    print(f"Failed to save image to {filename}_{n:02d}.png")
+            # Convert to float32
             img_array = img_array.astype(np.float32) / 255.0
             # Ensure correct shape
             if img_array.shape != (self.params.image_generation.width.value, self.params.image_generation.height.value, 3):
@@ -215,6 +237,14 @@ class ImageGeneration(Node):
             img = np.array(img[0])
             # save last image
             self.last_img = img
+            # save numpy array ; do not overwrite
+            if self.params.image_generation.save_image.value:
+                filename = f"{self.assets_path}/imgs/{prompt}"
+                n = 0
+                while exists(f"{filename}_{n:02d}.npy"):
+                    n += 1
+                
+                np.save(f"{filename}_{n:02d}.npy", img)
 
             return {
                 "img": (
