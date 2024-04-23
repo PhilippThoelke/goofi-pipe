@@ -1,5 +1,5 @@
 import numpy as np
-from geopy.geocoders import Nominatim
+
 from goofi.data import Data, DataType
 from goofi.node import Node
 from goofi.params import FloatParam
@@ -17,6 +17,7 @@ class Coord2loc(Node):
         }
 
     def setup(self):
+        from geopy.geocoders import Nominatim
         # list keys : ['ISO3166-2-lvl4', 'ISO3166-2-lvl6', 'ISO3166-2-lvl7', 'city',
         # 'city_district', 'country', 'country_code', 'county', 'district', 'hamlet', 'locality',
         # 'municipality', 'postcode', 'region', 'road', 'state', 'state_district', 'suburb', 'town', 'village']
