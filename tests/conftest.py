@@ -38,6 +38,8 @@ def dangling_process_decorator(f):
 
         # allow only daemon child processes to remain
         non_daemons = [proc for proc in active_children() if not proc.daemon]
+        # SyncManagers are okay during testing
+        non_daemons = [proc for proc in non_daemons if not proc.name.startswith("SyncManager")]
         if len(non_daemons) > 0:
             for proc in non_daemons:
                 proc.terminate()

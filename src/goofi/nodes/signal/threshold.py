@@ -24,14 +24,20 @@ class Threshold(Node):
                 "trigger_on_false": BoolParam(False, doc="Send data even when threshold is not exceeded"),
                 "require_pass": BoolParam(False, doc="Only retrigger if the threshold was not exceeded in the last cycle"),
                 "min_delay": FloatParam(0.0, doc="Minimum delay between two threshold crossings in seconds"),
+                "nan_reset": BoolParam(False, doc="Send NaN in the first cycle after a threshold crossing"),
             },
         }
 
     def setup(self):
         self.last_trigger = 0
+        self.triggered_last_cycle = False
         self.trigger_ready = True
 
     def process(self, data: Data):
+        if self.triggered_last_cycle and self.params.threshold.nan_reset.value:
+            self.triggered_last_cycle = False
+            return {"thresholded": (np.array([np.nan]), data.meta)}
+
         if data is None or data.data is None:
             return None
 
@@ -66,4 +72,5 @@ class Threshold(Node):
 
         self.last_trigger = time.time()
         result = np.where(thresholded, self.params.threshold.true_value.value, self.params.threshold.false_value.value)
+        self.triggered_last_cycle = True
         return {"thresholded": (result, data.meta)}

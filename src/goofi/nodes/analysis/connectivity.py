@@ -1,9 +1,8 @@
 import numpy as np
-from scipy.stats import pearsonr
-from sklearn.feature_selection import mutual_info_regression
+
 from goofi.data import Data, DataType
 from goofi.node import Node
-from goofi.params import FloatParam, IntParam, StringParam, BoolParam
+from goofi.params import BoolParam, FloatParam, IntParam, StringParam
 
 
 class Connectivity(Node):
@@ -108,17 +107,21 @@ def compute_conn_matrix_single(
     return bt_conn.conn_matrix
 
 
-hilbert_fn, coherence_fn = None, None
+hilbert_fn, coherence_fn, pearsonr_fn, mutual_info_regression_fn = None, None, None, None
 
 
 def compute_classical_connectivity(data, method):
     # import the connectivity function here to avoid loading it on startup
-    global hilbert_fn, coherence_fn
+    global hilbert_fn, coherence_fn, pearsonr_fn, mutual_info_regression_fn
     if hilbert_fn is None:
         from scipy.signal import coherence, hilbert
+        from scipy.stats import pearsonr
+        from sklearn.feature_selection import mutual_info_regression
 
         hilbert_fn = hilbert
         coherence_fn = coherence
+        pearsonr_fn = pearsonr
+        mutual_info_regression_fn = mutual_info_regression
 
     n_channels, n_samples = data.shape
     matrix = np.zeros((n_channels, n_channels))
@@ -161,11 +164,11 @@ def compute_classical_connectivity(data, method):
                 matrix[i, j] = matrix[j, i] = np.abs(np.mean(np.exp(1j * (np.angle(sig1) - np.angle(sig2)))))
 
             elif method == "pearson":
-                corr, _ = pearsonr(data[i, :], data[j, :])
+                corr, _ = pearsonr_fn(data[i, :], data[j, :])
                 matrix[i, j] = matrix[j, i] = corr
 
             elif method == "mutual_info":
-                mutual_info = mutual_info_regression(data[i, :].reshape(-1, 1), data[j, :])[0]
+                mutual_info = mutual_info_regression_fn(data[i, :].reshape(-1, 1), data[j, :])[0]
                 matrix[i, j] = matrix[j, i] = mutual_info
 
     return matrix

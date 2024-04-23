@@ -6,6 +6,7 @@ class ExtendedTable(Node):
     def config_input_slots():
         # Define 10 input slots, 5 are Arrays and 5 are Strings
         return {
+            "base": DataType.TABLE,
             "array_input1": DataType.ARRAY,
             "array_input2": DataType.ARRAY,
             "array_input3": DataType.ARRAY,

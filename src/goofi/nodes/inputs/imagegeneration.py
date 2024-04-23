@@ -134,18 +134,24 @@ class ImageGeneration(Node):
             else:
                 try:
                     # run the Dall-E txt2img pipeline
-                    response = self.dalle_pipe(model=self.params.image_generation.model_id.value,
-                                               prompt=prompt,
-                                               n=1,
-                                               size=size,
-                                               quality="standard",
-                                               response_format="b64_json",)
+                    response = self.dalle_pipe(
+                        model=self.params.image_generation.model_id.value,
+                        prompt=prompt,
+                        n=1,
+                        size=size,
+                        quality="standard",
+                        response_format="b64_json",
+                    )
                 except self.openai.BadRequestError as e:
                     if e.response.status_code == 400:
-                        print(f"Error code 400: the size of the image is not supported by the model."
-                              f"\nYour Model: {self.params.image_generation.model_id.value}"
-                              f"\n1024x1024 is minimum for Dall-E3")
-                        
+                        raise RuntimeError(
+                            f"Error code 400: the size of the image is not supported by the model."
+                            f"\nYour Model: {self.params.image_generation.model_id.value}"
+                            f"\n1024x1024 is minimum for Dall-E3"
+                        )
+                    raise e
+                    
+
             img = response.data[0].b64_json
             # Decode base64 to bytes
             decoded_bytes = self.base64.b64decode(img)

@@ -1,9 +1,10 @@
+from os.path import join
+
 import numpy as np
-import pandas as pd
-from os.path import join, dirname
+
 from goofi.data import Data, DataType
 from goofi.node import Node
-from goofi.params import FloatParam, IntParam, StringParam
+from goofi.params import FloatParam, IntParam
 
 
 class Bioplanets(Node):
@@ -22,6 +23,8 @@ class Bioplanets(Node):
         }
 
     def setup(self):
+        import pandas as pd
+
         # load the dataframe here to avoid loading it on startup
         self.planets_data = pd.read_csv(join(self.assets_path, "planets_peaks_prominence02.csv"))
         self.desired_planets = ["venus", "earth", "mars", "jupiter", "saturn"]
@@ -86,7 +89,5 @@ def bioplanets_realtime(peaks, df, tolerance):
         unique_wavelengths.sort()
 
         wavelengths_by_planet[planet] = unique_wavelengths
-
-        print(f"Wavelengths for {planet}: {unique_wavelengths}")
 
     return wavelengths_by_planet

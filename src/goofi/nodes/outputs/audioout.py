@@ -12,11 +12,10 @@ class AudioOut(Node):
     def config_params():
         return {
             "audio": {
-                "sampling_rate": StringParam("44100", options=["44100", "48000"]),
+                "sampling_rate": StringParam("44100", options=["44100", "48000", "32000", "16000"]),
                 "device": StringParam(AudioOut.list_audio_devices()[0], options=AudioOut.list_audio_devices()),
                 "transition_samples": 100,
-            },
-            "common": {"autotrigger": True},
+            }
         }
 
     def setup(self):
@@ -40,7 +39,7 @@ class AudioOut(Node):
 
         if self.stream is None:
             raise RuntimeError("Audio output stream is not available.")
-        
+
         # set data type to float32
         samples = data.data.astype(np.float32).T
         # Handle Mono to Stereo or Stereo to Mono Conversion
@@ -66,7 +65,7 @@ class AudioOut(Node):
         # Send the audio data to the output device after ensuring it's C-contiguous
         self.stream.write(np.ascontiguousarray(samples))
 
-    def audio_sampling_frequency_changed(self, value):
+    def audio_sampling_rate_changed(self, value):
         self.setup()
 
     @staticmethod

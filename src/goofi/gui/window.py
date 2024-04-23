@@ -1,4 +1,5 @@
 import os
+import platform
 import pprint
 import threading
 import time
@@ -137,6 +138,7 @@ class GUINode:
             with dpg.theme_component():
                 dpg.add_theme_color(dpg.mvThemeCol_WindowBg, [200, 200, 200, 255], category=dpg.mvThemeCat_Core)
                 dpg.add_theme_color(dpg.mvThemeCol_Text, [0, 0, 0, 255], category=dpg.mvThemeCat_Core)
+                dpg.add_theme_color(dpg.mvThemeCol_FrameBg, [0, 0, 0, 0], category=dpg.mvThemeCat_Core)
 
         with dpg.window(
             width=size[0],
@@ -153,7 +155,7 @@ class GUINode:
             dpg.add_separator()
 
             txt = "All good!" if self._error_msg is None else self._error_msg
-            dpg.add_text(txt)
+            dpg.add_input_text(multiline=True, default_value=txt.strip(), readonly=True, width=-1, height=-1)
 
             dpg.bind_item_theme(win.node_info_window, win_theme)
 
@@ -197,8 +199,11 @@ def toggle_log_plot(_1, _2, data):
     node.output_draw_handlers[slot].toggle_log_plot(axis)
 
 
-def param_updated(_, value, user_data):
-    """A callback function for updating a parameter value."""
+def param_updated(a, value, user_data):
+    """
+    A GUI callback function for updating a parameter value. This is called by DearPyGui when
+    a parameter is updated, and passed the update to the node.
+    """
     group, name, node = user_data[:3]
 
     if len(user_data) == 4:
@@ -221,7 +226,8 @@ def param_updated(_, value, user_data):
 
     # send the updated parameter to the node
     node.update_param(group, name, value)
-
+    # mark manager state as dirty
+    Window().manager.unsaved_changes = True
 
 def add_param(parent: int, group: str, name: str, param: Param, node: NodeRef) -> None:
     """
@@ -729,6 +735,15 @@ class Window:
                 with dpg.group(horizontal=True):
                     dpg.add_button(label="Yes", callback=confirm_callback, user_data=(win, True))
                     dpg.add_button(label="Cancel", callback=confirm_callback, user_data=(win, False))
+        except RuntimeError as e:
+            # something went wrong, open error dialog
+            w, h = dpg.get_viewport_width(), dpg.get_viewport_height()
+            pos = (w / 2 - w / 8, h / 2 - h / 12)
+            with dpg.window(label="Error", width=w / 4, height=h / 6, pos=pos) as win:
+                dpg.add_text(str(e))
+
+                # add button
+                dpg.add_button(label="Ok", callback=lambda _, __: dpg.delete_item(win))
 
     def _get_file(self, callback: Callable, message: Optional[str] = None) -> None:
         """
@@ -847,7 +862,9 @@ class Window:
                                 user_data=(self, node, slot, "y"),
                             )
                         dpg.add_separator()
-                        self.metadata_view[slot] = dpg.add_text("")
+                        self.metadata_view[slot] = dpg.add_input_text(
+                            default_value="", multiline=True, readonly=True, width=-1, height=-1
+                        )
 
         # show parameters window
         dpg.configure_item(self.side_panel_win, show=True)
@@ -869,7 +886,11 @@ class Window:
     def resize_callback(self, _, size: Tuple[int, int]) -> None:
         """Callback from DearPyGui that the viewport was resized."""
         # resize window to fill viewport
-        dpg.configure_item(self.window, width=size[0], height=size[1])
+        if platform.system() == "Windows":
+            # frame border seems to be different on Windows
+            dpg.configure_item(self.window, width=size[0] - 16, height=size[1] - 39)
+        else:
+            dpg.configure_item(self.window, width=size[0], height=size[1])
 
         if self.selected_node is None:
             # no node selected, resize node editor to fill viewport
@@ -1055,6 +1076,7 @@ class Window:
         # create a reference node to calculate the mouse position within the node editor
         # NOTE: this is a workaround as DearPyGui doesn't provide access to the node editor coordinates
         # NOTE: ideally we would set show=False in the ref node, but this causes a Segmentation Fault
+        # NOTE: show=False is now fixed (https://github.com/hoffstadt/DearPyGui/pull/2225), waiting for release
         pos = [0, 0]
         dpg.add_node(label=" ", tag="_ref", parent=self.node_editor, pos=pos, user_data=pos, draggable=False)
         dpg.bind_item_theme("_ref", ref_theme)

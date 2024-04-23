@@ -18,3 +18,5 @@ panns_inference
 networkx
 deeptime
 py-feat
+geopy
+edgeofpy @ git+https://github.com/jnobyrne/edgeofpy.git

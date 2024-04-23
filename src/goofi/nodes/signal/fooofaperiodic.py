@@ -1,8 +1,9 @@
+import numpy as np
 from fooof import FOOOF
+
 from goofi.data import Data, DataType
 from goofi.node import Node
 from goofi.params import IntParam
-import numpy as np
 
 
 class FOOOFaperiodic(Node):
@@ -10,13 +11,17 @@ class FOOOFaperiodic(Node):
         return {"psd_data": DataType.ARRAY}
 
     def config_output_slots():
-        return {"offset": DataType.ARRAY, "exponent": DataType.ARRAY, "cf_peaks": DataType.ARRAY, "cleaned_psd": DataType.ARRAY}
+        return {
+            "offset": DataType.ARRAY,
+            "exponent": DataType.ARRAY,
+            "cf_peaks": DataType.ARRAY,
+            "cleaned_psd": DataType.ARRAY,
+        }
 
     def config_params():
         return {
             "fooof": {
                 "max_n_peaks": IntParam(5, 1, 20, doc="The maximum number of peaks to fit."),
-                # ... add other fooof parameters if needed
             }
         }
 
@@ -30,10 +35,13 @@ class FOOOFaperiodic(Node):
         # Extract the PSD and freqs from the Data object
         psd = psd_data.data
 
-        if psd_data.data.ndim == 1:
-            freqs = np.array(psd_data.meta["channels"]["dim0"])
-        else:  # if 2D
-            freqs = np.array(psd_data.meta["channels"]["dim1"])
+        try:
+            if psd_data.data.ndim == 1:
+                freqs = np.array(psd_data.meta["channels"]["dim0"])
+            else:  # if 2D
+                freqs = np.array(psd_data.meta["channels"]["dim1"])
+        except KeyError:
+            raise ValueError("No frequency information. Make sure to pass a power spectrum with frequency information.")
 
         # Fit FOOOF model
         fm.fit(freqs, psd)

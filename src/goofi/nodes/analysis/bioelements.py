@@ -1,7 +1,6 @@
 from os.path import join
 
 import numpy as np
-import pandas as pd
 
 from goofi.data import Data, DataType
 from goofi.node import Node
@@ -24,6 +23,8 @@ class Bioelements(Node):
         }
 
     def setup(self):
+        import pandas as pd
+
         # load the dataframe here to avoid loading it on startup
         self.air_elements = pd.read_csv(join(self.assets_path, "air_elements_filtered.csv"))
 

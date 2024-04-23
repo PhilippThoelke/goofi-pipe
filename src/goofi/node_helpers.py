@@ -152,10 +152,10 @@ class NodeRef:
         A dictionary of output slots and their data types.
     `params` : NodeParams
         The parameters of the node.
+    `category` : str
+        The category of the node.
     `process` : Optional[Process]
         If the node is running in a separate process, this should be the process object. Defaults to None.
-    category : str
-        The category of the node.
     """
 
     connection: Connection
@@ -166,8 +166,29 @@ class NodeRef:
 
     process: Optional[Process] = None
     callbacks: Dict[MessageType, Callable] = field(default_factory=dict)
+    serialization_pending: bool = False
     serialized_state: Optional[Dict[str, Any]] = None
     gui_kwargs: Dict[str, Any] = field(default_factory=dict)
+
+    def __post_init__(self):
+        if self.connection is None:
+            raise ValueError("Expected Connection, got None.")
+
+        self._alive = True
+        self._messaging_thread = Thread(target=self._messaging_loop, daemon=True)
+        self._messaging_thread.start()
+
+        # register the node reference as an output pipe for each output slot
+        for name in self.output_slots.keys():
+            self.connection.send(
+                Message(
+                    MessageType.ADD_OUTPUT_PIPE,
+                    {"slot_name_out": name, "slot_name_in": name, "node_connection": None},
+                )
+            )
+
+        # request the initial serialized state
+        self.serialize()
 
     def set_message_handler(self, msg_type: MessageType, callback: Optional[Callable]) -> None:
         """
@@ -213,12 +234,12 @@ class NodeRef:
 
     def serialize(self) -> None:
         """
-        Clears the serialized state of the node ref and requests a new serialized state from the node.
+        Sets the serialization_pending flag and requests a new serialized state from the node.
         The serialized state can be accessed through the `serialized_state` attribute.
 
         Make sure to wait for the node's response as this is an asynchronous operation.
         """
-        self.serialized_state = None
+        self.serialization_pending = True
         self.connection.send(Message(MessageType.SERIALIZE_REQUEST, {}))
 
     def terminate(self) -> None:
@@ -261,20 +282,4 @@ class NodeRef:
             elif msg.type == MessageType.SERIALIZE_RESPONSE:
                 # store the serialized state
                 self.serialized_state = msg.content
-
-    def __post_init__(self):
-        if self.connection is None:
-            raise ValueError("Expected Connection, got None.")
-
-        self._alive = True
-        self._messaging_thread = Thread(target=self._messaging_loop, daemon=True)
-        self._messaging_thread.start()
-
-        # register the node reference as an output pipe for each output slot
-        for name in self.output_slots.keys():
-            self.connection.send(
-                Message(
-                    MessageType.ADD_OUTPUT_PIPE,
-                    {"slot_name_out": name, "slot_name_in": name, "node_connection": None},
-                )
-            )
+                self.serialization_pending = False

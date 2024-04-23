@@ -1,8 +1,8 @@
-import neurokit2 as nk
 import numpy as np
-from goofi.params import StringParam, IntParam, FloatParam
+
 from goofi.data import Data, DataType
 from goofi.node import Node
+from goofi.params import FloatParam, IntParam, StringParam
 
 
 class Fractality(Node):
@@ -42,6 +42,11 @@ class Fractality(Node):
             },
         }
 
+    def setup(self):
+        import neurokit2 as nk
+
+        self.nk = nk
+
     def process(self, data_input: Data):
         if data_input is None or data_input.data is None:
             return None
@@ -50,21 +55,21 @@ class Fractality(Node):
 
         # For methods in neurokit2
         if method == "fractal_katz":
-            result, _ = nk.fractal_katz(data_input.data)
+            result, _ = self.nk.fractal_katz(data_input.data)
         elif method == "fractal_petrosian":
-            result, _ = nk.fractal_petrosian(data_input.data)
+            result, _ = self.nk.fractal_petrosian(data_input.data)
         elif method == "fractal_linelength":
-            result, _ = nk.fractal_linelength(data_input.data)
+            result, _ = self.nk.fractal_linelength(data_input.data)
         elif method == "fractal_psdslope":
-            result, _ = nk.fractal_psdslope(data_input.data)
+            result, _ = self.nk.fractal_psdslope(data_input.data)
         elif method == "fractal_nld":
-            result, _ = nk.fractal_nld(data_input.data)
+            result, _ = self.nk.fractal_nld(data_input.data)
         elif method == "fractal_higuchi":
-            result, _ = nk.fractal_higuchi(data_input.data, k_max=self.params["fractal_higuchi"]["k_max"].value)
+            result, _ = self.nk.fractal_higuchi(data_input.data, k_max=self.params["fractal_higuchi"]["k_max"].value)
         elif method == "hurst":
-            result, _ = nk.fractal_hurst(data_input.data)
+            result, _ = self.nk.fractal_hurst(data_input.data)
         elif method == "fractal_correlation":
-            result, _ = nk.fractal_correlation(data_input.data)
+            result, _ = self.nk.fractal_correlation(data_input.data)
         elif method == "box_counting_2d":
             result = self.box_counting(data_input.data)
             print(result)

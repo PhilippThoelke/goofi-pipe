@@ -65,6 +65,7 @@ class Node(ABC):
     """
 
     NO_MULTIPROCESSING = False
+    MESSAGE_TIMEOUT = 500  # ms
 
     def __init__(
         self,
@@ -90,6 +91,9 @@ class Node(ABC):
         self.process_flag = Event()
         if self.params.common.autotrigger.value:
             self.process_flag.set()
+
+        # set up dict of possibly timed out output connections
+        self.pending_connections = {}
 
         # initialize data processing thread
         self.processing_thread = Thread(target=self._processing_loop, daemon=True)
@@ -138,6 +142,19 @@ class Node(ABC):
                 error_message = traceback.format_exc()
                 self.connection.try_send(Message(MessageType.PROCESSING_ERROR, {"error": error_message}))
                 time.sleep(0.1)
+
+    def _serialize(self):
+        """Serialize the node's type, output connections, and parameters, and send the serialized data to the manager."""
+        # serialize output connections and the node's parameters
+        out_conns = {name: slot.connections for name, slot in self.output_slots.items()}
+        params = self.params.serialize()
+        # return the serialized data
+        self.connection.try_send(
+            Message(
+                MessageType.SERIALIZE_RESPONSE,
+                {"_type": type(self).__name__, "category": self.category(), "out_conns": out_conns, "params": params},
+            )
+        )
 
     def _messaging_loop(self):
         """
@@ -200,6 +217,10 @@ class Node(ABC):
                     self_conn = True
 
                 slot.connections.append((msg.content["slot_name_in"], conn, self_conn))
+
+                if not self_conn:
+                    # notify the manager that the connection was added
+                    self._serialize()
             elif msg.type == MessageType.REMOVE_OUTPUT_PIPE:
                 # clear the data in the input slot
                 msg.content["node_connection"].try_send(
@@ -220,6 +241,9 @@ class Node(ABC):
                             },
                         )
                     )
+
+                # notify the manager of the updated connections
+                self._serialize()
             elif msg.type == MessageType.DATA:
                 # received data from another node
                 if msg.content["slot_name"] not in self.input_slots:
@@ -243,6 +267,9 @@ class Node(ABC):
                     raise ValueError(f"Parameter '{param_name}' doesn't exist in group '{group}'.")
                 self.params[group][param_name].value = param_value
 
+                # notify the manager that the parameter was updated
+                self._serialize()
+
                 # call the callback if it exists
                 if hasattr(self, f"{group}_{param_name}_changed"):
                     try:
@@ -255,17 +282,9 @@ class Node(ABC):
                                 {"error": f"Parameter callback for {group}.{param_name} failed: {e}"},
                             )
                         )
+
             elif msg.type == MessageType.SERIALIZE_REQUEST:
-                # serialize output connections and the node's parameters
-                out_conns = {name: slot.connections for name, slot in self.output_slots.items()}
-                params = self.params.serialize()
-                # return the serialized data
-                self.connection.try_send(
-                    Message(
-                        MessageType.SERIALIZE_RESPONSE,
-                        {"_type": type(self).__name__, "category": self.category(), "out_conns": out_conns, "params": params},
-                    )
-                )
+                self._serialize()
             else:
                 # TODO: handle the incoming message
                 raise NotImplementedError(f"Message type {msg.type} not implemented.")
@@ -275,6 +294,9 @@ class Node(ABC):
             self.terminate()
         except Exception as e:
             self.connection.try_send(Message(MessageType.PROCESSING_ERROR, {"error": str(e)}))
+
+        # close input connection
+        self.connection.close()
 
     def _processing_loop(self):
         """
@@ -361,13 +383,31 @@ class Node(ABC):
                         self.connection.try_send(Message(MessageType.PROCESSING_ERROR, {"error": error_message}))
                         continue
 
-                    try:
-                        conn.send(msg)
-                    except ConnectionError:
-                        # the target node is dead, remove the connection
-                        # TODO: forward removal of this connection to the manager
-                        self.output_slots[name].connections.remove((target_slot, conn, self_conn))
-                        continue
+                    if conn._id in self.pending_connections:
+                        # filter out dead threads
+                        self.pending_connections[conn._id] = [
+                            (thread, timestamp) for thread, timestamp in self.pending_connections[conn._id] if thread.is_alive()
+                        ]
+                        # check if the connection has timed out
+                        timeout_occurred = False
+                        for _, creation in self.pending_connections[conn._id]:
+                            if time.time() - creation > self.MESSAGE_TIMEOUT / 1000:
+                                # the connection has timed out, remove it
+                                # TODO: forward removal of this connection to the manager
+                                self.output_slots[name].connections.remove((target_slot, conn, self_conn))
+                                timeout_occurred = True
+                                continue
+
+                        if timeout_occurred:
+                            # skip sending the message if the connection has timed out
+                            continue
+                    else:
+                        self.pending_connections[conn._id] = []
+
+                    # send the message (in a separate thread because connections may time out and block)
+                    t = Thread(target=conn.send, args=(msg,), daemon=True)
+                    t.start()
+                    self.pending_connections[conn._id].append((t, time.time()))
 
     @staticmethod
     def _configure(cls) -> Tuple[Dict[str, InputSlot], Dict[str, OutputSlot], NodeParams]:
@@ -388,7 +428,7 @@ class Node(ABC):
             self.process_flag.set()
 
     @classmethod
-    def create(cls, initial_params: Optional[Dict[str, Dict[str, Any]]] = None) -> NodeRef:
+    def create(cls, initial_params: Optional[Dict[str, Dict[str, Any]]] = None, retries: int = 3) -> NodeRef:
         """
         Create a new node instance in a separate process and return a reference to the node.
 
@@ -409,10 +449,22 @@ class Node(ABC):
         # integrate initial parameters if they are provided
         if initial_params is not None:
             params.update(initial_params)
-        conn1, conn2 = Connection.create()
-        # instantiate the node in a separate process
-        proc = Process(target=cls, args=(conn2, in_slots, out_slots, params, False), daemon=True)
-        proc.start()
+
+        tries = 0
+        while True:
+            try:
+                conn1, conn2 = Connection.create()
+
+                # instantiate the node in a separate process
+                proc = Process(target=cls, args=(conn2, in_slots, out_slots, params, False), daemon=True)
+                proc.start()
+                break
+            except Exception as e:
+                tries += 1
+                if tries >= retries:
+                    raise e
+                time.sleep(0.1)
+
         # create the node reference
         return NodeRef(
             conn1,
@@ -479,7 +531,7 @@ class Node(ABC):
             The path to the assets folder of the node.
         """
         return join(dirname(dirname(dirname(__file__))), "assets")
-    
+
     @property
     def data_path(self) -> str:
         """

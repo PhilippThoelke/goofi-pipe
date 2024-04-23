@@ -1,6 +1,7 @@
 import importlib
 import time
 from copy import deepcopy
+from multiprocessing import Manager as MPManager
 from os import path
 from threading import Thread
 from typing import Any, Dict, Optional
@@ -203,7 +204,7 @@ class Manager:
             raise FileNotFoundError(f"File '{filepath}' does not exist.")
 
         # TODO: add proper logging
-        print(f"Loading manager state from '{filepath}'.")
+        print(f"Loading manager state from '{filepath}'...")
 
         # load the yaml file
         with open(filepath, "r") as f:
@@ -221,6 +222,9 @@ class Manager:
         # store the save path
         self.save_path = filepath
         self.unsaved_changes = False
+
+        # TODO: add proper logging
+        print("Finished loading manager state.")
 
     @mark_unsaved_changes
     def add_node(
@@ -274,7 +278,12 @@ class Manager:
             ref = node.create_local(initial_params=params)[0]
 
         # add the node to the container
-        name = self.nodes.add_node(node_type.lower(), ref)
+        if name is None:
+            # default name is the node type
+            name = self.nodes.add_node(node_type.lower(), ref)
+        else:
+            # force the given name
+            name = self.nodes.add_node(name, ref, force_name=True)
 
         # add the node to the gui
         if not self.headless and notify_gui:
@@ -424,24 +433,23 @@ class Manager:
             raise FileExistsError(f"File {filepath} already exists.")
 
         # TODO: add proper logging
-        print(f"Saving manager state to '{filepath}'.")
+        print(f"Saving manager state...")
 
-        # request all nodes to serialized their state
-        for name in self.nodes:
-            self.nodes[name].serialize()
-
-        # wait for all nodes to respond, i.e. their serialized_state is not None
+        # wait for all nodes to respond, if their serialization_pending flag is set
         start = time.time()
         serialized_nodes = {}
         for name in self.nodes:
-            while self.nodes[name].serialized_state is None and time.time() - start < timeout:
+            while self.nodes[name].serialization_pending and time.time() - start < timeout:
                 # wait for the node to respond or for the timeout to be reached
                 time.sleep(0.01)
 
+            if self.nodes[name].serialization_pending:
+                # TODO: add proper logging
+                print(f"WARNING: Node {name} timed out while waiting for serialization. Node state is possibly outdated.")
+
             # check if we got a response in time
             if self.nodes[name].serialized_state is None:
-                # TODO: add proper logging
-                print(f"ERROR: Node {name} did not respond to serialization request. Attempting to proceed anyway.")
+                raise RuntimeError(f"Node {name} does not have a serialized state. Recreate the node and try again.")
 
             if not self.headless:
                 # retrieve the GUI state
@@ -468,12 +476,7 @@ class Manager:
                 for slot_name_in, conn in conns:
                     # find the node that matches the output connection of the current slot
                     for node_name_in in serialized_nodes.keys():
-                        # prevent corrupting the save file if an illegal self-connection is present
-                        if node_name_in == node_name_out:
-                            # TODO: add proper logging
-                            print(f"WARNING: Illegal self-connection: {node_name_out} to {node_name_in}.")
-                            continue
-
+                        # check if the connection matches the current node
                         if conn == self.nodes[node_name_in].connection:
                             # verify that the input slot exists
                             if slot_name_in not in self.nodes[node_name_in].input_slots:
@@ -504,6 +507,9 @@ class Manager:
         # write the yaml to the file
         with open(filepath, "w") as f:
             f.write(manager_yaml)
+
+        # TODO: add proper logging
+        print(f"Successfuly saved manager state to '{filepath}'.")
 
         # store the save path
         self.save_path = filepath
@@ -565,10 +571,21 @@ def main(duration: float = 0, args=None):
     parser.add_argument("--comm", choices=comm_choices, default="mp", help="node communication backend")
     args = parser.parse_args(args)
 
-    Connection.set_backend(args.comm)
+    with MPManager() as manager:
+        # set the communication backend
+        try:
+            Connection.set_backend(args.comm, manager)
+        except AssertionError:
+            # connection backend is already set (occurrs when running tests)
+            pass
 
-    # create and run the manager (this blocks until the manager is terminated)
-    Manager(filepath=args.filepath, headless=args.headless, use_multiprocessing=not args.no_multiprocessing, duration=duration)
+        # create and run the manager (this blocks until the manager is terminated)
+        Manager(
+            filepath=args.filepath,
+            headless=args.headless,
+            use_multiprocessing=not args.no_multiprocessing,
+            duration=duration,
+        )
 
 
 if __name__ == "__main__":
