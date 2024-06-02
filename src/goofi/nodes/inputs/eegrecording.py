@@ -1,8 +1,10 @@
+import os
 import threading
 import time
 from typing import Any, Dict, Tuple
 
 import mne
+import pandas as pd
 from mne.datasets import eegbci
 from mne_realtime import MockLSLStream
 
@@ -19,6 +21,10 @@ class EEGRecording(Node):
 
     def stream_thread(self):
         """Load the appropriate data and start the stream. Then wait until running is set to False."""
+        while not self.params.recording.use_example_data.value and not os.path.exists(self.params.recording.file_path.value):
+            print("File path cannot be empty if 'Use Example Data' is False.")
+            time.sleep(1)
+
         if self.params.recording.use_example_data.value:
             raw = mne.concatenate_raws(
                 [mne.io.read_raw(p, preload=True, verbose=False) for p in eegbci.load_data(1, [1, 2])],
@@ -27,6 +33,15 @@ class EEGRecording(Node):
             eegbci.standardize(raw)
             # scale the data for better default behavior
             raw.apply_function(lambda x: x * 1e4)
+        elif self.params.recording.file_path.value.endswith(".csv"):
+            # load data from csv file
+            df = pd.read_csv(self.params.recording.file_path.value, index_col=0)
+            df = df.select_dtypes(include=["float"])
+            data = df.transpose().to_numpy()
+
+            # TODO: make sfreq a parameter
+            info = mne.create_info(ch_names=df.columns.tolist(), ch_types=["eeg"] * data.shape[0], sfreq=256)
+            raw = mne.io.RawArray(data, info)
         else:
             # load data from file
             raw = mne.io.read_raw(self.params.recording.file_path.value, preload=True)
@@ -60,9 +75,7 @@ class EEGRecording(Node):
                 # both use_example_data and file_path are set
                 # TODO: add proper logging
                 print("Both 'use_example_data' and 'file_path' are set. Using example data.")
-        elif self.params.recording.file_path.value == "":
-            # either use example data or a file path must be set
-            raise ValueError("File path cannot be empty if 'Use Example Data' is False.")
+
         assert self.params.recording.stream_name.value != "", "Stream name cannot be empty."
 
         # start the stream
