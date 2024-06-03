@@ -2,14 +2,14 @@ import numpy as np
 import asyncio
 import base64
 from io import BytesIO
-from pydub import AudioSegment
 from goofi.data import Data, DataType
 from goofi.node import Node
 from goofi.params import FloatParam, StringParam
-from hume import HumeStreamClient
-from hume.models.config import BurstConfig, ProsodyConfig
 
 class VocalExpression(Node):
+    def setup(self):
+        self.AudioSegment, self.HumeStreamClient, self.BurstConfig, self.ProsodyConfig = import_audio_libs()
+
     @staticmethod
     def config_input_slots():
         return {"data": DataType.ARRAY}
@@ -33,9 +33,9 @@ class VocalExpression(Node):
         }
 
     async def decode_emotion_prosody(self, encoded_audio_sample):
-        client = HumeStreamClient(self.params["prosody_analysis"]["api_key"].value)
-        burst_config = BurstConfig()
-        prosody_config = ProsodyConfig()
+        client = self.HumeStreamClient(self.params["prosody_analysis"]["api_key"].value)
+        burst_config = self.BurstConfig()
+        prosody_config = self.ProsodyConfig()
 
         prosody_label = ""
         prosody_score = 0.0
@@ -89,7 +89,7 @@ class VocalExpression(Node):
             raise ValueError("Data must be 1D")
 
         # Convert numpy array to AudioSegment
-        audio_segment = AudioSegment(
+        audio_segment = self.AudioSegment(
             data=audio_sample.tobytes(),
             sample_width=audio_sample.dtype.itemsize,
             frame_rate=44100,  # Assuming the sample rate is 44100 Hz
@@ -110,3 +110,20 @@ class VocalExpression(Node):
             "prosody_score": (np.array([prosody_score]), {}),
             "burst_score": (np.array([burst_score]), {}),
         }
+    
+
+def import_audio_libs():
+    try:
+        from pydub import AudioSegment
+    except ImportError:
+        raise ImportError(
+            "You need to install pydub to use the VocalExpression node: pip install pydub"
+        )
+    try:
+        from hume import HumeStreamClient
+        from hume.models.config import BurstConfig, ProsodyConfig
+    except ImportError:
+        raise ImportError(
+            "You need to install hume to use the VocalExpression node: pip install hume"
+        )
+    return AudioSegment, HumeStreamClient, BurstConfig, ProsodyConfig
