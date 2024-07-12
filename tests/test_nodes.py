@@ -6,6 +6,8 @@ import pytest
 from goofi.node import Node
 from goofi.node_helpers import list_nodes
 
+SKIP_NODES = ["AudioStream", "AudioOut", "MidiCCout", "MidiCout"]
+
 
 @pytest.mark.parametrize("node", list_nodes())
 def test_implement_init(node: Type[Node]):
@@ -17,7 +19,7 @@ def test_implement_init(node: Type[Node]):
 
 @pytest.mark.parametrize("node", list_nodes())
 def test_create_local(node: Type[Node], timeout: float = 20.0):
-    if node.__name__ == "AudioStream" or node.__name__ == "AudioOut":
+    if node.__name__ in SKIP_NODES:
         pytest.skip("Github Actions does not support audio devices.")
 
     # TODO: a 20 second timeout is too much, is there a way to kill nodes faster?
@@ -32,7 +34,7 @@ def test_create_local(node: Type[Node], timeout: float = 20.0):
 
 @pytest.mark.parametrize("node", [n for n in list_nodes() if not n.NO_MULTIPROCESSING])
 def test_create(node: Type[Node]):
-    if node.__name__ == "AudioStream" or node.__name__ == "AudioOut":
+    if node.__name__ in SKIP_NODES:
         pytest.skip("Github Actions does not support audio devices.")
 
     node.create().terminate()
