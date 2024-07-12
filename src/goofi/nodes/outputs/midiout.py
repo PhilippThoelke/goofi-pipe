@@ -21,9 +21,14 @@ class MidiOut(Node):
         return {"midi_status": DataType.STRING}
 
     def config_params():
-        import mido
+        try:
+            import mido
 
-        available_ports = mido.get_output_names()
+            available_ports = mido.get_output_names()
+        except Exception as e:
+            print(f"Error getting MIDI ports: {e}")
+            available_ports = []
+
         return {
             "MIDI": {
                 "port_name": StringParam("", options=available_ports, doc="MIDI output port name"),
