@@ -1,7 +1,6 @@
 import threading
 import time
 
-import mido
 import numpy as np
 
 from goofi.data import Data, DataType
@@ -22,6 +21,8 @@ class MidiOut(Node):
         return {"midi_status": DataType.STRING}
 
     def config_params():
+        import mido
+
         available_ports = mido.get_output_names()
         return {
             "MIDI": {
@@ -36,9 +37,14 @@ class MidiOut(Node):
 
     def play_note(self, outport, n, v, d, channel):
         """Thread function to play a note."""
-        outport.send(mido.Message("note_on", note=n, velocity=v, channel=channel))
+        outport.send(self.mido.Message("note_on", note=n, velocity=v, channel=channel))
         time.sleep(d)
-        outport.send(mido.Message("note_off", note=n, velocity=0, channel=channel))
+        outport.send(self.mido.Message("note_off", note=n, velocity=0, channel=channel))
+
+    def setup(self):
+        import mido
+
+        self.mido = mido
 
     def process(self, note: Data, velocity: Data, duration: Data):
         if note is None or len(note.data) == 0:
@@ -65,7 +71,7 @@ class MidiOut(Node):
         channel = self.params.MIDI["channel"].value
         play_mode = self.params.MIDI["play_mode"].value
 
-        outport = mido.open_output(port_name)  # Open the MIDI port once
+        outport = self.mido.open_output(port_name)  # Open the MIDI port once
         alert_on = False
         try:
             if play_mode == "simultaneous":
