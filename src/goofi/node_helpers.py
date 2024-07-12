@@ -109,6 +109,9 @@ class InputSlot:
             # convert dtype from string to DataType
             self.dtype = DataType[self.dtype]
 
+    def clear(self):
+        """Clears the data stored in the input slot."""
+        self.data = None
 
 @dataclass
 class OutputSlot:
