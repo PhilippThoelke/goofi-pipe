@@ -120,7 +120,7 @@ class TextGeneration(Node):
         return response.text
 
     def process(self, prompt: Data):
-        if prompt.data is None:
+        if prompt is None or prompt.data is None:
             return None
 
         self.import_libs(self.params["text_generation"]["model"].value)
