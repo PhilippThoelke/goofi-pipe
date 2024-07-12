@@ -9,6 +9,9 @@ class AudioOut(Node):
     def config_input_slots():
         return {"data": DataType.ARRAY}
 
+    def config_output_slots():
+        return {"finished": DataType.ARRAY}
+
     def config_params():
         return {
             "audio": {
@@ -64,6 +67,8 @@ class AudioOut(Node):
 
         # Send the audio data to the output device after ensuring it's C-contiguous
         self.stream.write(np.ascontiguousarray(samples))
+
+        return {"finished": (np.array([1]), {})}
 
     def audio_sampling_rate_changed(self, value):
         self.setup()
