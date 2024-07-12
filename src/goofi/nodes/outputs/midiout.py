@@ -1,27 +1,25 @@
 import threading
 import time
+
 import mido
 import numpy as np
+
 from goofi.data import Data, DataType
 from goofi.node import Node
-from goofi.params import StringParam, FloatParam, IntParam, BoolParam
+from goofi.params import BoolParam, FloatParam, IntParam, StringParam
+
 
 def hz_to_midi(hz):
     """Convert a frequency in Hz to a MIDI note number."""
     return int(69 + 12 * np.log2(hz / 440.0))
 
+
 class MidiOut(Node):
     def config_input_slots():
-        return {
-            "note": DataType.ARRAY,
-            "velocity": DataType.ARRAY,
-            "duration": DataType.ARRAY
-        }
+        return {"note": DataType.ARRAY, "velocity": DataType.ARRAY, "duration": DataType.ARRAY}
 
     def config_output_slots():
-        return {
-            "midi_status": DataType.STRING
-        }
+        return {"midi_status": DataType.STRING}
 
     def config_params():
         available_ports = mido.get_output_names()
@@ -32,15 +30,15 @@ class MidiOut(Node):
                 "play_mode": StringParam("simultaneous", options=["simultaneous", "sequential"], doc="Play mode"),
                 "default_velocity": IntParam(100, 0, 127, doc="Default MIDI velocity"),
                 "default_duration": FloatParam(0.1, 0.001, 10, doc="Default note duration in seconds"),
-                "hz_input": BoolParam(False, doc="Interpret input as Hz")
+                "hz_input": BoolParam(False, doc="Interpret input as Hz"),
             }
         }
 
     def play_note(self, outport, n, v, d, channel):
         """Thread function to play a note."""
-        outport.send(mido.Message('note_on', note=n, velocity=v, channel=channel))
+        outport.send(mido.Message("note_on", note=n, velocity=v, channel=channel))
         time.sleep(d)
-        outport.send(mido.Message('note_off', note=n, velocity=0, channel=channel))
+        outport.send(mido.Message("note_off", note=n, velocity=0, channel=channel))
 
     def process(self, note: Data, velocity: Data, duration: Data):
         if note is None or len(note.data) == 0:
@@ -63,7 +61,6 @@ class MidiOut(Node):
             # Fill in default durations where necessary
             durations = [float(d) if d is not None else self.params.MIDI["default_duration"].value for d in duration.data]
 
-
         port_name = self.params.MIDI["port_name"].value
         channel = self.params.MIDI["channel"].value
         play_mode = self.params.MIDI["play_mode"].value
@@ -74,16 +71,16 @@ class MidiOut(Node):
             if play_mode == "simultaneous":
                 threads = []
                 for n, v, d in zip(midi_notes, velocities, durations):
-                    if n > 127 or n < 0 :
-                        print('Note outside of MIDI 0-127 range')
+                    if n > 127 or n < 0:
+                        print("Note outside of MIDI 0-127 range")
                         alert_on = True
-                        error_message = 'Note outside of MIDI 0-127 range'
-                        pass    
+                        error_message = "Note outside of MIDI 0-127 range"
+                        pass
                     if v > 127 or v < 0:
-                        print('Velocity outside of MIDI 0-127 range')
+                        print("Velocity outside of MIDI 0-127 range")
                         alert_on = True
-                        error_message = 'Velocity outside of MIDI 0-127 range'
-                        pass 
+                        error_message = "Velocity outside of MIDI 0-127 range"
+                        pass
                     t = threading.Thread(target=self.play_note, args=(outport, n, v, d, channel))
                     t.start()
                     threads.append(t)
@@ -94,24 +91,20 @@ class MidiOut(Node):
             elif play_mode == "sequential":
                 for n, v, d in zip(midi_notes, velocities, durations):
                     if n > 127 or n < 0:
-                        print('Note outside of MIDI 0-127 range')
+                        print("Note outside of MIDI 0-127 range")
                         alert_on = True
-                        error_message = 'Note outside of MIDI 0-127 range'
-                        pass   
+                        error_message = "Note outside of MIDI 0-127 range"
+                        pass
                     if v > 127 or v < 0:
-                        print('Velocity outside of MIDI 0-127 range')
+                        print("Velocity outside of MIDI 0-127 range")
                         alert_on = True
-                        error_message = 'Velocity outside of MIDI 0-127 range'
+                        error_message = "Velocity outside of MIDI 0-127 range"
                         pass
                     self.play_note(outport, n, v, d, channel)
         finally:
             outport.close()  # Ensure that the MIDI port is closed when done
 
         if alert_on:
-            return {
-                "midi_status": (f"Notes sent successfully\n{error_message}", note.meta)
-            }
+            return {"midi_status": (f"Notes sent successfully\n{error_message}", note.meta)}
         else:
-            return {
-                "midi_status": ("Notes sent successfully", note.meta)
-            }
+            return {"midi_status": ("Notes sent successfully", note.meta)}
