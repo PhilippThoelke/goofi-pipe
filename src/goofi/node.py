@@ -255,7 +255,7 @@ class Node(ABC):
             elif msg.type == MessageType.CLEAR_DATA:
                 # clear the data in the input slot (usually triggered by a REMOVE_OUTPUT_PIPE message)
                 slot = self.input_slots[msg.content["slot_name"]]
-                slot.data = None
+                slot.clear()
             elif msg.type == MessageType.PARAMETER_UPDATE:
                 # update a parameter
                 group = msg.content["group"]

@@ -10,7 +10,7 @@ openai==1.3.6
 scikit-learn
 opencv-python==4.8.0.74 # prevent mediapipe TypeError: 'numpy._DTypeMeta' object is not subscriptable
 pyzmq
-webcolors
+webcolors==1.13
 pylsl
 mediapipe
 librosa==0.9.2
@@ -20,3 +20,4 @@ deeptime
 py-feat
 geopy
 edgeofpy @ git+https://github.com/jnobyrne/edgeofpy.git
+mido
