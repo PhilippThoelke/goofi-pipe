@@ -1,10 +1,12 @@
 from os import path, environ
-
+import json
+import requests
 from goofi.data import Data, DataType
 from goofi.node import Node
 from goofi.params import FloatParam, IntParam, StringParam, BoolParam
 
 class TextGeneration(Node):
+
     @staticmethod
     def config_input_slots():
         return {"prompt": DataType.STRING}
@@ -21,7 +23,8 @@ class TextGeneration(Node):
                 "model": StringParam("gpt-3.5-turbo", doc="Model ID for the text generation service"),
                 "temperature": FloatParam(1.0, 0.0, 2.0, doc="Temperature for text generation"),
                 "max_tokens": IntParam(20, 5, 2048, doc="Maximum number of tokens to generate"),
-                "keep_conversation": BoolParam(False, doc="Whether to keep conversation history")
+                "keep_conversation": BoolParam(False, doc="Whether to keep conversation history"),
+                "save_conversation": StringParam("", doc="Whether to save conversation history to a JSON file")
             }
         }
 
@@ -46,7 +49,7 @@ class TextGeneration(Node):
         elif model.startswith("gemini-"):
             self.api_key = environ.get("GOOGLE_API_KEY", self.api_key)
 
-        if not self.api_key:
+        if not self.api_key and not model.startswith("local-"):
             raise ValueError(f"API key for {model} not found in environment variables or input parameters.")
 
         print(f"Loaded API key for {model}.")
@@ -76,6 +79,8 @@ class TextGeneration(Node):
             except ImportError:
                 raise ImportError("You need to install google-generativeai: pip install google-generativeai")
             return None, None, genai
+        elif model.startswith("local-"):
+            return None, None, None  # No additional imports needed for local model
         else:
             raise ValueError(f"Unknown model: {model}")
 
@@ -105,7 +110,7 @@ class TextGeneration(Node):
         )
         return response.content[0].text
 
-    def generate_gemini_response(self, text, temp, keep_conversation):
+    def generate_gemini_response(self, text, temp, keep_conversation, history=None):
         if self.client is None:
             self.genai.configure(api_key=self.api_key)
             self.client = self.genai.GenerativeModel(self.params['text_generation']['model'].value)
@@ -117,7 +122,38 @@ class TextGeneration(Node):
             "temperature": temp,
         }
         response = chat.send_message(text, generation_config=config)
+        try:
+            history = chat.history()
+        except Exception as e:
+            print(f"History is None: {e}")
+            history = None
         return response.text
+
+    def generate_local_response(self, content):
+        url = "http://127.0.0.1:5000/v1/chat/completions"
+        headers = {
+            "Content-Type": "application/json"
+        }
+        data = {
+            "mode": "chat-instruct", # TODO: Add mode to params
+            "max_tokens": self.params["text_generation"]["max_tokens"].value,
+            "temperature": self.params["text_generation"]["temperature"].value,
+            "character": "Example",
+            "messages": [
+                {
+                    "role": "user",
+                    "content": content
+                }
+            ]
+        }
+        response = requests.post(url, headers=headers, json=data, verify=False)
+        return response.json()["choices"][0]["message"]["content"]
+
+    def save_conversation_to_json(self):
+        filename = f"conversation_{self.params['text_generation']['save_conversation']}.json"
+        with open(filename, "w") as f:
+            json.dump(self.messages, f, indent=4)
+        print(f"Conversation saved to {filename}")
 
     def process(self, prompt: Data):
         if prompt.data is None:
@@ -130,6 +166,7 @@ class TextGeneration(Node):
         temp = self.params["text_generation"]["temperature"].value
         model = self.params["text_generation"]["model"].value
         keep_conversation = self.params["text_generation"]["keep_conversation"].value
+        save_conversation = self.params["text_generation"]["save_conversation"].value
 
         if keep_conversation:
             self.messages.append({"role": "user", "content": prompt_})
@@ -142,10 +179,15 @@ class TextGeneration(Node):
             generated_text = self.generate_anthropic_response(self.messages, temp)
         elif model.startswith("gemini-"):
             generated_text = self.generate_gemini_response(prompt_, temp, keep_conversation)
+        elif model.startswith("local-"):
+            generated_text = self.generate_local_response(prompt_)
         else:
             raise ValueError(f"Unknown model: {model}")
 
         if keep_conversation:
             self.messages.append({"role": "assistant", "content": generated_text})
+
+        if save_conversation:
+            self.save_conversation_to_json()
 
         return {"generated_text": (generated_text, prompt.meta)}
