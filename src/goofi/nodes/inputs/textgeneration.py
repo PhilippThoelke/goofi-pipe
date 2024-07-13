@@ -150,7 +150,7 @@ class TextGeneration(Node):
         return response.json()["choices"][0]["message"]["content"]
 
     def save_conversation_to_json(self):
-        filename = f"conversation_{self.params['text_generation']['save_conversation']}.json"
+        filename = f"conversation_{self.params['text_generation']['save_conversation'].value}.json"
         with open(filename, "w") as f:
             json.dump(self.messages, f, indent=4)
         print(f"Conversation saved to {filename}")
