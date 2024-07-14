@@ -54,6 +54,10 @@ def test_param_types(param_type):
             # some types may be instances of other types, e.g. bool is an instance of int
             continue
 
+        if isinstance(param_type.default(), float) and isinstance(type2.default(), int):
+            # we accept int as default value for float
+            continue
+
         with pytest.raises(TypeError):
             param_type(type2.default())
 
