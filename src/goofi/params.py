@@ -20,8 +20,15 @@ class Param(ABC):
     def __post_init__(self):
         if self._value is None:
             self._value = self.default()
+
         if not isinstance(self._value, type(self.default())):
-            raise TypeError(f"Expected {type(self.default())}, got {type(self._value)}")
+            if isinstance(self.default(), float) and isinstance(self._value, int):
+                # it's okay if we wanted a float but got int
+                self._value = float(self._value)
+            else:
+                raise TypeError(
+                    f"Parameter {self.__class__.__name__} expected type {type(self.default())} but got {type(self._value)}."
+                )
 
     @staticmethod
     @abstractmethod
