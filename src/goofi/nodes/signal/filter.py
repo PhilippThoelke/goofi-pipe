@@ -1,3 +1,5 @@
+from collections import deque
+
 import numpy as np
 from scipy.signal import butter, cheby1, detrend, ellip, filtfilt, lfilter, lfilter_zi
 
@@ -56,11 +58,14 @@ class Filter(Node):
             "signal": {
                 "detrend": False,
                 "demean": False,
+                "internal_buffer": False,
+                "buffer_size": 512,
             },
         }
 
     def setup(self):
         self.filter_state = None
+        self.internal_buffer = deque(maxlen=self.params["signal"]["buffer_size"].value)
 
     def process(self, data: Data):
         if data is None or data.data is None:
@@ -69,13 +74,11 @@ class Filter(Node):
         sfreq = data.meta["sfreq"]
         nyq = 0.5 * sfreq
 
-        filtered_data = data.data  # Initialize
-
-        # Detrend and demean
-        if self.params["signal"]["detrend"].value:
-            filtered_data = detrend(filtered_data)
-        if self.params["signal"]["demean"].value:
-            filtered_data = detrend(filtered_data, type="constant")
+        self.internal_buffer.extend(data.data.T)
+        if self.params["signal"]["internal_buffer"].value:
+            filtered_data = np.array(self.internal_buffer).T
+        else:
+            filtered_data = data.data
 
         # Bandpass Filtering
         if self.params["bandpass"]["apply"].value:
@@ -123,7 +126,16 @@ class Filter(Node):
 
             filtered_data = self.apply_filter(b, a, filtered_data, method, padding)
 
-        return {"filtered_data": (filtered_data, {**data.meta})}
+        if self.params["signal"]["internal_buffer"].value:
+            filtered_data = filtered_data[..., -data.data.shape[-1] :]
+
+        # Detrend and demean
+        if self.params["signal"]["detrend"].value:
+            filtered_data = detrend(filtered_data, type="linear")
+        if self.params["signal"]["demean"].value:
+            filtered_data = detrend(filtered_data, type="constant")
+
+        return {"filtered_data": (filtered_data, data.meta)}
 
     def apply_filter(self, b, a, data, method, padding):
         if method == "Zero-phase":
@@ -146,3 +158,6 @@ class Filter(Node):
                 return lfilter(b, a, data.T, axis=0, zi=self.filter_state)[0].T
         else:
             return data
+
+    def signal_buffer_size_changed(self, buffer_size):
+        self.internal_buffer = deque(maxlen=buffer_size)
