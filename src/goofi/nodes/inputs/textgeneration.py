@@ -121,7 +121,7 @@ class TextGeneration(Node):
         
         return response.content[0].text
 
-    def generate_gemini_response(self, text, temp, keep_conversation, history=None, system_prompt=None):
+    def generate_gemini_response(self, text, temp, keep_conversation, history=None):
         if self.client is None:
             self.genai.configure(api_key=self.api_key)
             # If system prompt is provided, prepend it to the message
