@@ -21,6 +21,7 @@ class TextGeneration(Node):
             "text_generation": {
                 "api_key": StringParam("openai.key", doc="API key for the text generation service"),
                 "model": StringParam("gpt-3.5-turbo", doc="Model ID for the text generation service"),
+                "system_prompt": StringParam("", doc="System prompt for text generation"),
                 "temperature": FloatParam(1.0, 0.0, 2.0, doc="Temperature for text generation"),
                 "max_tokens": IntParam(20, 5, 2048, doc="Maximum number of tokens to generate"),
                 "keep_conversation": BoolParam(False, doc="Whether to keep conversation history"),
@@ -34,6 +35,7 @@ class TextGeneration(Node):
         self.messages = []
         self.load_api_key()
         self.import_libs(self.params["text_generation"]["model"].value)
+        self.system_prompt = self.params["text_generation"]["system_prompt"].value
 
     def load_api_key(self):
         self.api_key = self.params["text_generation"]["api_key"].value
@@ -91,42 +93,63 @@ class TextGeneration(Node):
     def generate_openai_response(self, messages, temp):
         if self.client is None:
             self.client = self.openai.OpenAI(api_key=self.api_key)
-        response = self.client.chat.completions.create(
-            model=self.params["text_generation"]["model"].value,
-            messages=messages,
-            temperature=temp,
-            max_tokens=self.params["text_generation"]["max_tokens"].value,
-        )
+
+        payload = {
+            "model": self.params["text_generation"]["model"].value,
+            "messages": messages,
+            "temperature": temp,
+            "max_tokens": self.params["text_generation"]["max_tokens"].value,
+        }
+
+        if self.system_prompt is not None and len(messages) < 2:
+            payload["messages"]= [{"role": "system", "content": self.system_prompt}] + messages
+
+        response = self.client.chat.completions.create(**payload)
         return response.choices[0].message.content
 
     def generate_anthropic_response(self, messages, temp):
         if self.client is None:
             self.client = self.anthropic.Anthropic(api_key=self.api_key)
+        
         response = self.client.messages.create(
             model=self.params["text_generation"]["model"].value,
             messages=messages,
             max_tokens=self.params["text_generation"]["max_tokens"].value,
-            temperature=temp
+            temperature=temp,
+            system=self.system_prompt if self.system_prompt is not None else None
         )
+        
         return response.content[0].text
 
-    def generate_gemini_response(self, text, temp, keep_conversation, history=None):
+    def generate_gemini_response(self, text, temp, keep_conversation, history=None, system_prompt=None):
         if self.client is None:
             self.genai.configure(api_key=self.api_key)
-            self.client = self.genai.GenerativeModel(self.params['text_generation']['model'].value)
+            # If system prompt is provided, prepend it to the message
+            self.client = self.genai.GenerativeModel(model_name=self.params['text_generation']['model'].value,
+                                                     system_instruction=self.system_prompt if self.system_prompt is not None else "You are a helpful assistant.",)
+            
         if not keep_conversation:
             history = []
+        
         chat = self.client.start_chat(history=history)
-        config = {
-            "max_output_tokens": self.params["text_generation"]["max_tokens"].value,
-            "temperature": temp,
-        }
-        response = chat.send_message(text, generation_config=config)
+        
+        generation_config = self.genai.GenerationConfig(
+            max_output_tokens=self.params["text_generation"]["max_tokens"].value,
+            temperature=temp
+        )
+        
+        # Prepare the message
+        message = text
+
+        # Send the request
+        response = chat.send_message(message, generation_config=generation_config)
+        # NOTE:  double check if history works this way
         try:
             history = chat.history()
         except Exception as e:
             print(f"History is None: {e}")
             history = None
+        
         return response.text
 
     def generate_local_response(self, content):
