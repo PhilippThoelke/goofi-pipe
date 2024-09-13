@@ -156,6 +156,9 @@ prompts = {
     "Be purely descriptive, your response does not have to be a complete sentence. "
     "Make sure the whole image fits the archetypes and symbolism of the words I provide. BE VERY SHORT "
     "AND CONCISE. LIMIT YOURSELF TO A MAXIMUM OF 20 WORDS.",
+    
+    "TXT2IMG_SHAMANIC_PROMPT": "Your task is to create a prompt for a text-to-image model that generates a shamanic portrait of a single person, incorporating a set of styles and artists based on a set of words provided at the end of this message. Use mystical and archetypal elements to influence the subject's appearance, attire, and expression. Mention different artistic mediums and tools (e.g., oil paint, charcoal, digital brushes, film grain). Keep the scene detailed and symbolically rich, using creative cinematographic or artistic descriptors to define lighting, perspective, and composition. Use the guiding words at the end to evoke emotions, settings, or surrealist elements. The guiding words are: ",
+    
     "BRAIN2STYLE_PROMPT": "I want you to provide me with a list of 3 visual artists or art styles which are matching"
     "in term of symbolic and all the types of associations you can make with the list of guiding words I will provide."
     "Use an interpretation of the guiding words based on phenomenological thinkers, "
