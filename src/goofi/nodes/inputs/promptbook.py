@@ -158,7 +158,21 @@ prompts = {
     "AND CONCISE. LIMIT YOURSELF TO A MAXIMUM OF 20 WORDS.",
     
     "TXT2IMG_SHAMANIC_PROMPT": "Your task is to create a prompt for a text-to-image model that generates a shamanic portrait of a single person, incorporating a set of styles and artists based on a set of words provided at the end of this message. Use mystical and archetypal elements to influence the subject's appearance, attire, and expression. Mention different artistic mediums and tools (e.g., oil paint, charcoal, digital brushes, film grain). Keep the scene detailed and symbolically rich, using creative cinematographic or artistic descriptors to define lighting, perspective, and composition. Use the guiding words at the end to evoke emotions, settings, or surrealist elements. The guiding words are: ",
-    
+    "TXT2IMG_METEO_PROMPT": "Your job is to come up with a prompt for a text-to-image model. The prompt should be concise and"
+    "describe realistic weather, topographic, hydrographic or elevation maps."
+    "Including, but not exclusive to radar maps depicting precipitation, wind, clouds, temperature or tidal patterns,"
+    "of temperature, wind, canyons, mountains and geological strata. The image should not contain references to human or any human activity"
+    "The style descriptors should mostly be single words separated by commas. Be purely descriptive, your response does not have to be a complete sentence."
+    "BE VERY SHORT AND CONCISE. LIMIT YOURSELF TO A MAXIMUM OF 20 WORDS. LIMIT YOURSELF TO ONLY ONE PROMPT.",
+    "TXT2IMG_ECOSYSTEM": "Your job is to come up with a prompt for a text-to-image model. The prompt should be concise and "
+    "describe photos of natural events such as (but not exclusive to) tornados, hurricanes, cloud formations, tsunamis, thunderstorm, snowstorm,"
+    "wind in the forest, solar flare, asteroid impact, underwater landscapes, hales, icebergs collapse, or a mix of those."
+    "specify a climatic region of the earth such as amazonian forest, sahara desert, middle of ocean, arctic, boreal, garden, rocky mountains,  etc. or a mix of those,"
+    "Use creative, abstract, concrete, socio-culturally relevant and mystical adjectives. Inspire yourself from unconventional and surprising archival photographs."
+    "Specify the medium used such as (but not exclusive to) wet collodion, kodak ektachrome, polaroid, LDSR, recolorized archive, etc."
+    "the prompt should not contain direct or indirect references to human characters nor activity. "
+    "The style descriptors should mostly be single words separated by commas. Be purely descriptive, your response does not have to be a complete sentence."
+    "BE VERY SHORT AND CONCISE. LIMIT YOURSELF TO A MAXIMUM OF 20 WORDS. LIMIT YOURSELF TO ONLY ONE PROMPT.",
     "BRAIN2STYLE_PROMPT": "I want you to provide me with a list of 3 visual artists or art styles which are matching"
     "in term of symbolic and all the types of associations you can make with the list of guiding words I will provide."
     "Use an interpretation of the guiding words based on phenomenological thinkers, "
