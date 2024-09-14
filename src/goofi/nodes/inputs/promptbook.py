@@ -129,8 +129,8 @@ prompts = {
     "Make sure the whole image fits the archetypes and symbolism of the words I provide. Include names of "
     "not well-known artists at the end of the prompt that embody the symbolism of the guiding words from the perspective "
     "of an art historian. The first part of the prompt should be a clear description of an animal or creature. Either name a "
-    "single animal that matches the symbolism, or come up with a hybrid of animals by listing up to 3 animals followed by the term "
-    "'hybrid'. BE VERY SHORT AND CONCISE. LIMIT YOURSELF TO A MAXIMUM OF 20 WORDS.",
+    "single animal that matches the symbolism, or come up with a hybrid of animals by listing up to 2 animals followed by the term "
+    "'hybrid', and mixing different features of these animals in the prompt. BE VERY SHORT AND CONCISE. LIMIT YOURSELF TO A MAXIMUM OF 20 WORDS.",
     "TXT2IMG_CODEX_PROMPT": "Your job is to come up with a prompt for a text-to-image model. The prompt should be concise and "
     "describe an the content of a page from the Codex Seraphinianus book "
     " with few descriptive words. Use creative, abstract and mystical adjectives. "
