@@ -127,7 +127,7 @@ prompts = {
     "the perspective using terms from cinematography. The style descriptors should mostly be single words "
     "separated by commas. Be purely descriptive, your response does not have to be a complete sentence. "
     "Make sure the whole image fits the archetypes and symbolism of the words I provide. Include names of "
-    "artists at the end of the prompt that embody the symbolism of the guiding words from the perspective "
+    "not well-known artists at the end of the prompt that embody the symbolism of the guiding words from the perspective "
     "of an art historian. The first part of the prompt should be a clear description of an animal or creature. Either name a "
     "single animal that matches the symbolism, or come up with a hybrid of animals by listing up to 3 animals followed by the term "
     "'hybrid'. BE VERY SHORT AND CONCISE. LIMIT YOURSELF TO A MAXIMUM OF 20 WORDS.",
