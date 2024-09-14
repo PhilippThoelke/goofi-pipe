@@ -30,6 +30,6 @@ class TableSelectString(Node):
         # print(selected_value)
         # print(type(selected_value))
         if selected_value.dtype != DataType.STRING:
-            raise ValueError(f"The value for {selected_key} is not a string.")
+            selected_value.data = str(selected_value.data)
 
         return {"output_string": (selected_value.data, input_table.meta)}
