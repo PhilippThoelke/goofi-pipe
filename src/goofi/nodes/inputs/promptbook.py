@@ -22,8 +22,9 @@ class PromptBook(Node):
         # retrieving the selected prompt
         selected_prompt = self.params["Text_Generation"]["selected_prompt"].value
         prompt_ = prompts.get(selected_prompt, [])
-        # append the input prompt to the selected prompt
-        prompt_ = prompt_ + input_prompt.data
+        if input_prompt:
+            # append the input prompt to the selected prompt
+            prompt_ = prompt_ + input_prompt.data
         # returning the value of the selected prompt
         return {"out": (prompt_, {})}
 
