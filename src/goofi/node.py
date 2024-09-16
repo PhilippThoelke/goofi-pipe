@@ -393,8 +393,8 @@ class Node(ABC):
                         for _, creation in self.pending_connections[conn._id]:
                             if time.time() - creation > self.MESSAGE_TIMEOUT / 1000:
                                 # the connection has timed out, remove it
-                                # TODO: forward removal of this connection to the manager
-                                self.output_slots[name].connections.remove((target_slot, conn, self_conn))
+                                # TODO: figure out what's going on, if we remove a timed out connection the GUI will sometimes lose contact with the node
+                                # self.output_slots[name].connections.remove((target_slot, conn, self_conn))
                                 timeout_occurred = True
                                 continue
 
