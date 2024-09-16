@@ -131,7 +131,9 @@ prompts = {
     "not well-known artists at the end of the prompt that embody the symbolism of the guiding words from the perspective "
     "of an art historian. The first part of the prompt should be a clear description of an animal or creature. Either name a "
     "single animal that matches the symbolism, or come up with a hybrid of animals by listing up to 2 animals followed by the term "
-    "'hybrid', and mixing different features of these animals in the prompt (real aninmal or mythological being). BE VERY SHORT AND CONCISE. LIMIT YOURSELF TO A MAXIMUM OF 20 WORDS.",
+    "'hybrid', and mixing different features of these animals in the prompt (real aninmal or mythological being). If some information about plant or technological terms is given in the guiding words, make the creature looking like it has some plant or technological features."
+    " If emotion is given in the guiding words, make the creature looking like it is in the specified emotional state. "
+    " If some information about AGE is given in the guiding words, make the creature looking like it is in the specified phase of life. BE VERY SHORT AND CONCISE. LIMIT YOURSELF TO A MAXIMUM OF 20 WORDS. The guiding words are: ",
     "TXT2IMG_CODEX_PROMPT": "Your job is to come up with a prompt for a text-to-image model. The prompt should be concise and "
     "describe an the content of a page from the Codex Seraphinianus book "
     " with few descriptive words. Use creative, abstract and mystical adjectives. "
