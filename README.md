@@ -22,6 +22,13 @@ pip install -e . # install goofi-pipe in development mode
 goofi-pipe # start the application to make sure the installation was successful
 ```
 
+> [!NOTE]
+> On some platforms (specifically Linux and Mac) it might be necessary to install the `liblsl` package for some of goofi-pipe's features (everything related to LSL streams).
+> Follow the instructions provided [here](https://github.com/sccn/liblsl?tab=readme-ov-file#getting-and-using-liblsl), or simply install it via
+> ```bash
+> conda install -c conda-forge liblsl
+> ```
+
 # Basic Usage
 
 ## Accessing the Node Menu
