@@ -2,8 +2,7 @@ import numpy as np
 
 from goofi.data import Data, DataType
 from goofi.node import Node
-from goofi.params import IntParam
-from copy import deepcopy
+from goofi.params import StringParam
 
 
 class Reshape(Node):
@@ -14,22 +13,14 @@ class Reshape(Node):
         return {"out": DataType.ARRAY}
 
     def config_params():
-        return {
-            "reshape": {
-                "new_shape_pos1": IntParam(-1, -1, 3),
-                "new_shape_pos2": IntParam(2, -1, 3),
-            }
-        }
+        return {"reshape": {"shape": StringParam("-1")}}
 
     def process(self, array: Data):
         if array is None:
             return None
 
-        a = self.params.reshape.new_shape_pos1.value
-        b = self.params.reshape.new_shape_pos2.value
-
-        # TODO: allow for N-dimensional arrays
-        result = np.reshape(array.data, (a, b))
+        shape = list(map(int, self.params.reshape.shape.value.split(",")))
+        result = array.data.reshape(shape)
 
         # TODO: properly handle channel names
         del array.meta["channels"]
