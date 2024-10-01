@@ -1,3 +1,4 @@
+import socket  # For setting broadcast options
 from typing import Any, List, Tuple
 
 from oscpy.client import send_bundle, send_message
@@ -18,6 +19,7 @@ class OSCOut(Node):
                 "port": IntParam(8000, 0, 65535),
                 "prefix": "/goofi",
                 "bundle": BoolParam(False, doc="Some software doesn't deal well with OSC bundles"),
+                "broadcast": BoolParam(False, doc="Enable broadcasting OSC messages"),
             }
         }
 
@@ -25,16 +27,30 @@ class OSCOut(Node):
         if data is None or len(data.data) == 0:
             return
 
+        # determine the address and configure the socket if broadcasting is enabled
+        address = self.params.osc.address.value
+        port = self.params.osc.port.value
+        broadcast = self.params.osc.broadcast.value
+
+        # create a socket with broadcasting enabled if needed
+        sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+        if broadcast:
+            address = "255.255.255.255"
+            sock.setsockopt(socket.SOL_SOCKET, socket.SO_BROADCAST, 1)
+
         # convert the data to a list of OSC messages
         messages = generate_messages(data, self.params.osc.prefix.value)
 
         if self.params.osc.bundle.value:
             # send the data as an OSC bundle
-            send_bundle(messages, self.params.osc.address.value, self.params.osc.port.value)
+            send_bundle(messages, address, port, sock=sock)
         else:
             # send the data as individual OSC messages
             for addr, val in messages:
-                send_message(addr, val, self.params.osc.address.value, self.params.osc.port.value)
+                send_message(addr, val, address, port, sock=sock)
+
+        # close the socket after use
+        sock.close()
 
 
 def generate_messages(data: Data, prefix: str = "") -> List[Tuple[bytes, List[Any]]]:
