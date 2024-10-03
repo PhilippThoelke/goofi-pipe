@@ -1,15 +1,8 @@
 import socket
-import traceback
 from typing import Any, Dict, Tuple
 
 import numpy as np
-
-try:
-    import pylsl
-except RuntimeError:
-    # pylsl is not available, print the error
-    traceback.print_exc()
-    pylsl = None
+import pylsl
 
 from goofi.data import DataType
 from goofi.node import Node
@@ -32,9 +25,6 @@ class LSLClient(Node):
 
     def setup(self):
         """Initialize and start the LSL client."""
-        if pylsl is None:
-            raise RuntimeError("pylsl is not available.")
-
         if hasattr(self, "client"):
             self.disconnect()
         self.client = None
@@ -55,8 +45,13 @@ class LSLClient(Node):
             if not self.connect():
                 return None
 
-        # fetch data
-        samples, _ = self.client.pull_chunk()
+        try:
+            # fetch data
+            samples, _ = self.client.pull_chunk()
+        except pylsl.LostError:
+            self.setup()
+            return None
+
         samples = np.array(samples).T
 
         if samples.size == 0:
@@ -70,8 +65,8 @@ class LSLClient(Node):
                 ch_names.append(ch_info.child_value("label") or "{} {:03d}".format(ch_type.upper(), k))
                 ch_info = ch_info.next_sibling()
             self.ch_names = ch_names
-        except OSError:
-            pass
+        except Exception:
+            self.setup()
 
         meta = {
             "sfreq": self.client.info().nominal_srate(),
@@ -105,7 +100,7 @@ class LSLClient(Node):
             raise RuntimeError(f"Found multiple streams matching {stream_name} from source {source_name}: {ms}.")
 
         # connect to the stream
-        self.client = pylsl.StreamInlet(info=list(matches.values())[0])
+        self.client = pylsl.StreamInlet(info=list(matches.values())[0], recover=False)
         return True
 
     def disconnect(self) -> None:
