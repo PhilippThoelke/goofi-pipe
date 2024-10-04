@@ -1108,7 +1108,8 @@ class Window:
 
         # start DearPyGui
         dpg.create_viewport(title="goofi-pipe", width=width, height=height, disable_close=True)
-        # TODO: set the goofi-pipe icon as the window icon
+        dpg.set_viewport_large_icon("assets/goofi.ico")
+        dpg.set_viewport_small_icon("assets/goofi.ico")
         dpg.setup_dearpygui()
         dpg.show_viewport()
 
