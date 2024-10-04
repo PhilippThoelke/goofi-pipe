@@ -1,5 +1,4 @@
 import numpy as np
-from pylsl import IRREGULAR_RATE, StreamInfo, StreamOutlet
 
 from goofi.data import Data, DataType
 from goofi.node import Node
@@ -18,6 +17,9 @@ class LSLOut(Node):
         }
 
     def setup(self):
+        import pylsl
+
+        self.pylsl = pylsl
         self.outlet = None
 
     def process(self, data: Data):
@@ -28,15 +30,15 @@ class LSLOut(Node):
             self.outlet = None
 
         if self.outlet is None:
-            info = StreamInfo(
+            info = self.pylsl.StreamInfo(
                 self.params.lsl.stream_name.value,
                 "Data",
                 len(data.data),
-                data.meta["sfreq"] if "sfreq" in data.meta else IRREGULAR_RATE,
+                data.meta["sfreq"] if "sfreq" in data.meta else self.pylsl.IRREGULAR_RATE,
                 "float32",
                 self.params.lsl.source_name.value,
             )
-            self.outlet = StreamOutlet(info)
+            self.outlet = self.pylsl.StreamOutlet(info)
 
         try:
             if data.data.ndim == 1:

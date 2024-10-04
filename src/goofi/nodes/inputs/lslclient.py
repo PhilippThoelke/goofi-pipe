@@ -2,7 +2,6 @@ import socket
 from typing import Any, Dict, Tuple
 
 import numpy as np
-import pylsl
 
 from goofi.data import DataType
 from goofi.node import Node
@@ -25,6 +24,10 @@ class LSLClient(Node):
 
     def setup(self):
         """Initialize and start the LSL client."""
+        import pylsl
+
+        self.pylsl = pylsl
+
         if hasattr(self, "client"):
             self.disconnect()
         self.client = None
@@ -48,7 +51,7 @@ class LSLClient(Node):
         try:
             # fetch data
             samples, _ = self.client.pull_chunk()
-        except pylsl.LostError:
+        except self.pylsl.LostError:
             self.setup()
             return None
 
@@ -100,7 +103,7 @@ class LSLClient(Node):
             raise RuntimeError(f"Found multiple streams matching {stream_name} from source {source_name}: {ms}.")
 
         # connect to the stream
-        self.client = pylsl.StreamInlet(info=list(matches.values())[0], recover=False)
+        self.client = self.pylsl.StreamInlet(info=list(matches.values())[0], recover=False)
         return True
 
     def disconnect(self) -> None:
@@ -110,7 +113,7 @@ class LSLClient(Node):
             self.client = None
 
     def lsl_stream_refresh_changed(self, value: bool) -> None:
-        self.available_streams = pylsl.resolve_streams()
+        self.available_streams = self.pylsl.resolve_streams()
         print("\nAvailable LSL streams:")
         for info in self.available_streams:
             print(f'  Source: "{info.source_id()}" with stream "{info.name()}" (hostname: {info.hostname()})')
