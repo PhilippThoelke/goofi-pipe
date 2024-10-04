@@ -23,6 +23,9 @@ class OSCOut(Node):
             }
         }
 
+    def setup(self):
+        self.sock = None
+
     def process(self, data: Data):
         if data is None or len(data.data) == 0:
             return
@@ -32,25 +35,31 @@ class OSCOut(Node):
         port = self.params.osc.port.value
         broadcast = self.params.osc.broadcast.value
 
-        # create a socket with broadcasting enabled if needed
-        sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
         if broadcast:
             address = "255.255.255.255"
-            sock.setsockopt(socket.SOL_SOCKET, socket.SO_BROADCAST, 1)
+            if self.sock is None:
+                # create a socket with broadcasting enabled if needed
+                self.sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+                self.sock.setsockopt(socket.SOL_SOCKET, socket.SO_BROADCAST, 1)
 
         # convert the data to a list of OSC messages
         messages = generate_messages(data, self.params.osc.prefix.value)
 
         if self.params.osc.bundle.value:
             # send the data as an OSC bundle
-            send_bundle(messages, address, port, sock=sock)
+            send_bundle(messages, address, port, sock=self.sock)
         else:
             # send the data as individual OSC messages
             for addr, val in messages:
-                send_message(addr, val, address, port, sock=sock)
+                if self.sock is None:
+                    send_message(addr, val, address, port)
+                else:
+                    send_message(addr, val, address, port, sock=self.sock)
 
-        # close the socket after use
-        sock.close()
+    def osc_broadcast_changed(self, value: bool):
+        if self.sock is not None:
+            self.sock.close()
+            self.sock = None
 
 
 def generate_messages(data: Data, prefix: str = "") -> List[Tuple[bytes, List[Any]]]:
