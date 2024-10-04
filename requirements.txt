@@ -1,6 +1,6 @@
 numpy
 dearpygui
-mne-realtime
+mne-lsl
 antropy
 biotuner @ git+https://github.com/AntoineBellemare/biotuner.git
 pyserial

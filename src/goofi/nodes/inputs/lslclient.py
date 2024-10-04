@@ -12,7 +12,7 @@ class LSLClient(Node):
     def config_params():
         return {
             "lsl_stream": {
-                "source_name": "goofi-stream",
+                "source_name": "goofi",
                 "stream_name": "",
                 "refresh": BoolParam(False, trigger=True),
             },

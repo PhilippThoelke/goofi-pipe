@@ -6,18 +6,22 @@ from typing import Any, Dict, Tuple
 import mne
 import pandas as pd
 from mne.datasets import eegbci
-from mne_realtime import MockLSLStream
+from mne_lsl.player import PlayerLSL
 
 from goofi.node import Node
 
 
 class EEGRecording(Node):
-    # disable multiprocessing for this node as it needs to spawn a child process
-    # TODO: make sure this is actually necessary
-    NO_MULTIPROCESSING = True
 
     def config_params():
-        return {"recording": {"use_example_data": True, "file_path": "", "stream_name": "goofi-stream"}}
+        return {
+            "recording": {
+                "use_example_data": True,
+                "file_path": "",
+                "source_name": "goofi",
+                "stream_name": "recording",
+            }
+        }
 
     def stream_thread(self):
         """Load the appropriate data and start the stream. Then wait until running is set to False."""
@@ -47,7 +51,12 @@ class EEGRecording(Node):
             raw = mne.io.read_raw(self.params.recording.file_path.value, preload=True)
 
         # start the stream
-        stream = MockLSLStream(self.params.recording.stream_name.value, raw, "eeg")
+        stream = PlayerLSL(
+            raw,
+            name=self.params.recording.stream_name.value,
+            source_id=self.params.recording.source_name.value,
+            annotations=False,
+        )
         stream.start()
 
         while self.running:
