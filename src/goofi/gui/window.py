@@ -222,12 +222,17 @@ def param_updated(a, value, user_data):
 
         # update all input widgets
         for child in dpg.get_item_children(input_group)[1]:
-            dpg.set_value(child, value)
+            try:
+                dpg.set_value(child, value)
+            except SystemError:
+                # the input widget might have been deleted, ignore this error
+                pass
 
     # send the updated parameter to the node
     node.update_param(group, name, value)
     # mark manager state as dirty
     Window().manager.unsaved_changes = True
+
 
 def add_param(parent: int, group: str, name: str, param: Param, node: NodeRef) -> None:
     """
@@ -872,6 +877,11 @@ class Window:
     def _processing_error_callback(self, node: NodeRef, message: Message, node_name: str) -> None:
         """Callback for the `MessageType.PROCESSING_ERROR` message type."""
         error = message.content["error"]
+        if error is None:
+            # no error, clear error message
+            self.nodes[node_name].set_error(None, self)
+            return
+
         self.nodes[node_name].set_error(error, self)
         print(f"Error in node {node_name}:\n{error}")
 

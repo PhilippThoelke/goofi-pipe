@@ -138,6 +138,8 @@ class Node(ABC):
             try:
                 self.setup()
                 self._node_ready = True
+                # clear any errors that may have occurred during setup
+                self.connection.try_send(Message(MessageType.PROCESSING_ERROR, {"error": None}))
             except Exception:
                 error_message = traceback.format_exc()
                 self.connection.try_send(Message(MessageType.PROCESSING_ERROR, {"error": error_message}))
@@ -426,6 +428,11 @@ class Node(ABC):
         """If the new value of the parameter common.autotrigger is True, trigger the processing loop."""
         if value:
             self.process_flag.set()
+
+    @require_init
+    def clear_error(self):
+        """Clear the error message."""
+        self.connection.try_send(Message(MessageType.PROCESSING_ERROR, {"error": None}))
 
     @classmethod
     def create(cls, initial_params: Optional[Dict[str, Dict[str, Any]]] = None, retries: int = 3) -> NodeRef:
