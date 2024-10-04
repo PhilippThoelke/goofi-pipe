@@ -106,7 +106,7 @@ class Message:
         elif self.type == MessageType.CLEAR_DATA:
             self.require_fields(slot_name=str)
         elif self.type == MessageType.PROCESSING_ERROR:
-            self.require_fields(error=str)
+            self.require_fields(error=(str, type(None)))
         elif self.type == MessageType.PARAMETER_UPDATE:
             self.require_fields(group=str, param_name=str, param_value=object)
         elif self.type == MessageType.SERIALIZE_RESPONSE:
