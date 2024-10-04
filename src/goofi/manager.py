@@ -588,5 +588,76 @@ def main(duration: float = 0, args=None):
         )
 
 
+def docs():
+    """
+    Updates the documentation by updating the list of nodes in the README.
+    """
+    from os import path
+
+    CATEGORY_DESCRIPTIONs = {
+        "inputs": "Nodes that provide data to the pipeline.",
+        "outputs": "Nodes that send data to external systems.",
+        "analysis": "Nodes that perform analysis on the data.",
+        "array": "Nodes implementing array operations.",
+        "signal": "Nodes implementing signal processing operations.",
+        "misc": "Miscellaneous nodes that do not fit into other categories.",
+    }
+
+    nodes_cls = list_nodes(verbose=True)
+
+    nodes = dict()
+    for node in nodes_cls:
+        if node.category() not in nodes:
+            nodes[node.category()] = []
+
+        # collect the node information
+        nodes[node.category()].append(
+            {
+                "name": node.__name__,
+                "input_slots": node.config_input_slots(),
+                "output_slots": node.config_output_slots(),
+            }
+        )
+
+    # find the README file
+    readme_path = path.join(path.dirname(__file__), "..", "..", "README.md")
+    readme_path = path.abspath(readme_path)
+    assert path.exists(readme_path), f"README file not found: {readme_path}"
+
+    # read the README file
+    with open(readme_path, "r") as f:
+        readme = f.read()
+
+    # find the start and end of the node list
+    start_tag = "<!-- !!GOOFI_PIPE_NODE_LIST_START!! -->"
+    end_tag = "<!-- !!GOOFI_PIPE_NODE_LIST_END!! -->"
+    start = readme.find(start_tag)
+    end = readme.find(end_tag)
+
+    # generate the new node list
+    new_nodes = []
+    for category, nodes_list in nodes.items():
+        new_nodes.append(f"## {category.capitalize()}\n")
+        new_nodes.append(f"{CATEGORY_DESCRIPTIONs[category]}\n")
+        new_nodes.append(f"<details><summary>View Nodes</summary>\n")
+        for node in nodes_list:
+            new_nodes.append(f"<details><summary>&emsp;{node['name']}</summary>\n")
+            new_nodes.append("  - **Inputs:**")
+            for slot, slot_type in node["input_slots"].items():
+                new_nodes.append(f"    - {slot}: {slot_type}")
+            new_nodes.append("  - **Outputs:**")
+            for slot, slot_type in node["output_slots"].items():
+                new_nodes.append(f"    - {slot}: {slot_type}")
+            new_nodes.append("  </details>\n")
+        new_nodes.append("</details>\n")
+
+    # insert the new node list into the README
+    new_readme = readme[: start + len(start_tag)] + "\n" + "\n".join(new_nodes) + readme[end:]
+
+    # write the updated README
+    with open(readme_path, "w") as f:
+        f.write(new_readme)
+
+
 if __name__ == "__main__":
     main()

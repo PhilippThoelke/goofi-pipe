@@ -10,6 +10,7 @@ line-length = 128
 
 [project.scripts]
 goofi-pipe = "goofi.manager:main"
+goofi-pipe-docs = "goofi.manager:docs"
 
 [project]
 name = "goofi"
