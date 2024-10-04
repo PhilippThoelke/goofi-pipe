@@ -1,6 +1,6 @@
 [build-system]
-requires = ["setuptools"]
 build-backend = "setuptools.build_meta"
+requires = ["setuptools"]
 
 [tool.setuptools.dynamic]
 dependencies = {file = ["requirements.txt"]}
@@ -13,6 +13,7 @@ goofi-pipe = "goofi.manager:main"
 goofi-pipe-docs = "goofi.manager:docs"
 
 [project]
-name = "goofi"
 dynamic = ["dependencies"]
-version = "2.0.0"
+name = "goofi"
+requires-python = ">=3.9"
+version = "2.1.0"
