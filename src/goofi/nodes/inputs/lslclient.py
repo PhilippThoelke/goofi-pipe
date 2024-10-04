@@ -79,6 +79,7 @@ class LSLClient(Node):
 
     def connect(self) -> bool:
         """Connect to the LSL stream."""
+        self.lsl_stream_refresh_changed(True)
         self.disconnect()
 
         # find the stream
@@ -97,10 +98,10 @@ class LSLClient(Node):
                     matches[(s, n)] = info
 
         if len(matches) == 0:
-            raise RuntimeError(f"Could not find stream {stream_name} from source {source_name}.")
+            raise RuntimeError(f'Could not find stream "{stream_name}" from source "{source_name}".')
         elif len(matches) > 1:
             ms = {m[0]: m[1] for m in matches.keys()}
-            raise RuntimeError(f"Found multiple streams matching {stream_name} from source {source_name}: {ms}.")
+            raise RuntimeError(f'Found multiple streams matching "{stream_name}" from source "{source_name}": {ms}.')
 
         # connect to the stream
         self.client = self.pylsl.StreamInlet(info=list(matches.values())[0], recover=False)
