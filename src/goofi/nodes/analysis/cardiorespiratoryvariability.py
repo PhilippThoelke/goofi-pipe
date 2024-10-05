@@ -10,8 +10,8 @@ class CardioRespiratoryVariability(Node):
 
     def config_output_slots():
         return {
-            "MeanNN": DataType.ARRAY,
-            "SDNN": DataType.ARRAY,
+            "Mean": DataType.ARRAY,
+            "SDSD": DataType.ARRAY,
             "SDSD": DataType.ARRAY,
             "RMSSD": DataType.ARRAY,
             "pNN50": DataType.ARRAY,
@@ -55,15 +55,18 @@ class CardioRespiratoryVariability(Node):
             _, info = self.neurokit.rsp_process(data.data, sampling_rate=data.meta["sfreq"])
             variability_df = self.neurokit.rsp_rrv(data.data, sampling_rate=data.meta["sfreq"])
 
+        BBorNN = "BB" if datatype == "RRV" else "NN"
+        pNNorBBx = "pBBx" if datatype == "RRV" else "pNN50"
+
         return {
-            "MeanNN": (np.array(variability_df[f'{datatype}_MeanNN']), {}),
-            "SDNN": (np.array(variability_df[f'{datatype}_SDNN']), {}),
+            "Mean": (np.array(variability_df[f'{datatype}_Mean{BBorNN}']), {}),
+            "SDNN": (np.array(variability_df[f'{datatype}_SD{BBorNN}']), {}),
             "SDSD": (np.array(variability_df[f'{datatype}_SDSD']), {}),
             "RMSSD": (np.array(variability_df[f'{datatype}_RMSSD']), {}),
-            "pNN50": (np.array(variability_df[f'{datatype}_pNN50']), {}),
+            "pNN50": (np.array(variability_df[f'{datatype}_{pNNorBBx}']), {}),
             "VLF": (np.array(variability_df[f'{datatype}_VLF']), {}),
             "LF": (np.array(variability_df[f'{datatype}_LF']), {}),
             "HF": (np.array(variability_df[f'{datatype}_HF']), {}),
             "LF/HF": (np.array(variability_df[f'{datatype}_LFHF']), {}),
-            "LZC": (np.array(variability_df[f'{datatype}_LZC']), {}),
+            "LZC": (np.array(variability_df[f'{datatype}_LZC']), {} if datatype == "HRV" else None),
         }
