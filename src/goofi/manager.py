@@ -569,7 +569,13 @@ def main(duration: float = 0, args=None):
     parser.add_argument("--headless", action="store_true", help="run in headless mode")
     parser.add_argument("--no-multiprocessing", action="store_true", help="disable multiprocessing")
     parser.add_argument("--comm", choices=comm_choices, default="mp", help="node communication backend")
+    parser.add_argument("--build-docs", action="store_true", help="update the node list in the README")
     args = parser.parse_args(args)
+
+    if args.build_docs:
+        # just update the docs and exit
+        docs()
+        return
 
     with MPManager() as manager:
         # set the communication backend
@@ -594,6 +600,8 @@ def docs():
     """
     from os import path
 
+    from tqdm import tqdm
+
     CATEGORY_DESCRIPTIONs = {
         "inputs": "Nodes that provide data to the pipeline.",
         "outputs": "Nodes that send data to external systems.",
@@ -606,7 +614,7 @@ def docs():
     nodes_cls = list_nodes(verbose=True)
 
     nodes = dict()
-    for node in nodes_cls:
+    for node in tqdm(nodes_cls, desc="Collecting node information"):
         if node.category() not in nodes:
             nodes[node.category()] = []
 
@@ -620,6 +628,7 @@ def docs():
         )
 
     # find the README file
+    print("Loading README file...", end="")
     readme_path = path.join(path.dirname(__file__), "..", "..", "README.md")
     readme_path = path.abspath(readme_path)
     assert path.exists(readme_path), f"README file not found: {readme_path}"
@@ -627,6 +636,7 @@ def docs():
     # read the README file
     with open(readme_path, "r") as f:
         readme = f.read()
+    print("done")
 
     # find the start and end of the node list
     start_tag = "<!-- !!GOOFI_PIPE_NODE_LIST_START!! -->"
@@ -636,7 +646,7 @@ def docs():
 
     # generate the new node list
     new_nodes = []
-    for category, nodes_list in nodes.items():
+    for category, nodes_list in tqdm(nodes.items(), desc="Generating new node list"):
         new_nodes.append(f"## {category.capitalize()}\n")
         new_nodes.append(f"{CATEGORY_DESCRIPTIONs[category]}\n")
         new_nodes.append(f"<details><summary>View Nodes</summary>\n")
@@ -652,11 +662,13 @@ def docs():
         new_nodes.append("</details>\n")
 
     # insert the new node list into the README
+    print("Updating README file...", end="")
     new_readme = readme[: start + len(start_tag)] + "\n" + "\n".join(new_nodes) + readme[end:]
 
     # write the updated README
     with open(readme_path, "w") as f:
         f.write(new_readme)
+    print("done")
 
 
 if __name__ == "__main__":
