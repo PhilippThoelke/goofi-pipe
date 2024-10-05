@@ -1,12 +1,15 @@
+import importlib.resources as pkg_resources
 import time
 import traceback
 from abc import ABC, abstractmethod
 from copy import deepcopy
 from multiprocessing import Process
 from os.path import dirname, join
+from pathlib import PosixPath
 from threading import Event, Thread
 from typing import Any, Callable, Dict, Optional, Tuple, Union
 
+from goofi import assets
 from goofi.connection import Connection
 from goofi.data import Data, DataType
 from goofi.message import Message, MessageType
@@ -529,15 +532,15 @@ class Node(ABC):
         return cls.__module__.split(".")[-2]
 
     @property
-    def assets_path(self) -> str:
+    def assets_path(self) -> PosixPath:
         """
         Returns the absolute path to the assets folder of goofi-pipe.
 
         ### Returns
-        `str`
+        `PosixPath`
             The path to the assets folder of the node.
         """
-        return join(dirname(dirname(dirname(__file__))), "assets")
+        return pkg_resources.files(assets)
 
     @property
     def data_path(self) -> str:

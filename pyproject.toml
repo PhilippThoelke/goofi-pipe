@@ -12,9 +12,9 @@ line-length = 128
 goofi-pipe = "goofi.manager:main"
 
 [project]
+description = "Real-time neuro-/biosignal processing and streaming pipeline."
 dynamic = ["dependencies"]
 name = "goofi"
+readme = "README.md"
 requires-python = ">=3.9"
 version = "2.1.0"
-description = "Real-time neuro-/biosignal processing and streaming pipeline."
-readme = "README.md"
