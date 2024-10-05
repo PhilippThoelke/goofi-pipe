@@ -14,7 +14,9 @@ goofi-pipe = "goofi.manager:main"
 [project]
 description = "Real-time neuro-/biosignal processing and streaming pipeline."
 dynamic = ["dependencies"]
+keywords = ["signal-processing", "neurofeedback", "biofeedback", "real-time", "EEG", "ECG"]
+license = {file = "LICENSE"}
 name = "goofi"
-readme = "README.md"
+readme = {file = "README.md", content-type = "text/markdown"}
 requires-python = ">=3.9"
 version = "2.1.0"
