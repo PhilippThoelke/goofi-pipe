@@ -2,7 +2,7 @@ numpy
 dearpygui
 mne-lsl
 antropy
-biotuner # @ git+https://github.com/AntoineBellemare/biotuner.git
+biotuner
 pyserial
 oscpy
 sounddevice
