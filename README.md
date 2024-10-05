@@ -6,20 +6,10 @@
 <h3 align="center">Generative Organic Oscillation Feedback Isomorphism Pipeline</h3>
 
 # Installation
-## Running the pipeline
 If you only want to run goofi-pipe and not edit any of the code, make sure you activated the desired Python environment with Python>=3.9 and run the following commands in your terminal:
 ```bash
-pip install git+https://github.com/PhilippThoelke/goofi-pipe # install goofi-pipe
+pip install goofi # install goofi-pipe
 goofi-pipe # start the application
-```
-
-## Development
-In your terminal, make sure you activated the desired Python environment with Python>=3.9, and that you are in the directory where you want to install goofi-pipe. Then, run the following commands:
-```bash
-git clone git@github.com:PhilippThoelke/goofi-pipe.git # download the repository
-cd goofi-pipe # navigate into the repository
-pip install -e . # install goofi-pipe in development mode
-goofi-pipe # start the application to make sure the installation was successful
 ```
 
 > [!NOTE]
@@ -28,6 +18,15 @@ goofi-pipe # start the application to make sure the installation was successful
 > ```bash
 > conda install -c conda-forge liblsl
 > ```
+
+## Development
+Follow these steps if you want to adapt the code of existing nodes, or create custom new nodes. In your terminal, make sure you activated the desired Python environment with Python>=3.9, and that you are in the directory where you want to install goofi-pipe. Then, run the following commands:
+```bash
+git clone git@github.com:PhilippThoelke/goofi-pipe.git # download the repository
+cd goofi-pipe # navigate into the repository
+pip install -e . # install goofi-pipe in development mode
+goofi-pipe # start the application to make sure the installation was successful
+```
 
 # Basic Usage
 
