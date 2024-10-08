@@ -366,8 +366,17 @@ class Node(ABC):
                     )
                 )
 
-            # TODO: handle extra fields in output data
-            # extra_fields = list(set(output_data.keys()) - set(self.output_slots.keys()))
+            # check that the output data doesn't contain extra fields
+            if extra_fields := list(set(output_data.keys()) - set(self.output_slots.keys())):
+                self.connection.try_send(
+                    Message(
+                        MessageType.PROCESSING_ERROR,
+                        {
+                            "error": f"Extra output fields: {extra_fields}. "
+                            f"The process method should only return those fields that were specified in the output slots."
+                        },
+                    )
+                )
 
             # send output data
             for name in self.output_slots.keys():
