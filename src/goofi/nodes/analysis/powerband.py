@@ -1,7 +1,8 @@
-from goofi.params import FloatParam, StringParam
-from goofi.data import Data, DataType
-from goofi.node import Node
 import numpy as np
+
+from goofi.data import DataType
+from goofi.node import Node
+from goofi.params import FloatParam, StringParam
 
 
 # TODO: deal meta data output

@@ -1,9 +1,11 @@
-import numpy as np
 import pickle
 from os.path import join
+
+import numpy as np
+
 from goofi.data import Data, DataType
 from goofi.node import Node
-from goofi.params import FloatParam, IntParam, StringParam, BoolParam
+from goofi.params import BoolParam, FloatParam, IntParam
 
 
 class AudioTagging(Node):
@@ -30,9 +32,7 @@ class AudioTagging(Node):
         }
 
     def setup(self):
-        import librosa
-        import panns_inference
-        from panns_inference import AudioTagging, SoundEventDetection, labels
+        from panns_inference import AudioTagging, labels
 
         self.at = AudioTagging(checkpoint_path=None, device="cpu")
         self.labels = labels

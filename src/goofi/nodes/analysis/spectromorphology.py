@@ -1,8 +1,8 @@
-import numpy as np
-from goofi.params import FloatParam, IntParam, StringParam
+import pyACA
+
 from goofi.data import Data, DataType
 from goofi.node import Node
-import pyACA
+from goofi.params import IntParam, StringParam
 
 
 class SpectroMorphology(Node):

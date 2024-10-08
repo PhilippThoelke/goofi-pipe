@@ -1,8 +1,8 @@
+import numpy as np
+
 from goofi.data import Data, DataType
 from goofi.node import Node
 from goofi.params import StringParam
-import numpy as np
-import pandas as pd
 
 
 class CardioRespiratoryVariability(Node):

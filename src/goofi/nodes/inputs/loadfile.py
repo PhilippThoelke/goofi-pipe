@@ -1,7 +1,8 @@
 import numpy as np
-from goofi.params import StringParam, FloatParam
-from goofi.data import Data, DataType
+
+from goofi.data import DataType
 from goofi.node import Node
+from goofi.params import FloatParam, StringParam
 
 
 class LoadFile(Node):

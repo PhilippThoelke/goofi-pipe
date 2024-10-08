@@ -433,7 +433,7 @@ class Manager:
             raise FileExistsError(f"File {filepath} already exists.")
 
         # TODO: add proper logging
-        print(f"Saving manager state...")
+        print("Saving manager state...")
 
         # wait for all nodes to respond, if their serialization_pending flag is set
         start = time.time()
@@ -649,7 +649,7 @@ def docs():
     for category, nodes_list in tqdm(nodes.items(), desc="Generating new node list"):
         new_nodes.append(f"## {category.capitalize()}\n")
         new_nodes.append(f"{CATEGORY_DESCRIPTIONs[category]}\n")
-        new_nodes.append(f"<details><summary>View Nodes</summary>\n")
+        new_nodes.append("<details><summary>View Nodes</summary>\n")
         for node in nodes_list:
             new_nodes.append(f"<details><summary>&emsp;{node['name']}</summary>\n")
             new_nodes.append("  - **Inputs:**")

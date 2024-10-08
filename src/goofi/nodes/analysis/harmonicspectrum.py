@@ -129,6 +129,6 @@ class HarmonicSpectrum(Node):
                         )
                         try:
                             harmonicity[i, j] = 1 - subharm[0]
-                        except:
+                        except Exception:
                             harmonicity[i, j] = None
         return harmonicity

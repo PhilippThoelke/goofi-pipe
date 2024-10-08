@@ -1,5 +1,6 @@
+from collections import defaultdict
+
 import numpy as np
-from collections import defaultdict, Counter
 
 from goofi.data import DataType
 from goofi.node import Node
@@ -7,8 +8,6 @@ from goofi.params import BoolParam
 
 
 class ProbabilityMatrix(Node):
-    def config_params():
-        return {"common": {"autotrigger": BoolParam(True)}}
 
     def config_input_slots():
         return {"input_data": DataType.ARRAY}

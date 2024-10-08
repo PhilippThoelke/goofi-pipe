@@ -44,7 +44,7 @@ class PoseEstimation(Node):
         if len(detection_result.hand_landmarks) == 0:
             return None
 
-        landmarks = np.array([[l.x, l.y, l.z] for l in detection_result.hand_landmarks[0]]).T
+        landmarks = np.array([[lm.x, lm.y, lm.z] for lm in detection_result.hand_landmarks[0]]).T
         meta = {
             "handdedness": detection_result.handedness[0][0].display_name,
             "channels": {"dim0": ["x", "y", "z"], "dim1": LANDMARK_NAMES},

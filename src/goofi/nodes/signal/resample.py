@@ -1,9 +1,11 @@
-import numpy as np
 from math import gcd
+
+import numpy as np
 from scipy.signal import resample_poly
+
 from goofi.data import Data, DataType
 from goofi.node import Node
-from goofi.params import FloatParam, IntParam
+from goofi.params import IntParam
 
 
 class Resample(Node):

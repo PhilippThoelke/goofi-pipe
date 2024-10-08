@@ -91,7 +91,7 @@ class FacialExpression(Node):
         threshold = self.params["emotion_recognition"]["threshold"].value
         # Process the emotions array
         if emotions is not None and len(emotions) > 0:
-            if self.params["emotion_recognition"]["disable_neutral"].value == True:
+            if self.params["emotion_recognition"]["disable_neutral"].value:
                 emotions[0][0][6] = 0
             emotion_probabilities = emotions[0][0]  # Assuming you're interested in the first detected face
             main_emotion_index = np.argmax(emotion_probabilities)

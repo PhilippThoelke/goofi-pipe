@@ -1,5 +1,3 @@
-from typing import Any, Dict, Tuple
-
 import numpy as np
 import zmq
 
@@ -21,7 +19,7 @@ class ZeroMQOut(Node):
         if hasattr(self, "socket"):
             try:
                 self.socket.close()
-            except:
+            except Exception:
                 pass
 
         # bind a publisher socket

@@ -1,5 +1,5 @@
-import cv2
 import numpy as np
+
 from goofi.data import Data, DataType
 from goofi.node import Node
 from goofi.params import FloatParam
