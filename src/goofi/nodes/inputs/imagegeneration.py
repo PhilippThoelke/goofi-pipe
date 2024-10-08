@@ -150,7 +150,6 @@ class ImageGeneration(Node):
                             f"\n1024x1024 is minimum for Dall-E3"
                         )
                     raise e
-                    
 
             img = response.data[0].b64_json
             # Decode base64 to bytes
@@ -161,7 +160,7 @@ class ImageGeneration(Node):
             if self.params.image_generation.save_image.value:
                 makedirs(join(self.assets_path, "imgs"), exist_ok=True)
                 # Remove all punctuation from the prompt
-                prompt_fn = ''.join(ch if ch.isalnum() or ch.isspace() else '_' for ch in prompt)
+                prompt_fn = "".join(ch if ch.isalnum() or ch.isspace() else "_" for ch in prompt)
                 # Truncate filename if it's too long
                 MAX_FILENAME_LENGTH = 200
                 if len(prompt_fn) > MAX_FILENAME_LENGTH:
@@ -249,7 +248,7 @@ class ImageGeneration(Node):
                 n = 0
                 while exists(f"{filename}_{n:02d}.npy"):
                     n += 1
-                
+
                 np.save(f"{filename}_{n:02d}.npy", img)
 
             return {

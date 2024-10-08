@@ -35,6 +35,7 @@ class DataType(Enum):
     def __str__(self) -> str:
         return self.name
 
+
 @dataclass
 class Data:
     """

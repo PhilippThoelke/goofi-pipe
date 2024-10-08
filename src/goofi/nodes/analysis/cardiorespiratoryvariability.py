@@ -4,6 +4,7 @@ from goofi.params import StringParam
 import numpy as np
 import pandas as pd
 
+
 class CardioRespiratoryVariability(Node):
     def config_input_slots():
         return {"data": DataType.ARRAY}
@@ -19,7 +20,7 @@ class CardioRespiratoryVariability(Node):
             "HF": DataType.ARRAY,
             "LF/HF": DataType.ARRAY,
             "LZC": DataType.ARRAY,
-            }
+        }
 
     def config_params():
         return {
@@ -59,14 +60,14 @@ class CardioRespiratoryVariability(Node):
         pNNorBBx = "pBBx" if datatype == "RRV" else "pNN50"
 
         return {
-            "Mean": (np.array(variability_df[f'{datatype}_Mean{BBorNN}']), {}),
-            "SDNN": (np.array(variability_df[f'{datatype}_SD{BBorNN}']), {}),
-            "SDSD": (np.array(variability_df[f'{datatype}_SDSD']), {}),
-            "RMSSD": (np.array(variability_df[f'{datatype}_RMSSD']), {}),
-            "pNN50": (np.array(variability_df[f'{datatype}_{pNNorBBx}']), {}),
-            "VLF": (np.array(variability_df[f'{datatype}_VLF']), {}),
-            "LF": (np.array(variability_df[f'{datatype}_LF']), {}),
-            "HF": (np.array(variability_df[f'{datatype}_HF']), {}),
-            "LF/HF": (np.array(variability_df[f'{datatype}_LFHF']), {}),
-            "LZC": (np.array(variability_df[f'{datatype}_LZC']), {} if datatype == "HRV" else None),
+            "Mean": (np.array(variability_df[f"{datatype}_Mean{BBorNN}"]), {}),
+            "SDNN": (np.array(variability_df[f"{datatype}_SD{BBorNN}"]), {}),
+            "SDSD": (np.array(variability_df[f"{datatype}_SDSD"]), {}),
+            "RMSSD": (np.array(variability_df[f"{datatype}_RMSSD"]), {}),
+            "pNN50": (np.array(variability_df[f"{datatype}_{pNNorBBx}"]), {}),
+            "VLF": (np.array(variability_df[f"{datatype}_VLF"]), {}),
+            "LF": (np.array(variability_df[f"{datatype}_LF"]), {}),
+            "HF": (np.array(variability_df[f"{datatype}_HF"]), {}),
+            "LF/HF": (np.array(variability_df[f"{datatype}_LFHF"]), {}),
+            "LZC": (np.array(variability_df[f"{datatype}_LZC"]), {} if datatype == "HRV" else None),
         }
