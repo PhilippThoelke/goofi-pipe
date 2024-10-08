@@ -12,10 +12,11 @@ class CardioRespiratoryVariability(Node):
     def config_output_slots():
         return {
             "Mean": DataType.ARRAY,
-            "SDSD": DataType.ARRAY,
+            "SDNN": DataType.ARRAY,
             "SDSD": DataType.ARRAY,
             "RMSSD": DataType.ARRAY,
             "pNN50": DataType.ARRAY,
+            "VLF": DataType.ARRAY,
             "LF": DataType.ARRAY,
             "HF": DataType.ARRAY,
             "LF/HF": DataType.ARRAY,
