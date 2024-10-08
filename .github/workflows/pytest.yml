@@ -32,7 +32,6 @@ jobs:
       run: |
         pip install --upgrade pip setuptools wheel
         pip install flake8 pytest pytest-xdist-forked
-        pip install -r requirements.txt
         pip install .
 
     - name: Lint with flake8
