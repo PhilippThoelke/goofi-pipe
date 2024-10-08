@@ -28,7 +28,14 @@ class FacialExpression(Node):
         }
 
     def setup(self):
-        from feat import Detector
+        try:
+            from feat import Detector
+        except ImportError:
+            raise ImportError(
+                "The dependency 'py-feat', which requires pytorch, is not installed. "
+                "Please install it using 'pip install py-feat', and make sure the pytorch version is "
+                "compatible with your system."
+            )
 
         logging.basicConfig(level=logging.INFO)
         # Load the py-feat detector with the specified models

@@ -36,7 +36,12 @@ class Audiocraft(Node):
                 "https://github.com/facebookresearch/audiocraft/tree/main?tab=readme-ov-file#installation"
             )
 
-        import torch
+        try:
+            import torch
+        except ImportError:
+            raise ImportError(
+                "Please first install torch according to these instructions: https://pytorch.org/get-started/locally/"
+            )
 
         torch.set_grad_enabled(False)
 
