@@ -17,28 +17,31 @@ class LSLOut(Node):
         }
 
     def setup(self):
-        import pylsl
+        from mne_lsl import lsl
 
-        self.pylsl = pylsl
+        self.lsl = lsl
         self.outlet = None
 
     def process(self, data: Data):
         if data is None or len(data.data) == 0:
             return
 
-        if self.outlet is not None and self.outlet.channel_count != len(data.data):
+        if self.outlet is not None and self.outlet.n_channels != len(data.data):
             self.outlet = None
 
         if self.outlet is None:
-            info = self.pylsl.StreamInfo(
+            info = self.lsl.StreamInfo(
                 self.params.lsl.stream_name.value,
                 "Data",
                 len(data.data),
-                data.meta["sfreq"] if "sfreq" in data.meta else self.pylsl.IRREGULAR_RATE,
+                data.meta["sfreq"] if "sfreq" in data.meta else self.lsl.IRREGULAR_RATE,
                 "float32",
                 self.params.lsl.source_name.value,
             )
-            self.outlet = self.pylsl.StreamOutlet(info)
+            if "dim0" in data.meta["channels"]:
+                info.set_channel_names(data.meta["channels"]["dim0"])
+
+            self.outlet = self.lsl.StreamOutlet(info)
 
         try:
             if data.data.ndim == 1:
