@@ -12,7 +12,7 @@ opencv-python==4.8.0.74 # prevent mediapipe TypeError: 'numpy._DTypeMeta' object
 pyzmq
 webcolors==1.13
 pylsl
-mediapipe
+#mediapipe
 librosa==0.9.2
 panns_inference
 networkx
