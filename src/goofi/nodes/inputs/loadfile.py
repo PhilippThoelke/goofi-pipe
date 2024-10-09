@@ -28,7 +28,6 @@ class LoadFile(Node):
         if self.params.file.filename.value is None:
             return None
         asset_path = self.assets_path
-        print(asset_path)
         file_type = self.params["file"]["type"].value
         filename = self.params["file"]["filename"].value
         data = np.load(f"{asset_path}/{filename}.npy", allow_pickle=True)
