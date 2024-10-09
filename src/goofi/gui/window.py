@@ -266,12 +266,14 @@ def add_param(parent: int, group: str, name: str, param: Param, node: NodeRef) -
             elif isinstance(param, FloatParam):
                 with dpg.group(horizontal=True) as input_group:
                     # parameter is a float
-                    dpg.add_input_text(
-                        width=50,
-                        scientific=True,
-                        default_value=str(param.value),
-                        callback=param_updated,
-                        user_data=(group, name, node, input_group, float),
+                    Window().param_input_fields.append(
+                        dpg.add_input_text(
+                            width=50,
+                            scientific=True,
+                            default_value=str(param.value),
+                            callback=param_updated,
+                            user_data=(group, name, node, input_group, float),
+                        )
                     )
                     dpg.add_slider_float(
                         default_value=param.value,
@@ -283,11 +285,13 @@ def add_param(parent: int, group: str, name: str, param: Param, node: NodeRef) -
             elif isinstance(param, IntParam):
                 with dpg.group(horizontal=True) as input_group:
                     # parameter is an integer
-                    dpg.add_input_text(
-                        width=50,
-                        default_value=str(param.value),
-                        callback=param_updated,
-                        user_data=(group, name, node, input_group, int),
+                    Window().param_input_fields.append(
+                        dpg.add_input_text(
+                            width=50,
+                            default_value=str(param.value),
+                            callback=param_updated,
+                            user_data=(group, name, node, input_group, int),
+                        )
                     )
                     dpg.add_slider_int(
                         default_value=param.value,
@@ -300,10 +304,12 @@ def add_param(parent: int, group: str, name: str, param: Param, node: NodeRef) -
                 # parameter is a string
                 if param.options is None:
                     # `options` is not set, use an unconstrained text input
-                    dpg.add_input_text(
-                        default_value=param.value,
-                        callback=param_updated,
-                        user_data=(group, name, node),
+                    Window().param_input_fields.append(
+                        dpg.add_input_text(
+                            default_value=param.value,
+                            callback=param_updated,
+                            user_data=(group, name, node),
+                        )
                     )
                 else:
                     # `options` is set, use a dropdown menu
@@ -833,6 +839,7 @@ class Window:
             dpg.add_separator()
 
             # populate parameters window
+            self.param_input_fields.clear()
             with dpg.tab_bar():
                 for group in node_ref.params:
                     with dpg.tab(label=format_name(group)) as tab:
@@ -1044,6 +1051,7 @@ class Window:
         self.node_clipboard = None
         self.node_info_window = None
         self.metadata_view = None
+        self.param_input_fields = []
 
         # create window
         self.window = dpg.add_window(
