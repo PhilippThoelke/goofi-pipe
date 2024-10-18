@@ -209,5 +209,5 @@ def test_doc(param_type):
 @pytest.mark.parametrize("trigger", [True, False])
 def test_toggle_bool_param(trigger):
     p = BoolParam(True, trigger=trigger)
-    assert p.value == True, "BoolParam should have the correct value."
+    assert p.value, "BoolParam should have the correct value."
     assert p.value == (not trigger), "Accessing BoolParam should set the value to False if trigger is True."

@@ -151,7 +151,7 @@ class ImageGeneration(Node):
                             f"\n1024x1024 is minimum for Dall-E3"
                         )
                     raise e
-                    
+              
             img = response.data[0].b64_json
             # Decode base64 to bytes
             decoded_bytes = self.base64.b64decode(img)
@@ -245,7 +245,7 @@ class ImageGeneration(Node):
                 n = 0
                 while exists(f"{filename}_{n:02d}.npy"):
                     n += 1
-                
+
                 np.save(f"{filename}_{n:02d}.npy", img)
 
             return {

@@ -1,101 +1,87 @@
-import os
-import threading
-import time
 from typing import Any, Dict, Tuple
 
 import mne
 import pandas as pd
 from mne.datasets import eegbci
-from mne_realtime import MockLSLStream
 
 from goofi.node import Node
+from goofi.params import FloatParam
 
 
 class EEGRecording(Node):
-    # disable multiprocessing for this node as it needs to spawn a child process
-    # TODO: make sure this is actually necessary
-    NO_MULTIPROCESSING = True
 
     def config_params():
-        return {"recording": {"use_example_data": True, "file_path": "", "stream_name": "goofi-stream"}}
+        return {
+            "recording": {
+                "use_example_data": True,
+                "file_path": "",
+                "file_sfreq": FloatParam(256, vmax=1000),
+                "source_name": "goofi",
+                "stream_name": "recording",
+            }
+        }
 
-    def stream_thread(self):
-        """Load the appropriate data and start the stream. Then wait until running is set to False."""
-        while not self.params.recording.use_example_data.value and not os.path.exists(self.params.recording.file_path.value):
-            print("File path cannot be empty if 'Use Example Data' is False.")
-            time.sleep(1)
-
-        if self.params.recording.use_example_data.value:
-            raw = mne.concatenate_raws(
-                [mne.io.read_raw(p, preload=True, verbose=False) for p in eegbci.load_data(1, [1, 2])],
-                verbose=False,
-            )
-            eegbci.standardize(raw)
-            # scale the data for better default behavior
-            raw.apply_function(lambda x: x * 1e4)
-        elif self.params.recording.file_path.value.endswith(".csv"):
-            # load data from csv file
-            df = pd.read_csv(self.params.recording.file_path.value, index_col=0)
-            df = df.select_dtypes(include=["float"])
-            data = df.transpose().to_numpy()
-
-            # TODO: make sfreq a parameter
-            info = mne.create_info(ch_names=df.columns.tolist(), ch_types=["eeg"] * data.shape[0], sfreq=256)
-            raw = mne.io.RawArray(data, info)
-        else:
-            # load data from file
-            raw = mne.io.read_raw(self.params.recording.file_path.value, preload=True)
-
-        # start the stream
-        stream = MockLSLStream(self.params.recording.stream_name.value, raw, "eeg")
-        stream.start()
-
-        while self.running:
-            time.sleep(0.1)
-
-        stream.stop()
-
-    def setup(self, init: bool = True):
+    def setup(self):
         """
         Load the data and start the stream.
-
-        ### Parameters
-        `init`: bool
-            Flag to indicate whether this is the first time the stream is being initialized.
         """
-        if init:
-            self.running = True
-            self.thread = None
-        else:
-            # stop previous stream if it exists
-            self.stop()
+        from mne_lsl.player import PlayerLSL
+
+        # stop previous stream if it exists
+        self.stop()
 
         if self.params.recording.use_example_data.value:
             if self.params.recording.file_path.value != "":
                 # both use_example_data and file_path are set
                 # TODO: add proper logging
-                print("Both 'use_example_data' and 'file_path' are set. Using example data.")
+                print(
+                    f"Both 'use_example_data' and 'file_path' are set. Prioritizing file: {self.params.recording.file_path.value}"
+                )
 
         assert self.params.recording.stream_name.value != "", "Stream name cannot be empty."
 
-        # start the stream
-        self.start()
+        if self.params.recording.file_path.value != "":
+            if self.params.recording.file_path.value.endswith(".csv"):
+                # load data from csv file
+                df = pd.read_csv(self.params.recording.file_path.value, index_col=0)
+                df = df.select_dtypes(include=["float"])
+                data = df.transpose().to_numpy()
 
-    def start(self):
-        """Start a new stream. If a stream is already running, stop it first."""
-        self.stop()
+                sfreq = self.params.recording.file_sfreq.value
+                sfreq = sfreq if sfreq > 0 else 256
+                info = mne.create_info(ch_names=df.columns.tolist(), ch_types=["eeg"] * data.shape[0], sfreq=sfreq)
+                raw = mne.io.RawArray(data, info)
+            else:
+                # load data from an MNE-compatible file
+                raw = mne.io.read_raw(self.params.recording.file_path.value, preload=True)
+        elif self.params.recording.use_example_data.value:
+            raw = mne.concatenate_raws(
+                [mne.io.read_raw(p, preload=True, verbose=False) for p in eegbci.load_data(1, [1, 2], update_path=False)],
+                verbose=False,
+            )
+            eegbci.standardize(raw)
+            # scale the data for better default behavior
+            raw.apply_function(lambda x: x * 1e4)
+        else:
+            raise RuntimeError("No data source specified. Set either 'use_example_data' or 'file_path'.")
 
         # start the stream
-        self.running = True
-        self.thread = threading.Thread(target=self.stream_thread, daemon=True)
-        self.thread.start()
+        self.stream = PlayerLSL(
+            raw,
+            name=self.params.recording.stream_name.value,
+            source_id=self.params.recording.source_name.value,
+            annotations=False,
+        )
+        self.stream.start()
+
+        # NOTE: this is a special case since the node doesn't process data, so errors are never cleared
+        self.clear_error()
 
     def stop(self):
-        """Stop the stream and wait for the thread to finish."""
-        self.running = False
-        if self.thread is not None:
-            self.thread.join()
-            self.thread = None
+        """Stop the stream if it exists."""
+        if hasattr(self, "stream") and self.stream is not None:
+            self.stream.stop()
+            self.stream = None
 
     def process(self) -> Dict[str, Tuple[Any, Dict[str, Any]]]:
         """Should never run, as the stream runs on its own."""
@@ -103,15 +89,23 @@ class EEGRecording(Node):
 
     def recording_use_example_data_changed(self, _):
         """Reinitialize the stream."""
-        self.setup(init=False)
+        self.setup()
 
     def recording_file_path_changed(self, _):
         """Reinitialize the stream."""
-        self.setup(init=False)
+        self.setup()
+
+    def recording_file_sfreq_changed(self, _):
+        """Reinitialize the stream."""
+        self.setup()
+
+    def recording_source_name_changed(self, _):
+        """Reinitialize the stream."""
+        self.setup()
 
     def recording_stream_name_changed(self, _):
         """Reinitialize the stream."""
-        self.setup(init=False)
+        self.setup()
 
     def terminate(self):
         """Stop the stream and terminate the node."""

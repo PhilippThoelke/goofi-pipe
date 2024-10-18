@@ -6,6 +6,7 @@ from goofi.data import Data, DataType
 from goofi.node import Node
 from goofi.params import FloatParam, StringParam
 
+
 class VocalExpression(Node):
     def setup(self):
         self.AudioSegment, self.HumeStreamClient, self.BurstConfig, self.ProsodyConfig = import_audio_libs()
@@ -28,7 +29,7 @@ class VocalExpression(Node):
         return {
             "prosody_analysis": {
                 "api_key": StringParam("", doc="Hume API key"),
-                "emotion_threshold": FloatParam(0.0, 0.0, 1.0, doc="Threshold for filtering emotions")
+                "emotion_threshold": FloatParam(0.0, 0.0, 1.0, doc="Threshold for filtering emotions"),
             }
         }
 
@@ -93,16 +94,18 @@ class VocalExpression(Node):
             data=audio_sample.tobytes(),
             sample_width=audio_sample.dtype.itemsize,
             frame_rate=44100,  # Assuming the sample rate is 44100 Hz
-            channels=1  # Assuming the audio is mono
+            channels=1,  # Assuming the audio is mono
         )
 
         # Export AudioSegment to WAV format in memory
         audio_io = BytesIO()
         audio_segment.export(audio_io, format="wav")
         audio_io.seek(0)
-        encoded_audio_sample = base64.b64encode(audio_io.read()).decode('utf-8')
+        encoded_audio_sample = base64.b64encode(audio_io.read()).decode("utf-8")
 
-        prosody_label, burst_label, prosody_score, burst_score = asyncio.run(self.decode_emotion_prosody(encoded_audio_sample.encode('utf-8')))
+        prosody_label, burst_label, prosody_score, burst_score = asyncio.run(
+            self.decode_emotion_prosody(encoded_audio_sample.encode("utf-8"))
+        )
 
         return {
             "prosody_label": (prosody_label, {}),
@@ -110,20 +113,16 @@ class VocalExpression(Node):
             "prosody_score": (np.array([prosody_score]), {}),
             "burst_score": (np.array([burst_score]), {}),
         }
-    
+
 
 def import_audio_libs():
     try:
         from pydub import AudioSegment
     except ImportError:
-        raise ImportError(
-            "You need to install pydub to use the VocalExpression node: pip install pydub"
-        )
+        raise ImportError("You need to install pydub to use the VocalExpression node: pip install pydub")
     try:
         from hume import HumeStreamClient
         from hume.models.config import BurstConfig, ProsodyConfig
     except ImportError:
-        raise ImportError(
-            "You need to install hume to use the VocalExpression node: pip install hume"
-        )
+        raise ImportError("You need to install hume to use the VocalExpression node: pip install hume")
     return AudioSegment, HumeStreamClient, BurstConfig, ProsodyConfig

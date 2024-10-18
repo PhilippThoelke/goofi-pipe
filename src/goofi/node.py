@@ -1,12 +1,15 @@
+import importlib.resources as pkg_resources
 import time
 import traceback
 from abc import ABC, abstractmethod
 from copy import deepcopy
 from multiprocessing import Process
 from os.path import dirname, join
+from pathlib import PosixPath
 from threading import Event, Thread
 from typing import Any, Callable, Dict, Optional, Tuple, Union
 
+from goofi import assets
 from goofi.connection import Connection
 from goofi.data import Data, DataType
 from goofi.message import Message, MessageType
@@ -138,6 +141,8 @@ class Node(ABC):
             try:
                 self.setup()
                 self._node_ready = True
+                # clear any errors that may have occurred during setup
+                self.connection.try_send(Message(MessageType.PROCESSING_ERROR, {"error": None}))
             except Exception:
                 error_message = traceback.format_exc()
                 self.connection.try_send(Message(MessageType.PROCESSING_ERROR, {"error": error_message}))
@@ -361,8 +366,17 @@ class Node(ABC):
                     )
                 )
 
-            # TODO: handle extra fields in output data
-            # extra_fields = list(set(output_data.keys()) - set(self.output_slots.keys()))
+            # check that the output data doesn't contain extra fields
+            if extra_fields := list(set(output_data.keys()) - set(self.output_slots.keys())):
+                self.connection.try_send(
+                    Message(
+                        MessageType.PROCESSING_ERROR,
+                        {
+                            "error": f"Extra output fields: {extra_fields}. "
+                            f"The process method should only return those fields that were specified in the output slots."
+                        },
+                    )
+                )
 
             # send output data
             for name in self.output_slots.keys():
@@ -426,6 +440,11 @@ class Node(ABC):
         """If the new value of the parameter common.autotrigger is True, trigger the processing loop."""
         if value:
             self.process_flag.set()
+
+    @require_init
+    def clear_error(self):
+        """Clear the error message."""
+        self.connection.try_send(Message(MessageType.PROCESSING_ERROR, {"error": None}))
 
     @classmethod
     def create(cls, initial_params: Optional[Dict[str, Dict[str, Any]]] = None, retries: int = 3) -> NodeRef:
@@ -522,15 +541,15 @@ class Node(ABC):
         return cls.__module__.split(".")[-2]
 
     @property
-    def assets_path(self) -> str:
+    def assets_path(self) -> PosixPath:
         """
         Returns the absolute path to the assets folder of goofi-pipe.
 
         ### Returns
-        `str`
+        `PosixPath`
             The path to the assets folder of the node.
         """
-        return join(dirname(dirname(dirname(__file__))), "assets")
+        return pkg_resources.files(assets)
 
     @property
     def data_path(self) -> str:

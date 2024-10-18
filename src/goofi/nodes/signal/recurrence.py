@@ -1,9 +1,11 @@
-from sklearn.metrics import pairwise_distances
-import numpy as np
-from goofi.node import Node
-from goofi.params import FloatParam, BoolParam, IntParam
-from goofi.data import DataType, Data
 from itertools import groupby
+
+import numpy as np
+from sklearn.metrics import pairwise_distances
+
+from goofi.data import Data, DataType
+from goofi.node import Node
+from goofi.params import BoolParam, FloatParam, IntParam
 
 
 class Recurrence(Node):
@@ -62,14 +64,14 @@ class Recurrence(Node):
         RR = np.mean(recurrence_matrix)  # Recurrence Rate
         # Get all diagonal lengths using the new method
         diagonal_lengths = self.get_diagonal_lengths(recurrence_matrix)
-        DET = sum([l**2 for l in diagonal_lengths]) / float(recurrence_matrix.size)  # Determinism
+        DET = sum([ln**2 for ln in diagonal_lengths]) / float(recurrence_matrix.size)  # Determinism
         vertical_lengths = [
             len(list(group))
             for i in range(recurrence_matrix.shape[0])
             for key, group in groupby(recurrence_matrix[i, :])
             if key
         ]
-        LAM = sum([l**2 for l in vertical_lengths]) / float(recurrence_matrix.size)  # Laminarity
+        LAM = sum([ln**2 for ln in vertical_lengths]) / float(recurrence_matrix.size)  # Laminarity
 
         return {
             "recurrence_matrix": (recurrence_matrix, input_array.meta),

@@ -2,7 +2,7 @@ import numpy as np
 
 from goofi.data import Data, DataType
 from goofi.node import Node
-from goofi.params import IntParam, StringParam, FloatParam
+from goofi.params import StringParam
 
 
 class TuningMatrix(Node):
@@ -27,7 +27,12 @@ class TuningMatrix(Node):
         }
 
     def setup(self):
-        from biotuner.metrics import tuning_cons_matrix, dyad_similarity, compute_consonance, metric_denom
+        from biotuner.metrics import (
+            compute_consonance,
+            dyad_similarity,
+            metric_denom,
+            tuning_cons_matrix,
+        )
 
         self.tuning_cons_matrix = tuning_cons_matrix
         self.dyad_similarity = dyad_similarity

@@ -1,9 +1,6 @@
-from typing import Any, Dict, Tuple
-
-import numpy as np
 import zmq
 
-from goofi.data import Data, DataType
+from goofi.data import DataType
 from goofi.node import Node
 from goofi.params import IntParam
 
@@ -22,7 +19,7 @@ class ZeroMQIn(Node):
         if hasattr(self, "socket"):
             try:
                 self.socket.close()
-            except:
+            except Exception:
                 pass
 
         # bind a publisher socket

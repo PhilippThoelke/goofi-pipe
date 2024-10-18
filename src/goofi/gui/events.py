@@ -78,6 +78,10 @@ def key_release_callback(_, data, win):
 
 def delete_selected_item(win):
     """Deletes the selected node or link."""
+    if any([dpg.is_item_active(item) for item in win.param_input_fields if dpg.does_item_exist(item)]):
+        # an input field is active, do not delete the selected node
+        return
+
     for node in dpg.get_selected_nodes(win.node_editor):
         win._remove_node(node)
     for link in dpg.get_selected_links(win.node_editor):
@@ -310,7 +314,7 @@ def paste_nodes(win):
 # the key handler map maps key press events to functions that handle them
 KEY_HANDLER_MAP = {
     dpg.mvKey_Delete: delete_selected_item,
-    # dpg.mvKey_X: delete_selected_item, # TODO: filter out when editing some text field
+    dpg.mvKey_Back: delete_selected_item,
     dpg.mvKey_Tab: create_node,
     dpg.mvKey_Escape: escape,
     dpg.mvKey_S: save_manager,

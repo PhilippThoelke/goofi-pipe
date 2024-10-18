@@ -1,8 +1,9 @@
+import numpy as np
+
 from goofi.data import Data, DataType
 from goofi.node import Node
 from goofi.params import StringParam
-import numpy as np
-import pandas as pd
+
 
 class CardioRespiratoryVariability(Node):
     def config_input_slots():
@@ -10,16 +11,17 @@ class CardioRespiratoryVariability(Node):
 
     def config_output_slots():
         return {
-            "MeanNN": DataType.ARRAY,
+            "Mean": DataType.ARRAY,
             "SDNN": DataType.ARRAY,
             "SDSD": DataType.ARRAY,
             "RMSSD": DataType.ARRAY,
             "pNN50": DataType.ARRAY,
+            "VLF": DataType.ARRAY,
             "LF": DataType.ARRAY,
             "HF": DataType.ARRAY,
             "LF/HF": DataType.ARRAY,
             "LZC": DataType.ARRAY,
-            }
+        }
 
     def config_params():
         return {
@@ -55,15 +57,18 @@ class CardioRespiratoryVariability(Node):
             _, info = self.neurokit.rsp_process(data.data, sampling_rate=data.meta["sfreq"])
             variability_df = self.neurokit.rsp_rrv(data.data, sampling_rate=data.meta["sfreq"])
 
+        BBorNN = "BB" if datatype == "RRV" else "NN"
+        pNNorBBx = "pBBx" if datatype == "RRV" else "pNN50"
+
         return {
-            "MeanNN": (np.array(variability_df[f'{datatype}_MeanNN']), {}),
-            "SDNN": (np.array(variability_df[f'{datatype}_SDNN']), {}),
-            "SDSD": (np.array(variability_df[f'{datatype}_SDSD']), {}),
-            "RMSSD": (np.array(variability_df[f'{datatype}_RMSSD']), {}),
-            "pNN50": (np.array(variability_df[f'{datatype}_pNN50']), {}),
-            "VLF": (np.array(variability_df[f'{datatype}_VLF']), {}),
-            "LF": (np.array(variability_df[f'{datatype}_LF']), {}),
-            "HF": (np.array(variability_df[f'{datatype}_HF']), {}),
-            "LF/HF": (np.array(variability_df[f'{datatype}_LFHF']), {}),
-            "LZC": (np.array(variability_df[f'{datatype}_LZC']), {}),
+            "Mean": (np.array(variability_df[f"{datatype}_Mean{BBorNN}"]), {}),
+            "SDNN": (np.array(variability_df[f"{datatype}_SD{BBorNN}"]), {}),
+            "SDSD": (np.array(variability_df[f"{datatype}_SDSD"]), {}),
+            "RMSSD": (np.array(variability_df[f"{datatype}_RMSSD"]), {}),
+            "pNN50": (np.array(variability_df[f"{datatype}_{pNNorBBx}"]), {}),
+            "VLF": (np.array(variability_df[f"{datatype}_VLF"]), {}),
+            "LF": (np.array(variability_df[f"{datatype}_LF"]), {}),
+            "HF": (np.array(variability_df[f"{datatype}_HF"]), {}),
+            "LF/HF": (np.array(variability_df[f"{datatype}_LFHF"]), {}),
+            "LZC": (np.array(variability_df[f"{datatype}_LZC"]), {} if datatype == "HRV" else None),
         }

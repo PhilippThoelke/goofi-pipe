@@ -2,7 +2,7 @@ import numpy as np
 
 from goofi.data import Data, DataType
 from goofi.node import Node
-from goofi.params import IntParam, StringParam, FloatParam
+from goofi.params import FloatParam, IntParam
 
 
 class DissonanceCurve(Node):

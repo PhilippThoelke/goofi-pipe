@@ -1,7 +1,7 @@
 import numpy as np
 from goofi.data import Data, DataType
 from goofi.node import Node
-from goofi.params import FloatParam
+
 
 class Compass(Node):
     """
@@ -10,12 +10,7 @@ class Compass(Node):
     """
 
     def config_input_slots():
-        return {
-            "north": DataType.ARRAY,
-            "south": DataType.ARRAY,
-            "east": DataType.ARRAY,
-            "west": DataType.ARRAY
-        }
+        return {"north": DataType.ARRAY, "south": DataType.ARRAY, "east": DataType.ARRAY, "west": DataType.ARRAY}
 
     def config_output_slots():
         return {
@@ -47,8 +42,6 @@ class Compass(Node):
         if angle_degrees < 0:
             angle_degrees += 360
         # check if sf in metadata and add it to the output metadata
-        
 
         # Return the angle as a Data object
         return {"angle": (angle_degrees, {})}
-

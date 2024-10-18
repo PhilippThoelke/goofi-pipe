@@ -1,7 +1,8 @@
 import numpy as np
-from goofi.params import StringParam, FloatParam
-from goofi.data import Data, DataType
+
+from goofi.data import DataType
 from goofi.node import Node
+from goofi.params import FloatParam, StringParam
 
 
 class LoadFile(Node):
@@ -27,7 +28,6 @@ class LoadFile(Node):
         if self.params.file.filename.value is None:
             return None
         asset_path = self.assets_path
-        print(asset_path)
         file_type = self.params["file"]["type"].value
         filename = self.params["file"]["filename"].value
         data = np.load(f"{asset_path}/{filename}.npy", allow_pickle=True)

@@ -158,5 +158,3 @@ cython_debug/
 # OpenAI key
 openai.key
 
-# mediapipe models
-assets/*.task

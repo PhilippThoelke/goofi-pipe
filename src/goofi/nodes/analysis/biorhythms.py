@@ -61,10 +61,10 @@ class Biorhythms(Node):
             pulses.append(euclid_final[i].count(1))
             steps.append(len(euclid_final[i]))
 
-        if optimize_offset == True:
-            # Find the optimal offsets
+        if optimize_offset:
+            # find the optimal offsets
             offsets = self.find_optimal_offsets(list(zip(pulses, steps)))
-        if optimize_offset == False:
+        else:
             offsets = [0] * len(pulses)
 
         return {

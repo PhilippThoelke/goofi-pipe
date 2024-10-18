@@ -222,12 +222,17 @@ def param_updated(a, value, user_data):
 
         # update all input widgets
         for child in dpg.get_item_children(input_group)[1]:
-            dpg.set_value(child, value)
+            try:
+                dpg.set_value(child, value)
+            except SystemError:
+                # the input widget might have been deleted, ignore this error
+                pass
 
     # send the updated parameter to the node
     node.update_param(group, name, value)
     # mark manager state as dirty
     Window().manager.unsaved_changes = True
+
 
 def add_param(parent: int, group: str, name: str, param: Param, node: NodeRef) -> None:
     """
@@ -261,12 +266,14 @@ def add_param(parent: int, group: str, name: str, param: Param, node: NodeRef) -
             elif isinstance(param, FloatParam):
                 with dpg.group(horizontal=True) as input_group:
                     # parameter is a float
-                    dpg.add_input_text(
-                        width=50,
-                        scientific=True,
-                        default_value=str(param.value),
-                        callback=param_updated,
-                        user_data=(group, name, node, input_group, float),
+                    Window().param_input_fields.append(
+                        dpg.add_input_text(
+                            width=50,
+                            scientific=True,
+                            default_value=str(param.value),
+                            callback=param_updated,
+                            user_data=(group, name, node, input_group, float),
+                        )
                     )
                     dpg.add_slider_float(
                         default_value=param.value,
@@ -278,11 +285,13 @@ def add_param(parent: int, group: str, name: str, param: Param, node: NodeRef) -
             elif isinstance(param, IntParam):
                 with dpg.group(horizontal=True) as input_group:
                     # parameter is an integer
-                    dpg.add_input_text(
-                        width=50,
-                        default_value=str(param.value),
-                        callback=param_updated,
-                        user_data=(group, name, node, input_group, int),
+                    Window().param_input_fields.append(
+                        dpg.add_input_text(
+                            width=50,
+                            default_value=str(param.value),
+                            callback=param_updated,
+                            user_data=(group, name, node, input_group, int),
+                        )
                     )
                     dpg.add_slider_int(
                         default_value=param.value,
@@ -295,10 +304,12 @@ def add_param(parent: int, group: str, name: str, param: Param, node: NodeRef) -
                 # parameter is a string
                 if param.options is None:
                     # `options` is not set, use an unconstrained text input
-                    dpg.add_input_text(
-                        default_value=param.value,
-                        callback=param_updated,
-                        user_data=(group, name, node),
+                    Window().param_input_fields.append(
+                        dpg.add_input_text(
+                            default_value=param.value,
+                            callback=param_updated,
+                            user_data=(group, name, node),
+                        )
                     )
                 else:
                     # `options` is set, use a dropdown menu
@@ -828,6 +839,7 @@ class Window:
             dpg.add_separator()
 
             # populate parameters window
+            self.param_input_fields.clear()
             with dpg.tab_bar():
                 for group in node_ref.params:
                     with dpg.tab(label=format_name(group)) as tab:
@@ -872,6 +884,11 @@ class Window:
     def _processing_error_callback(self, node: NodeRef, message: Message, node_name: str) -> None:
         """Callback for the `MessageType.PROCESSING_ERROR` message type."""
         error = message.content["error"]
+        if error is None:
+            # no error, clear error message
+            self.nodes[node_name].set_error(None, self)
+            return
+
         self.nodes[node_name].set_error(error, self)
         print(f"Error in node {node_name}:\n{error}")
 
@@ -1034,6 +1051,7 @@ class Window:
         self.node_clipboard = None
         self.node_info_window = None
         self.metadata_view = None
+        self.param_input_fields = []
 
         # create window
         self.window = dpg.add_window(
@@ -1098,7 +1116,8 @@ class Window:
 
         # start DearPyGui
         dpg.create_viewport(title="goofi-pipe", width=width, height=height, disable_close=True)
-        # TODO: set the goofi-pipe icon as the window icon
+        dpg.set_viewport_large_icon("assets/goofi.ico")
+        dpg.set_viewport_small_icon("assets/goofi.ico")
         dpg.setup_dearpygui()
         dpg.show_viewport()
 

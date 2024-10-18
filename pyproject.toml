@@ -1,6 +1,6 @@
 [build-system]
-requires = ["setuptools"]
 build-backend = "setuptools.build_meta"
+requires = ["setuptools"]
 
 [tool.setuptools.dynamic]
 dependencies = {file = ["requirements.txt"]}
@@ -12,6 +12,11 @@ line-length = 128
 goofi-pipe = "goofi.manager:main"
 
 [project]
-name = "goofi"
+description = "Real-time neuro-/biosignal processing and streaming pipeline."
 dynamic = ["dependencies"]
-version = "2.0.0"
+keywords = ["signal-processing", "neurofeedback", "biofeedback", "real-time", "EEG", "ECG"]
+license = {file = "LICENSE"}
+name = "goofi"
+readme = {file = "README.md", content-type = "text/markdown"}
+requires-python = ">=3.9"
+version = "2.1.7"

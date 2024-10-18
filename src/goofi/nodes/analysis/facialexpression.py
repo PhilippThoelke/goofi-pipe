@@ -28,7 +28,14 @@ class FacialExpression(Node):
         }
 
     def setup(self):
-        from feat import Detector
+        try:
+            from feat import Detector
+        except ImportError:
+            raise ImportError(
+                "The dependency 'py-feat', which requires pytorch, is not installed. "
+                "Please install it using 'pip install py-feat', and make sure the pytorch version is "
+                "compatible with your system."
+            )
 
         logging.basicConfig(level=logging.INFO)
         # Load the py-feat detector with the specified models
@@ -84,7 +91,7 @@ class FacialExpression(Node):
         threshold = self.params["emotion_recognition"]["threshold"].value
         # Process the emotions array
         if emotions is not None and len(emotions) > 0:
-            if self.params["emotion_recognition"]["disable_neutral"].value == True:
+            if self.params["emotion_recognition"]["disable_neutral"].value:
                 emotions[0][0][6] = 0
             emotion_probabilities = emotions[0][0]  # Assuming you're interested in the first detected face
             main_emotion_index = np.argmax(emotion_probabilities)

@@ -71,18 +71,22 @@ class PSD(Node):
                 freq = f
                 psd = np.array(psd)
         """elif method == "multitaper":
-            fmin, fmax = f_min, f_max       
+            fmin, fmax = f_min, f_max
             # Computing the TFR using multitaper
-            power_tfr = tfr_array_multitaper(data.data[None], sfreq=sfreq, freqs=np.arange(fmin, fmax, precision), 
-                                   n_cycles=n_cycles,  # This can be adjusted or parameterized
-                                   time_bandwidth=time_bandwidth, 
-                                   use_fft=True, 
-                                   verbose=False)
-            
+            power_tfr = tfr_array_multitaper(
+                data.data[None],
+                sfreq=sfreq,
+                freqs=np.arange(fmin, fmax, precision),
+                n_cycles=n_cycles,  # This can be adjusted or parameterized
+                time_bandwidth=time_bandwidth,
+                use_fft=True,
+                verbose=False,
+            )
+
             # Extract the PSD data
             # Sum the power across the time dimension to get PSD
             psd = np.mean(power_tfr.data, axis=-1)
-            
+
             # The first dimension in the result is redundant and needs to be removed
             psd = psd.squeeze()
             freq = np.arange(fmin, fmax, precision)"""

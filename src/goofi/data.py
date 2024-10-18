@@ -32,6 +32,9 @@ class DataType(Enum):
         else:
             raise ValueError(f"Unknown data type {self}")
 
+    def __str__(self) -> str:
+        return self.name
+
 
 @dataclass
 class Data:

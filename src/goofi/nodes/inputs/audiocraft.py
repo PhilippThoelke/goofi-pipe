@@ -36,7 +36,12 @@ class Audiocraft(Node):
                 "https://github.com/facebookresearch/audiocraft/tree/main?tab=readme-ov-file#installation"
             )
 
-        import torch
+        try:
+            import torch
+        except ImportError:
+            raise ImportError(
+                "Please first install torch according to these instructions: https://pytorch.org/get-started/locally/"
+            )
 
         torch.set_grad_enabled(False)
 
@@ -72,7 +77,7 @@ class Audiocraft(Node):
         # remove version from torch to avoid messing up the current installation
         req = req.replace("torch==2.1.0\n", "")
         try:
-            import torch
+            import torch  # noqa
         except ImportError:
             raise ImportError(
                 "Please first install torch according to these instructions: https://pytorch.org/get-started/locally/"

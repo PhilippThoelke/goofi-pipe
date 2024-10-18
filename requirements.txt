@@ -1,8 +1,8 @@
 numpy
 dearpygui
-mne-realtime
+mne-lsl
 antropy
-biotuner @ git+https://github.com/AntoineBellemare/biotuner.git
+biotuner
 pyserial
 oscpy
 sounddevice
@@ -17,7 +17,6 @@ librosa==0.9.2
 panns_inference
 networkx
 deeptime
-py-feat
 geopy
-edgeofpy @ git+https://github.com/jnobyrne/edgeofpy.git
+edgeofpy
 mido

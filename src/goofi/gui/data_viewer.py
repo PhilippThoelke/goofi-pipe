@@ -37,7 +37,7 @@ class ViewerContainer:
             # failed to retrieve state, likely because the window was closed
             return
 
-        if not "hovered" in state or not state["hovered"]:
+        if "hovered" not in state or not state["hovered"]:
             # window is not hovered
             return
 
@@ -53,7 +53,7 @@ class ViewerContainer:
             # failed to retrieve state, likely because the window was closed
             return
 
-        if not "hovered" in state or not state["hovered"]:
+        if "hovered" not in state or not state["hovered"]:
             # window is not hovered
             return
 
@@ -115,7 +115,7 @@ class ViewerContainer:
         try:
             # update the data viewer
             self.viewer.update(msg.content["data"])
-        except UnsupportedViewerError as e:
+        except UnsupportedViewerError:
             self.next_viewer()
         except Exception:
             traceback.print_exc()
@@ -413,7 +413,7 @@ class TopomapViewer(ImageViewer):
         array = np.squeeze(data.data).copy(order="C")
 
         if array.ndim > 1:
-            raise UnsupportedViewerError(f"Cannot handle array with more than one dimension.")
+            raise UnsupportedViewerError("Cannot handle array with more than one dimension.")
 
         if "dim0" not in data.meta["channels"]:
             raise UnsupportedViewerError("Expected data to have channel dim0.")

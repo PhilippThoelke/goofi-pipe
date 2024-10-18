@@ -1,9 +1,11 @@
+from copy import deepcopy
+
 import numpy as np
 from numpy.fft import fft, fftfreq
+
 from goofi.data import Data, DataType
 from goofi.node import Node
-from goofi.params import FloatParam, IntParam, StringParam
-from copy import deepcopy
+from goofi.params import StringParam
 
 
 class FFT(Node):

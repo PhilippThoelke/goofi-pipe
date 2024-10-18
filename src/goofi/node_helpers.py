@@ -113,6 +113,7 @@ class InputSlot:
         """Clears the data stored in the input slot."""
         self.data = None
 
+
 @dataclass
 class OutputSlot:
     """

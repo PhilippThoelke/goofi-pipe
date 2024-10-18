@@ -6,20 +6,10 @@
 <h3 align="center">Generative Organic Oscillation Feedback Isomorphism Pipeline</h3>
 
 # Installation
-## Running the pipeline
-If you only want to run goofi-pipe and not edit any of the code, make sure you activated the desired Python environment with Python>=3.8 and run the following commands in your terminal:
+If you only want to run goofi-pipe and not edit any of the code, make sure you activated the desired Python environment with Python>=3.9 and run the following commands in your terminal:
 ```bash
-pip install git+https://github.com/PhilippThoelke/goofi-pipe # install goofi-pipe
+pip install goofi # install goofi-pipe
 goofi-pipe # start the application
-```
-
-## Development
-In your terminal, make sure you activated the desired Python environment with Python>=3.8, and that you are in the directory where you want to install goofi-pipe. Then, run the following commands:
-```bash
-git clone git@github.com:PhilippThoelke/goofi-pipe.git # download the repository
-cd goofi-pipe # navigate into the repository
-pip install -e . # install goofi-pipe in development mode
-goofi-pipe # start the application to make sure the installation was successful
 ```
 
 > [!NOTE]
@@ -28,6 +18,15 @@ goofi-pipe # start the application to make sure the installation was successful
 > ```bash
 > conda install -c conda-forge liblsl
 > ```
+
+## Development
+Follow these steps if you want to adapt the code of existing nodes, or create custom new nodes. In your terminal, make sure you activated the desired Python environment with Python>=3.9, and that you are in the directory where you want to install goofi-pipe. Then, run the following commands:
+```bash
+git clone git@github.com:PhilippThoelke/goofi-pipe.git # download the repository
+cd goofi-pipe # navigate into the repository
+pip install -e . # install goofi-pipe in development mode
+goofi-pipe # start the application to make sure the installation was successful
+```
 
 # Basic Usage
 
@@ -179,9 +178,7 @@ Delving into the parameters of the Biotuner node:
 For a deeper understanding and advanced configurations, consult the [Biotuner repository](https://github.com/AntoineBellemare/biotuner).
 
 
-# Data Types and Node Categories
-
-## Data Types
+# Data Types
 
 To simplify understanding, we've associated specific shapes with data types at the inputs and outputs of nodes:
 
@@ -190,62 +187,975 @@ To simplify understanding, we've associated specific shapes with data types at t
 - **Squares**: Represent tables.
 
 
-## Node Categories
+# Node Categories
 
-The nodes used in goofi-pipe can be categorized as follows:
+<!-- AUTO-GENERATED NODE LIST -->
+<!-- !!GOOFI_PIPE_NODE_LIST_START!! -->
+## Analysis
 
-1. **Inputs**:
-   - `AudioStream`
-   - `LslClient`
-   - `SerialStream`
-   - `VideoStream`
-   - and other related input nodes.
+Nodes that perform analysis on the data.
 
-2. **Array**:
-   - Specific to array manipulation techniques such as:
-     - `Join`
-     - `Math`
-     - `Reduce`
-     - `Select`
-     - `Transpose`
-   
-3. **Signal**:
-   - Pertains to signal processing techniques such as:
-     - `Buffer`
-     - `Smooth`
-     - `Resample`
-     - `Filter`
-     - `Psd`
-     - `Hilbert`
-     - `WelfordZTransform`
-     - `StatisBaseline`
-     - among others.
-     
-4. **Analysis**:
-   
-   - **Biosignal Analysis**:
-     - Techniques related to biological signals include:
-       - `Powerbands`
-       - `LempelZiv`
-       - `Connectivity`
-       - `CardiacRespiration`
-       - and more.
-       
-   - **Music Theory Analysis**:
-     - Techniques related to musical theory include:
-       - `Biotuner`
-       - `Biorhythms`
-       - `Spectromorphology`
-       - `Transitional Harmony`
-       - and others.
+<details><summary>View Nodes</summary>
 
-5. **Outputs**:
-   - `OscoOut`
-   - `WriteCsv`
-   - `AudioOut`
-   - `SharedMemOut`
-   
-6. **Misc**:
-   - Miscellaneous nodes that don't fit into the above categories.
+<details><summary>&emsp;AudioTagging</summary>
 
+  - **Inputs:**
+    - audioIn: ARRAY
+  - **Outputs:**
+    - tags: STRING
+    - probabilities: ARRAY
+    - embedding: ARRAY
+  </details>
 
+<details><summary>&emsp;Avalanches</summary>
+
+  - **Inputs:**
+    - data: ARRAY
+  - **Outputs:**
+    - size: ARRAY
+    - duration: ARRAY
+  </details>
+
+<details><summary>&emsp;Binarize</summary>
+
+  - **Inputs:**
+    - data: ARRAY
+  - **Outputs:**
+    - bin_data: ARRAY
+  </details>
+
+<details><summary>&emsp;Bioelements</summary>
+
+  - **Inputs:**
+    - data: ARRAY
+  - **Outputs:**
+    - elements: TABLE
+  </details>
+
+<details><summary>&emsp;Bioplanets</summary>
+
+  - **Inputs:**
+    - peaks: ARRAY
+  - **Outputs:**
+    - planets: TABLE
+    - top_planets: STRING
+  </details>
+
+<details><summary>&emsp;Biorhythms</summary>
+
+  - **Inputs:**
+    - tuning: ARRAY
+  - **Outputs:**
+    - pulses: ARRAY
+    - steps: ARRAY
+    - offsets: ARRAY
+  </details>
+
+<details><summary>&emsp;Biotuner</summary>
+
+  - **Inputs:**
+    - data: ARRAY
+  - **Outputs:**
+    - harmsim: ARRAY
+    - tenney: ARRAY
+    - subharm_tension: ARRAY
+    - cons: ARRAY
+    - peaks_ratios_tuning: ARRAY
+    - harm_tuning: ARRAY
+    - peaks: ARRAY
+    - amps: ARRAY
+    - extended_peaks: ARRAY
+    - extended_amps: ARRAY
+  </details>
+
+<details><summary>&emsp;CardiacRespiration</summary>
+
+  - **Inputs:**
+    - data: ARRAY
+  - **Outputs:**
+    - cardiac: ARRAY
+  </details>
+
+<details><summary>&emsp;CardioRespiratoryVariability</summary>
+
+  - **Inputs:**
+    - data: ARRAY
+  - **Outputs:**
+    - MeanNN: ARRAY
+    - SDNN: ARRAY
+    - SDSD: ARRAY
+    - RMSSD: ARRAY
+    - pNN50: ARRAY
+    - LF: ARRAY
+    - HF: ARRAY
+    - LF/HF: ARRAY
+    - LZC: ARRAY
+  </details>
+
+<details><summary>&emsp;Classifier</summary>
+
+  - **Inputs:**
+    - data: ARRAY
+  - **Outputs:**
+    - probs: ARRAY
+    - feature_importances: ARRAY
+  </details>
+
+<details><summary>&emsp;Clustering</summary>
+
+  - **Inputs:**
+    - matrix: ARRAY
+  - **Outputs:**
+    - cluster_labels: ARRAY
+    - cluster_centers: ARRAY
+  </details>
+
+<details><summary>&emsp;Compass</summary>
+
+  - **Inputs:**
+    - north: ARRAY
+    - south: ARRAY
+    - east: ARRAY
+    - west: ARRAY
+  - **Outputs:**
+    - angle: ARRAY
+  </details>
+
+<details><summary>&emsp;Connectivity</summary>
+
+  - **Inputs:**
+    - data: ARRAY
+  - **Outputs:**
+    - matrix: ARRAY
+  </details>
+
+<details><summary>&emsp;Coord2loc</summary>
+
+  - **Inputs:**
+    - latitude: ARRAY
+    - longitude: ARRAY
+  - **Outputs:**
+    - coord_info: TABLE
+  </details>
+
+<details><summary>&emsp;Correlation</summary>
+
+  - **Inputs:**
+    - data1: ARRAY
+    - data2: ARRAY
+  - **Outputs:**
+    - pearson: ARRAY
+  </details>
+
+<details><summary>&emsp;DissonanceCurve</summary>
+
+  - **Inputs:**
+    - peaks: ARRAY
+    - amps: ARRAY
+  - **Outputs:**
+    - dissonance_curve: ARRAY
+    - tuning: ARRAY
+    - avg_dissonance: ARRAY
+  </details>
+
+<details><summary>&emsp;EigenDecomposition</summary>
+
+  - **Inputs:**
+    - matrix: ARRAY
+  - **Outputs:**
+    - eigenvalues: ARRAY
+    - eigenvectors: ARRAY
+  </details>
+
+<details><summary>&emsp;ERP</summary>
+
+  - **Inputs:**
+    - signal: ARRAY
+    - trigger: ARRAY
+  - **Outputs:**
+    - erp: ARRAY
+  </details>
+
+<details><summary>&emsp;FacialExpression</summary>
+
+  - **Inputs:**
+    - image: ARRAY
+  - **Outputs:**
+    - emotion_probabilities: ARRAY
+    - action_units: ARRAY
+    - main_emotion: STRING
+  </details>
+
+<details><summary>&emsp;Fractality</summary>
+
+  - **Inputs:**
+    - data_input: ARRAY
+  - **Outputs:**
+    - fractal_dimension: ARRAY
+  </details>
+
+<details><summary>&emsp;GraphMetrics</summary>
+
+  - **Inputs:**
+    - matrix: ARRAY
+  - **Outputs:**
+    - clustering_coefficient: ARRAY
+    - characteristic_path_length: ARRAY
+    - betweenness_centrality: ARRAY
+    - degree_centrality: ARRAY
+    - assortativity: ARRAY
+    - transitivity: ARRAY
+  </details>
+
+<details><summary>&emsp;HarmonicSpectrum</summary>
+
+  - **Inputs:**
+    - psd: ARRAY
+  - **Outputs:**
+    - harmonic_spectrum: ARRAY
+    - max_harmonicity: ARRAY
+    - avg_harmonicity: ARRAY
+  </details>
+
+<details><summary>&emsp;Img2Txt</summary>
+
+  - **Inputs:**
+    - image: ARRAY
+  - **Outputs:**
+    - generated_text: STRING
+  </details>
+
+<details><summary>&emsp;LempelZiv</summary>
+
+  - **Inputs:**
+    - data: ARRAY
+  - **Outputs:**
+    - lzc: ARRAY
+  </details>
+
+<details><summary>&emsp;PCA</summary>
+
+  - **Inputs:**
+    - data: ARRAY
+  - **Outputs:**
+    - principal_components: ARRAY
+  </details>
+
+<details><summary>&emsp;PoseEstimation</summary>
+
+  - **Inputs:**
+    - image: ARRAY
+  - **Outputs:**
+    - pose: ARRAY
+  </details>
+
+<details><summary>&emsp;PowerBand</summary>
+
+  - **Inputs:**
+    - data: ARRAY
+  - **Outputs:**
+    - power: ARRAY
+  </details>
+
+<details><summary>&emsp;PowerBandEEG</summary>
+
+  - **Inputs:**
+    - data: ARRAY
+  - **Outputs:**
+    - delta: ARRAY
+    - theta: ARRAY
+    - alpha: ARRAY
+    - lowbeta: ARRAY
+    - highbeta: ARRAY
+    - gamma: ARRAY
+  </details>
+
+<details><summary>&emsp;ProbabilityMatrix</summary>
+
+  - **Inputs:**
+    - input_data: ARRAY
+  - **Outputs:**
+    - data: ARRAY
+  </details>
+
+<details><summary>&emsp;SpectroMorphology</summary>
+
+  - **Inputs:**
+    - data: ARRAY
+  - **Outputs:**
+    - spectro: ARRAY
+  </details>
+
+<details><summary>&emsp;SpeechSynthesis</summary>
+
+  - **Inputs:**
+    - text: STRING
+    - voice: ARRAY
+  - **Outputs:**
+    - speech: ARRAY
+    - transcript: STRING
+  </details>
+
+<details><summary>&emsp;TransitionalHarmony</summary>
+
+  - **Inputs:**
+    - data: ARRAY
+  - **Outputs:**
+    - trans_harm: ARRAY
+    - melody: ARRAY
+  </details>
+
+<details><summary>&emsp;TuningColors</summary>
+
+  - **Inputs:**
+    - data: ARRAY
+  - **Outputs:**
+    - hue: ARRAY
+    - saturation: ARRAY
+    - value: ARRAY
+    - color_names: STRING
+  </details>
+
+<details><summary>&emsp;TuningMatrix</summary>
+
+  - **Inputs:**
+    - tuning: ARRAY
+  - **Outputs:**
+    - matrix: ARRAY
+    - metric_per_step: ARRAY
+    - metric: ARRAY
+  </details>
+
+<details><summary>&emsp;TuningReduction</summary>
+
+  - **Inputs:**
+    - tuning: ARRAY
+  - **Outputs:**
+    - reduced: ARRAY
+  </details>
+
+<details><summary>&emsp;VAMP</summary>
+
+  - **Inputs:**
+    - data: ARRAY
+  - **Outputs:**
+    - comps: ARRAY
+  </details>
+
+<details><summary>&emsp;VocalExpression</summary>
+
+  - **Inputs:**
+    - data: ARRAY
+  - **Outputs:**
+    - prosody_label: STRING
+    - burst_label: STRING
+    - prosody_score: ARRAY
+    - burst_score: ARRAY
+  </details>
+
+</details>
+
+## Array
+
+Nodes implementing array operations.
+
+<details><summary>View Nodes</summary>
+
+<details><summary>&emsp;Clip</summary>
+
+  - **Inputs:**
+    - array: ARRAY
+  - **Outputs:**
+    - out: ARRAY
+  </details>
+
+<details><summary>&emsp;Join</summary>
+
+  - **Inputs:**
+    - a: ARRAY
+    - b: ARRAY
+  - **Outputs:**
+    - out: ARRAY
+  </details>
+
+<details><summary>&emsp;Math</summary>
+
+  - **Inputs:**
+    - data: ARRAY
+  - **Outputs:**
+    - out: ARRAY
+  </details>
+
+<details><summary>&emsp;Operation</summary>
+
+  - **Inputs:**
+    - a: ARRAY
+    - b: ARRAY
+  - **Outputs:**
+    - out: ARRAY
+  </details>
+
+<details><summary>&emsp;Reduce</summary>
+
+  - **Inputs:**
+    - array: ARRAY
+  - **Outputs:**
+    - out: ARRAY
+  </details>
+
+<details><summary>&emsp;Reshape</summary>
+
+  - **Inputs:**
+    - array: ARRAY
+  - **Outputs:**
+    - out: ARRAY
+  </details>
+
+<details><summary>&emsp;Select</summary>
+
+  - **Inputs:**
+    - data: ARRAY
+  - **Outputs:**
+    - out: ARRAY
+  </details>
+
+<details><summary>&emsp;Transpose</summary>
+
+  - **Inputs:**
+    - array: ARRAY
+  - **Outputs:**
+    - out: ARRAY
+  </details>
+
+</details>
+
+## Inputs
+
+Nodes that provide data to the pipeline.
+
+<details><summary>View Nodes</summary>
+
+<details><summary>&emsp;Audiocraft</summary>
+
+  - **Inputs:**
+    - prompt: STRING
+  - **Outputs:**
+    - wav: ARRAY
+  </details>
+
+<details><summary>&emsp;AudioStream</summary>
+
+  - **Inputs:**
+  - **Outputs:**
+    - out: ARRAY
+  </details>
+
+<details><summary>&emsp;ConstantArray</summary>
+
+  - **Inputs:**
+  - **Outputs:**
+    - out: ARRAY
+  </details>
+
+<details><summary>&emsp;ConstantString</summary>
+
+  - **Inputs:**
+  - **Outputs:**
+    - out: STRING
+  </details>
+
+<details><summary>&emsp;EEGRecording</summary>
+
+  - **Inputs:**
+  - **Outputs:**
+  </details>
+
+<details><summary>&emsp;ExtendedTable</summary>
+
+  - **Inputs:**
+    - base: TABLE
+    - array_input1: ARRAY
+    - array_input2: ARRAY
+    - array_input3: ARRAY
+    - array_input4: ARRAY
+    - array_input5: ARRAY
+    - string_input1: STRING
+    - string_input2: STRING
+    - string_input3: STRING
+    - string_input4: STRING
+    - string_input5: STRING
+  - **Outputs:**
+    - table: TABLE
+  </details>
+
+<details><summary>&emsp;FractalImage</summary>
+
+  - **Inputs:**
+    - complexity: ARRAY
+  - **Outputs:**
+    - image: ARRAY
+  </details>
+
+<details><summary>&emsp;ImageGeneration</summary>
+
+  - **Inputs:**
+    - prompt: STRING
+    - negative_prompt: STRING
+    - base_image: ARRAY
+  - **Outputs:**
+    - img: ARRAY
+  </details>
+
+<details><summary>&emsp;Kuramoto</summary>
+
+  - **Inputs:**
+    - initial_phases: ARRAY
+  - **Outputs:**
+    - phases: ARRAY
+    - coupling: ARRAY
+    - order_parameter: ARRAY
+    - waveforms: ARRAY
+  </details>
+
+<details><summary>&emsp;LoadFile</summary>
+
+  - **Inputs:**
+  - **Outputs:**
+    - data_output: ARRAY
+  </details>
+
+<details><summary>&emsp;LSLClient</summary>
+
+  - **Inputs:**
+  - **Outputs:**
+    - out: ARRAY
+  </details>
+
+<details><summary>&emsp;MeteoMedia</summary>
+
+  - **Inputs:**
+    - latitude: ARRAY
+    - longitude: ARRAY
+    - location_name: STRING
+  - **Outputs:**
+    - weather_data_table: TABLE
+  </details>
+
+<details><summary>&emsp;OSCIn</summary>
+
+  - **Inputs:**
+  - **Outputs:**
+    - message: TABLE
+  </details>
+
+<details><summary>&emsp;PromptBook</summary>
+
+  - **Inputs:**
+    - input_prompt: STRING
+  - **Outputs:**
+    - out: STRING
+  </details>
+
+<details><summary>&emsp;Reservoir</summary>
+
+  - **Inputs:**
+    - connectivity: ARRAY
+  - **Outputs:**
+    - data: ARRAY
+  </details>
+
+<details><summary>&emsp;SerialStream</summary>
+
+  - **Inputs:**
+  - **Outputs:**
+    - out: ARRAY
+  </details>
+
+<details><summary>&emsp;Sine</summary>
+
+  - **Inputs:**
+  - **Outputs:**
+    - out: ARRAY
+  </details>
+
+<details><summary>&emsp;Table</summary>
+
+  - **Inputs:**
+    - base: TABLE
+    - new_entry: ARRAY
+  - **Outputs:**
+    - table: TABLE
+  </details>
+
+<details><summary>&emsp;TextGeneration</summary>
+
+  - **Inputs:**
+    - prompt: STRING
+  - **Outputs:**
+    - generated_text: STRING
+  </details>
+
+<details><summary>&emsp;VideoStream</summary>
+
+  - **Inputs:**
+  - **Outputs:**
+    - frame: ARRAY
+  </details>
+
+<details><summary>&emsp;ZeroMQIn</summary>
+
+  - **Inputs:**
+  - **Outputs:**
+    - data: ARRAY
+  </details>
+
+</details>
+
+## Misc
+
+Miscellaneous nodes that do not fit into other categories.
+
+<details><summary>View Nodes</summary>
+
+<details><summary>&emsp;AppendTables</summary>
+
+  - **Inputs:**
+    - table1: TABLE
+    - table2: TABLE
+  - **Outputs:**
+    - output_table: TABLE
+  </details>
+
+<details><summary>&emsp;ColorEnhancer</summary>
+
+  - **Inputs:**
+    - image: ARRAY
+  - **Outputs:**
+    - enhanced_image: ARRAY
+  </details>
+
+<details><summary>&emsp;EdgeDetector</summary>
+
+  - **Inputs:**
+    - image: ARRAY
+  - **Outputs:**
+    - edges: ARRAY
+  </details>
+
+<details><summary>&emsp;FormatString</summary>
+
+  - **Inputs:**
+    - input_string_1: STRING
+    - input_string_2: STRING
+    - input_string_3: STRING
+    - input_string_4: STRING
+    - input_string_5: STRING
+    - input_string_6: STRING
+    - input_string_7: STRING
+    - input_string_8: STRING
+    - input_string_9: STRING
+    - input_string_10: STRING
+  - **Outputs:**
+    - output_string: STRING
+  </details>
+
+<details><summary>&emsp;HSVtoRGB</summary>
+
+  - **Inputs:**
+    - hsv_image: ARRAY
+  - **Outputs:**
+    - rgb_image: ARRAY
+  </details>
+
+<details><summary>&emsp;JoinString</summary>
+
+  - **Inputs:**
+    - string1: STRING
+    - string2: STRING
+    - string3: STRING
+    - string4: STRING
+    - string5: STRING
+  - **Outputs:**
+    - output: STRING
+  </details>
+
+<details><summary>&emsp;RGBtoHSV</summary>
+
+  - **Inputs:**
+    - rgb_image: ARRAY
+  - **Outputs:**
+    - hsv_image: ARRAY
+  </details>
+
+<details><summary>&emsp;SetMeta</summary>
+
+  - **Inputs:**
+    - array: ARRAY
+  - **Outputs:**
+    - out: ARRAY
+  </details>
+
+<details><summary>&emsp;StringAwait</summary>
+
+  - **Inputs:**
+    - message: STRING
+    - trigger: ARRAY
+  - **Outputs:**
+    - out: STRING
+  </details>
+
+<details><summary>&emsp;TableSelectArray</summary>
+
+  - **Inputs:**
+    - input_table: TABLE
+  - **Outputs:**
+    - output_array: ARRAY
+  </details>
+
+<details><summary>&emsp;TableSelectString</summary>
+
+  - **Inputs:**
+    - input_table: TABLE
+  - **Outputs:**
+    - output_string: STRING
+  </details>
+
+</details>
+
+## Outputs
+
+Nodes that send data to external systems.
+
+<details><summary>View Nodes</summary>
+
+<details><summary>&emsp;AudioOut</summary>
+
+  - **Inputs:**
+    - data: ARRAY
+  - **Outputs:**
+    - finished: ARRAY
+  </details>
+
+<details><summary>&emsp;LSLOut</summary>
+
+  - **Inputs:**
+    - data: ARRAY
+  - **Outputs:**
+  </details>
+
+<details><summary>&emsp;MidiCCout</summary>
+
+  - **Inputs:**
+    - cc1: ARRAY
+    - cc2: ARRAY
+    - cc3: ARRAY
+    - cc4: ARRAY
+    - cc5: ARRAY
+  - **Outputs:**
+    - midi_status: STRING
+  </details>
+
+<details><summary>&emsp;MidiOut</summary>
+
+  - **Inputs:**
+    - note: ARRAY
+    - velocity: ARRAY
+    - duration: ARRAY
+  - **Outputs:**
+    - midi_status: STRING
+  </details>
+
+<details><summary>&emsp;OSCOut</summary>
+
+  - **Inputs:**
+    - data: TABLE
+  - **Outputs:**
+  </details>
+
+<details><summary>&emsp;SharedMemOut</summary>
+
+  - **Inputs:**
+    - data: ARRAY
+  - **Outputs:**
+  </details>
+
+<details><summary>&emsp;WriteCsv</summary>
+
+  - **Inputs:**
+    - table_input: TABLE
+  - **Outputs:**
+  </details>
+
+<details><summary>&emsp;ZeroMQOut</summary>
+
+  - **Inputs:**
+    - data: ARRAY
+  - **Outputs:**
+  </details>
+
+</details>
+
+## Signal
+
+Nodes implementing signal processing operations.
+
+<details><summary>View Nodes</summary>
+
+<details><summary>&emsp;Buffer</summary>
+
+  - **Inputs:**
+    - val: ARRAY
+  - **Outputs:**
+    - out: ARRAY
+  </details>
+
+<details><summary>&emsp;Cycle</summary>
+
+  - **Inputs:**
+    - signal: ARRAY
+  - **Outputs:**
+    - cycle: ARRAY
+  </details>
+
+<details><summary>&emsp;EMD</summary>
+
+  - **Inputs:**
+    - data: ARRAY
+  - **Outputs:**
+    - IMFs: ARRAY
+  </details>
+
+<details><summary>&emsp;FFT</summary>
+
+  - **Inputs:**
+    - data: ARRAY
+  - **Outputs:**
+    - mag: ARRAY
+    - phase: ARRAY
+  </details>
+
+<details><summary>&emsp;Filter</summary>
+
+  - **Inputs:**
+    - data: ARRAY
+  - **Outputs:**
+    - filtered_data: ARRAY
+  </details>
+
+<details><summary>&emsp;FOOOFaperiodic</summary>
+
+  - **Inputs:**
+    - psd_data: ARRAY
+  - **Outputs:**
+    - offset: ARRAY
+    - exponent: ARRAY
+    - cf_peaks: ARRAY
+    - cleaned_psd: ARRAY
+  </details>
+
+<details><summary>&emsp;FrequencyShift</summary>
+
+  - **Inputs:**
+    - data: ARRAY
+  - **Outputs:**
+    - out: ARRAY
+  </details>
+
+<details><summary>&emsp;Hilbert</summary>
+
+  - **Inputs:**
+    - data: ARRAY
+  - **Outputs:**
+    - inst_amplitude: ARRAY
+    - inst_phase: ARRAY
+    - inst_frequency: ARRAY
+  </details>
+
+<details><summary>&emsp;IFFT</summary>
+
+  - **Inputs:**
+    - spectrum: ARRAY
+    - phase: ARRAY
+  - **Outputs:**
+    - reconstructed: ARRAY
+  </details>
+
+<details><summary>&emsp;PSD</summary>
+
+  - **Inputs:**
+    - data: ARRAY
+  - **Outputs:**
+    - psd: ARRAY
+  </details>
+
+<details><summary>&emsp;Recurrence</summary>
+
+  - **Inputs:**
+    - input_array: ARRAY
+  - **Outputs:**
+    - recurrence_matrix: ARRAY
+    - RR: ARRAY
+    - DET: ARRAY
+    - LAM: ARRAY
+  </details>
+
+<details><summary>&emsp;Resample</summary>
+
+  - **Inputs:**
+    - data: ARRAY
+  - **Outputs:**
+    - out: ARRAY
+  </details>
+
+<details><summary>&emsp;ResampleJoint</summary>
+
+  - **Inputs:**
+    - data1: ARRAY
+    - data2: ARRAY
+  - **Outputs:**
+    - out1: ARRAY
+    - out2: ARRAY
+  </details>
+
+<details><summary>&emsp;Smooth</summary>
+
+  - **Inputs:**
+    - data: ARRAY
+  - **Outputs:**
+    - out: ARRAY
+  </details>
+
+<details><summary>&emsp;StaticBaseline</summary>
+
+  - **Inputs:**
+    - data: ARRAY
+  - **Outputs:**
+    - normalized: ARRAY
+  </details>
+
+<details><summary>&emsp;Threshold</summary>
+
+  - **Inputs:**
+    - data: ARRAY
+  - **Outputs:**
+    - thresholded: ARRAY
+  </details>
+
+<details><summary>&emsp;TimeDelayEmbedding</summary>
+
+  - **Inputs:**
+    - input_array: ARRAY
+  - **Outputs:**
+    - embedded_array: ARRAY
+  </details>
+
+<details><summary>&emsp;WelfordsZTransform</summary>
+
+  - **Inputs:**
+    - data: ARRAY
+  - **Outputs:**
+    - normalized: ARRAY
+  </details>
+
+</details>
+<!-- !!GOOFI_PIPE_NODE_LIST_END!! -->

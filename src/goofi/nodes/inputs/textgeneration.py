@@ -5,6 +5,7 @@ from goofi.data import Data, DataType
 from goofi.node import Node
 from goofi.params import FloatParam, IntParam, StringParam, BoolParam
 
+
 class TextGeneration(Node):
 
     @staticmethod
@@ -25,7 +26,7 @@ class TextGeneration(Node):
                 "temperature": FloatParam(1.0, 0.0, 2.0, doc="Temperature for text generation"),
                 "max_tokens": IntParam(20, 5, 2048, doc="Maximum number of tokens to generate"),
                 "keep_conversation": BoolParam(False, doc="Whether to keep conversation history"),
-                "save_conversation": StringParam("", doc="Whether to save conversation history to a JSON file")
+                "save_conversation": StringParam("", doc="Whether to save conversation history to a JSON file"),
             }
         }
 
@@ -102,7 +103,7 @@ class TextGeneration(Node):
         }
 
         if self.system_prompt is not None and len(messages) < 2:
-            payload["messages"]= [{"role": "system", "content": self.system_prompt}] + messages
+            payload["messages"] = [{"role": "system", "content": self.system_prompt}] + messages
 
         response = self.client.chat.completions.create(**payload)
         return response.choices[0].message.content
@@ -110,34 +111,35 @@ class TextGeneration(Node):
     def generate_anthropic_response(self, messages, temp):
         if self.client is None:
             self.client = self.anthropic.Anthropic(api_key=self.api_key)
-        
+
         response = self.client.messages.create(
             model=self.params["text_generation"]["model"].value,
             messages=messages,
             max_tokens=self.params["text_generation"]["max_tokens"].value,
             temperature=temp,
-            system=self.system_prompt if self.system_prompt is not None else None
+            system=self.system_prompt if self.system_prompt is not None else None,
         )
-        
+
         return response.content[0].text
 
     def generate_gemini_response(self, text, temp, keep_conversation, history=None):
         if self.client is None:
             self.genai.configure(api_key=self.api_key)
             # If system prompt is provided, prepend it to the message
-            self.client = self.genai.GenerativeModel(model_name=self.params['text_generation']['model'].value,
-                                                     system_instruction=self.system_prompt if self.system_prompt is not None else "You are a helpful assistant.",)
-            
+            self.client = self.genai.GenerativeModel(
+                model_name=self.params["text_generation"]["model"].value,
+                system_instruction=self.system_prompt if self.system_prompt is not None else "You are a helpful assistant.",
+            )
+
         if not keep_conversation:
             history = []
-        
+
         chat = self.client.start_chat(history=history)
-        
+
         generation_config = self.genai.GenerationConfig(
-            max_output_tokens=self.params["text_generation"]["max_tokens"].value,
-            temperature=temp
+            max_output_tokens=self.params["text_generation"]["max_tokens"].value, temperature=temp
         )
-        
+
         # Prepare the message
         message = text
 
@@ -149,25 +151,18 @@ class TextGeneration(Node):
         except Exception as e:
             print(f"History is None: {e}")
             history = None
-        
+
         return response.text
 
     def generate_local_response(self, content):
         url = "http://127.0.0.1:5000/v1/chat/completions"
-        headers = {
-            "Content-Type": "application/json"
-        }
+        headers = {"Content-Type": "application/json"}
         data = {
-            "mode": "chat-instruct", # TODO: Add mode to params
+            "mode": "chat-instruct",  # TODO: Add mode to params
             "max_tokens": self.params["text_generation"]["max_tokens"].value,
             "temperature": self.params["text_generation"]["temperature"].value,
             "character": "Example",
-            "messages": [
-                {
-                    "role": "user",
-                    "content": content
-                }
-            ]
+            "messages": [{"role": "user", "content": content}],
         }
         response = requests.post(url, headers=headers, json=data, verify=False)
         return response.json()["choices"][0]["message"]["content"]
