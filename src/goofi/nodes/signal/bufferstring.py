@@ -16,7 +16,7 @@ class BufferString(Node):
         return {
             "buffer": {
                 "size": IntParam(10, 1, 5000),
-                "separator": StringParam(" ", options=[" ", ",", "\n"]),
+                "separator": StringParam(" ", options=["[space]", ",", "[paragraph]"]),
                 "reset": BoolParam(False, trigger=True)
             }
         }
@@ -34,6 +34,10 @@ class BufferString(Node):
 
         maxlen = self.params.buffer.size.value
         separator = self.params.buffer.separator.value
+        if separator == "[space]":
+            separator = " "
+        elif separator == "[paragraph]":
+            separator = "\n"
 
         # Split the input string into words based on the separator
         words = val.data.split(separator)
