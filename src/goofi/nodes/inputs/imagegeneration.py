@@ -15,6 +15,7 @@ class ImageGeneration(Node):
         return {
             "image_generation": {
                 "save_image": BoolParam(False, doc="Save the images in NumPy Arrays"),
+                "save_filename": StringParam("goofi", doc="Filename to save the image as"),
                 "model_id": StringParam("dall-e-3", options=["stabilityai/stable-diffusion-2-1", "dall-e-2", "dall-e-3"]),
                 "openai_key": StringParam("openai.key"),
                 "inference_steps": IntParam(50, 5, 100),
@@ -151,24 +152,18 @@ class ImageGeneration(Node):
                         )
                     raise e
                     
-
             img = response.data[0].b64_json
             # Decode base64 to bytes
             decoded_bytes = self.base64.b64decode(img)
             # Convert bytes to numpy array using OpenCV
             img_array = cv2.imdecode(np.frombuffer(decoded_bytes, np.uint8), cv2.IMREAD_COLOR)
-            # save numpy array ; do not overwrite
+            
+            # save numpy array using OpenCV
             if self.params.image_generation.save_image.value:
                 makedirs(join(self.assets_path, "imgs"), exist_ok=True)
-                # Remove all punctuation from the prompt
-                prompt_fn = ''.join(ch if ch.isalnum() or ch.isspace() else '_' for ch in prompt)
-                # Truncate filename if it's too long
-                MAX_FILENAME_LENGTH = 200
-                if len(prompt_fn) > MAX_FILENAME_LENGTH:
-                    prompt_fn = prompt_fn[:MAX_FILENAME_LENGTH]
 
-                # make sure it saves on Windows
-                filename = join(self.assets_path, "imgs", f"{prompt_fn.replace(' ', '_')}")
+                # make sure not to overwrite
+                filename = f"{join(self.assets_path, 'imgs', self.params.image_generation.save_filename.value)}"
                 n = 0
                 while exists(f"{filename}_{n:02d}.png"):
                     n += 1
@@ -177,7 +172,8 @@ class ImageGeneration(Node):
                     print(f"Saved image to {filename}_{n:02d}.png")
                 else:
                     print(f"Failed to save image to {filename}_{n:02d}.png")
-            # Convert to float32
+    
+            # Convert to float32 to display in goofi
             img_array = img_array.astype(np.float32) / 255.0
             # Ensure correct shape
             if img_array.shape != (self.params.image_generation.width.value, self.params.image_generation.height.value, 3):
