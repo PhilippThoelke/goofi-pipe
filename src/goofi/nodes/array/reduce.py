@@ -13,7 +13,15 @@ class Reduce(Node):
         return {"out": DataType.ARRAY}
 
     def config_params():
-        return {"reduce": {"method": StringParam("mean", options=["mean", "median", "min", "max", "std"]), "axis": 0}}
+        return {
+            "reduce": {
+                "method": StringParam(
+                    "mean",
+                    options=["mean", "median", "min", "max", "std", "norm"],
+                ),
+                "axis": 0,
+            }
+        }
 
     def process(self, array: Data):
         if array is None:
@@ -23,7 +31,10 @@ class Reduce(Node):
         if axis < 0:
             axis = array.data.ndim + axis
 
-        result = getattr(np, self.params.reduce.method.value)(array.data, axis=axis)
+        if self.params.reduce.method.value == "norm":
+            result = np.linalg.norm(array.data, axis=axis)
+        else:
+            result = getattr(np, self.params.reduce.method.value)(array.data, axis=axis)
 
         if f"dim{axis}" in array.meta["channels"]:
             del array.meta["channels"][f"dim{axis}"]
