@@ -1,3 +1,4 @@
+from os import path, environ
 import numpy as np
 import asyncio
 import base64
@@ -9,7 +10,9 @@ from goofi.params import FloatParam, StringParam
 
 class VocalExpression(Node):
     def setup(self):
+        self.load_api_key()
         self.AudioSegment, self.HumeStreamClient, self.BurstConfig, self.ProsodyConfig = import_audio_libs()
+
 
     @staticmethod
     def config_input_slots():
@@ -27,14 +30,24 @@ class VocalExpression(Node):
     @staticmethod
     def config_params():
         return {
-            "prosody_analysis": {
-                "api_key": StringParam("", doc="Hume API key"),
-                "emotion_threshold": FloatParam(0.0, 0.0, 1.0, doc="Threshold for filtering emotions"),
+            "vocal_analysis": {
+                "api_key": StringParam("hume.key", doc="Hume API key"),
+                "emotion_threshold": FloatParam(0.0, 0.0, 1.0, doc="Threshold for filtering emotions")
             }
         }
+    def load_api_key(self):
+        self.api_key = self.params["vocal_analysis"]["api_key"].value
 
+        if path.exists(self.api_key):
+            with open(self.api_key, "r") as f:
+                self.api_key = f.read().strip()
+        elif self.api_key is str and not self.api_key.startswith("hume."):
+            self.api_key = environ.get("HUME_API_KEY", self.api_key)
+        elif not self.api_key:
+            raise ValueError("API key not found")
+            
     async def decode_emotion_prosody(self, encoded_audio_sample):
-        client = self.HumeStreamClient(self.params["prosody_analysis"]["api_key"].value)
+        client = self.HumeStreamClient(self.params["vocal_analysis"]["api_key"].value)
         burst_config = self.BurstConfig()
         prosody_config = self.ProsodyConfig()
 
@@ -42,7 +55,7 @@ class VocalExpression(Node):
         prosody_score = 0.0
         burst_label = ""
         burst_score = 0.0
-        emotion_threshold = self.params["prosody_analysis"]["emotion_threshold"].value
+        emotion_threshold = self.params["vocal_analysis"]["emotion_threshold"].value
 
         for attempt in range(3):  # Retry up to 3 times
             try:

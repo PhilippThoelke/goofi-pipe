@@ -21,7 +21,7 @@ class TextGeneration(Node):
         return {
             "text_generation": {
                 "api_key": StringParam("openai.key", doc="API key for the text generation service"),
-                "model": StringParam("gpt-3.5-turbo", doc="Model ID for the text generation service"),
+                "model": StringParam("gpt-4o-mini", doc="Model ID for the text generation service"),
                 "system_prompt": StringParam("", doc="System prompt for text generation"),
                 "temperature": FloatParam(1.0, 0.0, 2.0, doc="Temperature for text generation"),
                 "max_tokens": IntParam(20, 5, 2048, doc="Maximum number of tokens to generate"),
@@ -59,7 +59,7 @@ class TextGeneration(Node):
 
     def import_libs(self, model):
         if model != self.previous_model:
-            self.openai, self.anthropic, self.genai = self.dynamic_import_libs(model)
+            self.openai, self.anthropic, self.genai, self.ollama = self.dynamic_import_libs(model)  # Include ollama
             self.previous_model = model
             self.client = None
 
@@ -69,27 +69,32 @@ class TextGeneration(Node):
                 import openai
             except ImportError:
                 raise ImportError("You need to install openai: pip install openai")
-            return openai, None, None
+            return openai, None, None, None
         elif model.startswith("claude-"):
             try:
                 import anthropic
             except ImportError:
                 raise ImportError("You need to install anthropic: pip install anthropic")
-            return None, anthropic, None
+            return None, anthropic, None, None
         elif model.startswith("gemini-"):
             try:
                 import google.generativeai as genai
             except ImportError:
-                raise ImportError("You need to install google-generativeai: pip install google-generativeai")
-            return None, None, genai
-        elif model.startswith("local-"):
-            return None, None, None  # No additional imports needed for local model
+                raise ImportError("You need to install google-generativeai: pip install google-generativeai\nWith Python>=3.10")
+            return None, None, genai, None
+        elif model.startswith("ollama-"):
+            try:
+                import ollama
+            except ImportError:
+                raise ImportError("You need to install ollama: pip install ollama")
+            return None, None, None, ollama  # Return ollama
         else:
             raise ValueError(f"Unknown model: {model}")
 
     def api_key_changed(self):
         self.load_api_key()
         self.client = None
+        self.api_key_loaded = True
 
     def generate_openai_response(self, messages, temp):
         if self.client is None:
@@ -153,7 +158,23 @@ class TextGeneration(Node):
             history = None
 
         return response.text
+    
+    def generate_ollama_response(self, model, messages, temp):
+        # Create an Ollama client instance
+        if self.client is None:
+            self.client = self.ollama
 
+        response = self.client.chat(
+            model=str(model.replace("ollama-", "")),  # remove ollama- prefix
+            messages=messages,
+            options={
+                "system": self.system_prompt,
+                "temperature": temp,
+                "max_tokens": self.params["text_generation"]["max_tokens"].value,
+            }
+        )
+        return response['message']['content']
+    
     def generate_local_response(self, content):
         url = "http://127.0.0.1:5000/v1/chat/completions"
         headers = {"Content-Type": "application/json"}
@@ -178,7 +199,6 @@ class TextGeneration(Node):
             return None
 
         self.import_libs(self.params["text_generation"]["model"].value)
-        self.load_api_key()  # Ensure API key is loaded with the current model
 
         prompt_ = prompt.data
         temp = self.params["text_generation"]["temperature"].value
@@ -192,13 +212,31 @@ class TextGeneration(Node):
             self.messages = [{"role": "user", "content": prompt_}]
 
         if model.startswith("gpt-"):
+            if self.api_key_loaded:
+                pass
+            else:
+                self.load_api_key()  # Ensure API key is loaded with the current model
             generated_text = self.generate_openai_response(self.messages, temp)
+
         elif model.startswith("claude-"):
+            if self.api_key_loaded:
+                pass
+            else:
+                self.load_api_key()  
             generated_text = self.generate_anthropic_response(self.messages, temp)
+            
         elif model.startswith("gemini-"):
+            if self.api_key_loaded:
+                pass
+            else:
+                self.load_api_key()  
             generated_text = self.generate_gemini_response(prompt_, temp, keep_conversation)
+
         elif model.startswith("local-"):
             generated_text = self.generate_local_response(prompt_)
+
+        elif model.startswith("ollama-"):
+            generated_text = self.generate_ollama_response(model, self.messages, temp)
         else:
             raise ValueError(f"Unknown model: {model}")
 
@@ -207,5 +245,8 @@ class TextGeneration(Node):
 
         if save_conversation:
             self.save_conversation_to_json()
+        
+        if self.params["text_generation"]["api_key"].value != self.api_key:
+            self.api_key_changed()
 
         return {"generated_text": (generated_text, prompt.meta)}

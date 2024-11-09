@@ -165,11 +165,11 @@ class ImageGeneration(Node):
                 # make sure not to overwrite
                 filename = f"{join(self.assets_path, 'imgs', self.params.image_generation.save_filename.value)}"
                 n = 0
-                while exists(f"{filename}_{n:02d}.png"):
+                while exists(join(self.assets_path,"imgs", f"default_value_{n:02d}.png")):
                     n += 1
                 # Save the image and check if it was successful
-                if cv2.imwrite(f"{filename}_{n:02d}.png", img_array):
-                    print(f"Saved image to {filename}_{n:02d}.png")
+                if cv2.imwrite(join(self.assets_path,"imgs", f"default_value_{n:02d}.png"), img_array):
+                    print(f"{join(self.assets_path,'imgs', f'default_value_{n:02d}.png')}")
                 else:
                     print(f"Failed to save image to {filename}_{n:02d}.png")
     
