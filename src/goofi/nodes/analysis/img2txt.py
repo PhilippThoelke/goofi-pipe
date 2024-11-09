@@ -3,7 +3,6 @@ import io
 import requests
 
 from PIL import Image
-import torch
 import numpy as np
 from goofi.data import Data, DataType
 from goofi.node import Node
@@ -52,6 +51,7 @@ class Img2Txt(Node):
     def setup_huggingface_llama(self):
         try:
             from transformers import MllamaForConditionalGeneration, AutoProcessor
+            import torch
             self.model_instance = MllamaForConditionalGeneration.from_pretrained(
                 self.model_id,
                 torch_dtype=torch.bfloat16,
