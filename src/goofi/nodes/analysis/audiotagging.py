@@ -82,7 +82,7 @@ class AudioTagging(Node):
         indices = [i for i, x in enumerate(tags) if x in active_categories and probabilities[i] > threshold]
         formatted_tags = "\n".join(tags[i] for i in indices[: n_tags - 1])
         formatted_probs = np.array([probabilities[i] for i in indices[: n_tags - 1]])
-
+        
         return {
             "tags": (formatted_tags, audioIn.meta),
             "probabilities": (formatted_probs, audioIn.meta),
