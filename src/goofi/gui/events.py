@@ -184,6 +184,7 @@ def create_node(win):
 
     # add search bar
     searchbox = dpg.add_input_text(hint="search", parent=win.create_node_window, callback=search_callback)
+    win.param_input_fields.append(searchbox)
     dpg.add_separator(parent=win.create_node_window)
 
     # create a tab bar with a tab for each category
