@@ -33,6 +33,7 @@ class TextGeneration(Node):
     def setup(self):
         self.client = None
         self.previous_model = None
+        self.api_key_loaded = False
         self.messages = []
         self.load_api_key()
         self.import_libs(self.params["text_generation"]["model"].value)
