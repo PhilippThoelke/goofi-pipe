@@ -20,3 +20,5 @@ deeptime
 geopy
 edgeofpy
 mido
+pyyaml
+pyaca
