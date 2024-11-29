@@ -1,12 +1,14 @@
 import base64
 import io
-import requests
 
-from PIL import Image
 import numpy as np
+import requests
+from PIL import Image
+
 from goofi.data import Data, DataType
 from goofi.node import Node
 from goofi.params import IntParam, StringParam
+
 
 class Img2Txt(Node):
     @staticmethod
@@ -23,7 +25,7 @@ class Img2Txt(Node):
             "img_to_text": {
                 "model": StringParam(
                     "ollama:llama3.2-vision",
-                    options=["meta-llama/Llama-3.2-11B-Vision-Instruct", "gpt-4o-mini", "ollama"],
+                    # options=["meta-llama/Llama-3.2-11B-Vision-Instruct", "gpt-4o-mini", "ollama"],
                     doc="Model ID or name for image captioning (Huggingface Llama, OpenAI, or Ollama)",
                 ),
                 "max_new_tokens": IntParam(30, 10, 1024, doc="Maximum number of tokens to generate"),
@@ -50,8 +52,9 @@ class Img2Txt(Node):
 
     def setup_huggingface_llama(self):
         try:
-            from transformers import MllamaForConditionalGeneration, AutoProcessor
             import torch
+            from transformers import AutoProcessor, MllamaForConditionalGeneration
+
             self.model_instance = MllamaForConditionalGeneration.from_pretrained(
                 self.model_id,
                 torch_dtype=torch.bfloat16,
@@ -65,6 +68,7 @@ class Img2Txt(Node):
     def setup_openai_gpt(self):
         try:
             import openai
+
             self.openai = openai
             key = self.params["img_to_text"]["openai_key"].value
             with open(key, "r") as f:
@@ -82,8 +86,12 @@ class Img2Txt(Node):
     def setup_ollama(self):
         try:
             import ollama
+
             self.ollama = ollama
         except ImportError:
+            print("Error: 'ollama' library not found. Please install it using 'pip install ollama'.")
+            raise
+        except ModuleNotFoundError:
             print("Error: 'ollama' library not found. Please install it using 'pip install ollama'.")
             raise
 
@@ -145,21 +153,18 @@ class Img2Txt(Node):
             [
                 {
                     "role": "user",
-                    "content": [
-                        {"type": "image"},
-                        {"type": "text", "text": self.params['img_to_text']['prompt'].value}
-                    ]
+                    "content": [{"type": "image"}, {"type": "text", "text": self.params["img_to_text"]["prompt"].value}],
                 }
             ],
         ]
         text = self.processor.apply_chat_template(messages, add_generation_prompt=True)
-        
+
         # Wrap the image in a list
         inputs = self.processor(text=text, images=[base64_image], return_tensors="pt")
-        
+
         # Move inputs to the correct device
         inputs = {k: v.to(self.model_instance.device) for k, v in inputs.items()}
-        
+
         output = self.model_instance.generate(**inputs, max_new_tokens=max_new_tokens)
         generated_text = self.processor.decode(output[0], skip_special_tokens=True)
         return {"generated_text": (generated_text, {})}
@@ -174,7 +179,7 @@ class Img2Txt(Node):
                 {
                     "role": "user",
                     "content": [
-                        {"type": "text", "text": self.params['img_to_text']['prompt'].value},
+                        {"type": "text", "text": self.params["img_to_text"]["prompt"].value},
                         {"type": "image_url", "image_url": {"url": f"data:image/jpeg;base64,{base64_image}"}},
                     ],
                 }
@@ -195,14 +200,10 @@ class Img2Txt(Node):
     def process_ollama(self, image_array, max_new_tokens):
         # Process using Ollama
         base64_image = self.encode_image(image_array)
-        messages = [
-            {
-                "role": "user",
-                "content": self.params['img_to_text']['prompt'].value,
-                "images": [f"{base64_image}"]
-            }
-        ]
-        response = self.ollama.chat(model=self.model_id.replace("ollama:", ""), messages=messages, options={"max_tokens": max_new_tokens})
-        generated_text = response['message']['content']
+        messages = [{"role": "user", "content": self.params["img_to_text"]["prompt"].value, "images": [f"{base64_image}"]}]
+        response = self.ollama.chat(
+            model=self.model_id.replace("ollama:", ""), messages=messages, options={"max_tokens": max_new_tokens}
+        )
+        generated_text = response["message"]["content"]
 
         return {"generated_text": (generated_text, {})}
