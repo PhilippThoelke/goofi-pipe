@@ -7,7 +7,7 @@ from PIL import Image
 
 from goofi.data import Data, DataType
 from goofi.node import Node
-from goofi.params import IntParam, StringParam
+from goofi.params import FloatParam, IntParam, StringParam
 
 
 class Img2Txt(Node):
@@ -29,7 +29,10 @@ class Img2Txt(Node):
                     doc="Model ID or name for image captioning (Huggingface Llama, OpenAI, or Ollama)",
                 ),
                 "max_new_tokens": IntParam(30, 10, 1024, doc="Maximum number of tokens to generate"),
+                "temperature": FloatParam(0.7, 0.1, 2.0, doc="Sampling temperature"),
                 "prompt": StringParam("What is in this image?", doc="Prompt for image captioning"),
+                "max_img_width": IntParam(-1, 128, 1024, doc="Maximum image width (-1 for no resizing)"),
+                "max_img_height": IntParam(-1, 128, 1024, doc="Maximum image height (-1 for no resizing)"),
                 "openai_key": StringParam("openai.key", doc="Path to OpenAI API key file (required for OpenAI models)"),
             }
         }
@@ -39,7 +42,7 @@ class Img2Txt(Node):
         self.model_instance = None
         self.openai = None
         self.ollama = None
-        self.model_id = self.params["img_to_text"]["model"].value
+        self.model_id = self.params.img_to_text.model.value
 
         if "/" in self.model_id.lower():
             self.setup_huggingface_llama()
@@ -109,7 +112,6 @@ class Img2Txt(Node):
             return None
 
         image_array = image.data
-        max_new_tokens = self.params["img_to_text"]["max_new_tokens"].value
 
         # Handle various image array shapes and types
         if image_array.ndim == 4:
@@ -138,22 +140,42 @@ class Img2Txt(Node):
                 image_array = image_array.astype(np.uint8)
 
         image = Image.fromarray(image_array)
+        if self.params.img_to_text.max_img_width.value > 0 and self.params.img_to_text.max_img_height.value > 0:
+            image.resize(
+                (self.params.img_to_text.max_img_width.value, self.params.img_to_text.max_img_height.value),
+            )
+        elif self.params.img_to_text.max_img_width.value > 0:
+            wpercent = self.params.img_to_text.max_img_width.value / float(image.size[0])
+            hsize = int((float(image.size[1]) * float(wpercent)))
+            image = image.resize((self.params.img_to_text.max_img_width.value, hsize))
+        elif self.params.img_to_text.max_img_height.value > 0:
+            hpercent = self.params.img_to_text.max_img_height.value / float(image.size[1])
+            wsize = int((float(image.size[0]) * float(hpercent)))
+            image = image.resize((wsize, self.params.img_to_text.max_img_height.value))
+
+        image_array = np.array(image)
 
         if "/" in self.model_id.lower():
-            return self.process_huggingface_llama(image_array, max_new_tokens)
+            return self.process_huggingface_llama(image_array)
         elif "gpt" in self.model_id.lower():
-            return self.process_openai_gpt(image_array, max_new_tokens)
+            return self.process_openai_gpt(image_array)
         elif "ollama" in self.model_id.lower():
-            return self.process_ollama(image_array, max_new_tokens)
+            return self.process_ollama(image_array)
 
-    def process_huggingface_llama(self, image_array, max_new_tokens):
+    def img_to_text_model_changed(self, model_id):
+        self.setup()
+
+    def process_huggingface_llama(self, image_array):
+        if self.processor is None or self.model_instance is None:
+            return {"generated_text": ("Error: Huggingface Llama model not initialized.", {})}
+
         # Process using Huggingface Llama
         base64_image = self.encode_image(image_array)
         messages = [
             [
                 {
                     "role": "user",
-                    "content": [{"type": "image"}, {"type": "text", "text": self.params["img_to_text"]["prompt"].value}],
+                    "content": [{"type": "image"}, {"type": "text", "text": self.params.img_to_text.prompt.value}],
                 }
             ],
         ]
@@ -165,11 +187,15 @@ class Img2Txt(Node):
         # Move inputs to the correct device
         inputs = {k: v.to(self.model_instance.device) for k, v in inputs.items()}
 
-        output = self.model_instance.generate(**inputs, max_new_tokens=max_new_tokens)
+        output = self.model_instance.generate(
+            **inputs,
+            max_new_tokens=self.params.img_to_text.max_new_tokens.value,
+            temperature=self.params.img_to_text.temperature.value,
+        )
         generated_text = self.processor.decode(output[0], skip_special_tokens=True)
         return {"generated_text": (generated_text, {})}
 
-    def process_openai_gpt(self, image_array, max_new_tokens):
+    def process_openai_gpt(self, image_array):
         # Process using OpenAI GPT
         base64_image = self.encode_image(image_array)
         headers = {"Content-Type": "application/json", "Authorization": f"Bearer {self.openai.api_key}"}
@@ -179,12 +205,13 @@ class Img2Txt(Node):
                 {
                     "role": "user",
                     "content": [
-                        {"type": "text", "text": self.params["img_to_text"]["prompt"].value},
+                        {"type": "text", "text": self.params.img_to_text.prompt.value},
                         {"type": "image_url", "image_url": {"url": f"data:image/jpeg;base64,{base64_image}"}},
                     ],
                 }
             ],
-            "max_tokens": max_new_tokens,
+            "max_tokens": self.params.img_to_text.max_new_tokens.value,
+            "temperature": self.params.img_to_text.temperature.value,
         }
 
         try:
@@ -197,12 +224,17 @@ class Img2Txt(Node):
 
         return {"generated_text": (generated_text, {})}
 
-    def process_ollama(self, image_array, max_new_tokens):
+    def process_ollama(self, image_array):
         # Process using Ollama
         base64_image = self.encode_image(image_array)
-        messages = [{"role": "user", "content": self.params["img_to_text"]["prompt"].value, "images": [f"{base64_image}"]}]
+        messages = [{"role": "user", "content": self.params.img_to_text.prompt.value, "images": [f"{base64_image}"]}]
         response = self.ollama.chat(
-            model=self.model_id.replace("ollama:", ""), messages=messages, options={"max_tokens": max_new_tokens}
+            model=self.model_id.replace("ollama:", ""),
+            messages=messages,
+            options={
+                "num_predict": self.params.img_to_text.max_new_tokens.value,
+                "temperature": self.params.img_to_text.temperature.value,
+            },
         )
         generated_text = response["message"]["content"]
 
