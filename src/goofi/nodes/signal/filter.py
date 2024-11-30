@@ -1,7 +1,6 @@
 from collections import deque
 
 import numpy as np
-from scipy.signal import butter, cheby1, detrend, ellip, filtfilt, lfilter, lfilter_zi
 
 from goofi.data import Data, DataType
 from goofi.node import Node
@@ -64,6 +63,20 @@ class Filter(Node):
         }
 
     def setup(self):
+        from scipy import signal
+
+        # import (
+        #     butter,
+        #     cheby1,
+        #     detrend,
+        #     ellip,
+        #     filtfilt,
+        #     lfilter,
+        #     lfilter_zi,
+        # )
+
+        self.signal = signal
+
         self.filter_state = None
         self.internal_buffer = deque(maxlen=self.params["signal"]["buffer_size"].value)
 
@@ -93,11 +106,11 @@ class Filter(Node):
             high = f_high / nyq
 
             if filter_type == "butterworth":
-                b, a = butter(order, [low, high], btype="band")
+                b, a = self.signal.butter(order, [low, high], btype="band")
             elif filter_type == "chebyshev":
-                b, a = cheby1(order, ripple, [low, high], btype="band")
+                b, a = self.signal.cheby1(order, ripple, [low, high], btype="band")
             elif filter_type == "elliptic":
-                b, a = ellip(order, ripple, ripple, [low, high], btype="band")
+                b, a = self.signal.ellip(order, ripple, ripple, [low, high], btype="band")
 
             filtered_data = self.apply_filter(b, a, filtered_data, method, padding)
 
@@ -118,11 +131,11 @@ class Filter(Node):
             w_high = np.clip(w0 + bw / 2, 0.01, 0.99)
 
             if filter_type == "butterworth":
-                b, a = butter(order, [w_low, w_high], btype="bandstop")
+                b, a = self.signal.butter(order, [w_low, w_high], btype="bandstop")
             elif filter_type == "chebyshev":
-                b, a = cheby1(order, ripple, [w_low, w_high], btype="bandstop")
+                b, a = self.signal.cheby1(order, ripple, [w_low, w_high], btype="bandstop")
             elif filter_type == "elliptic":
-                b, a = ellip(order, ripple, ripple, [w_low, w_high], btype="bandstop")
+                b, a = self.signal.ellip(order, ripple, ripple, [w_low, w_high], btype="bandstop")
 
             filtered_data = self.apply_filter(b, a, filtered_data, method, padding)
 
@@ -131,9 +144,9 @@ class Filter(Node):
 
         # Detrend and demean
         if self.params["signal"]["detrend"].value:
-            filtered_data = detrend(filtered_data, type="linear")
+            filtered_data = self.signal.detrend(filtered_data, type="linear")
         if self.params["signal"]["demean"].value:
-            filtered_data = detrend(filtered_data, type="constant")
+            filtered_data = self.signal.detrend(filtered_data, type="constant")
 
         return {"filtered_data": (filtered_data, data.meta)}
 
@@ -143,19 +156,19 @@ class Filter(Node):
                 padlen = int(padding * len(data))
             else:
                 padlen = int(padding * data.shape[-1])
-            return filtfilt(b, a, data, padlen=padlen)
+            return self.signal.filtfilt(b, a, data, padlen=padlen)
         elif method == "Causal":
             if data.ndim == 1:
-                zi = lfilter_zi(b, a)
+                zi = self.signal.lfilter_zi(b, a)
                 if self.filter_state is None or self.filter_state.shape != zi.shape:
                     self.filter_state = zi * data[0]
-                return lfilter(b, a, data, zi=self.filter_state)[0]
+                return self.signal.lfilter(b, a, data, zi=self.filter_state)[0]
             elif data.ndim == 2:
                 num_channels = data.shape[0]
-                zi = lfilter_zi(b, a).reshape(-1, 1)
+                zi = self.signal.lfilter_zi(b, a).reshape(-1, 1)
                 if self.filter_state is None or self.filter_state.shape[1] != num_channels:
                     self.filter_state = np.tile(zi, (1, num_channels)) * data[:, 0]
-                return lfilter(b, a, data.T, axis=0, zi=self.filter_state)[0].T
+                return self.signal.lfilter(b, a, data.T, axis=0, zi=self.filter_state)[0].T
         else:
             return data
 

@@ -1,7 +1,6 @@
 from os import path
 
 import numpy as np
-import requests
 
 from goofi.data import Data, DataType
 from goofi.node import Node
@@ -16,6 +15,7 @@ class PoseEstimation(Node):
 
     def setup(self):
         import mediapipe as mp
+        import requests
         from mediapipe.tasks import python
         from mediapipe.tasks.python import vision
 

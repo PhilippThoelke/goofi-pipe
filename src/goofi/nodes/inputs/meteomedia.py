@@ -1,9 +1,10 @@
+from os.path import join
+
+import numpy as np
+
 from goofi.data import Data, DataType
 from goofi.node import Node
 from goofi.params import FloatParam, StringParam
-import requests
-import numpy as np
-from os.path import join
 
 
 class MeteoMedia(Node):
@@ -23,6 +24,11 @@ class MeteoMedia(Node):
                 "max_frequency": FloatParam(0.1, 0.1, 30.0),
             },
         }
+
+    def setup(self):
+        import requests
+
+        self.requests = requests
 
     def process(self, latitude: Data, longitude: Data, location_name: Data):
         if latitude is None or longitude is None:
@@ -45,13 +51,13 @@ class MeteoMedia(Node):
         if location_name is None:
             url = f"https://api.tomorrow.io/v4/weather/realtime?location={np.float(lat_value)},{np.float(long_value)}&apikey={api_key}"
             headers = {"accept": "application/json"}
-            response = requests.get(url, headers=headers)
+            response = self.requests.get(url, headers=headers)
             print(response.status_code)
 
         else:
             url = f"https://api.tomorrow.io/v4/weather/realtime?location={location_name}&apikey={api_key}"
             headers = {"accept": "application/json"}
-            response = requests.get(url, headers=headers)
+            response = self.requests.get(url, headers=headers)
             print(response.status_code)
         if response.status_code == 200:
             responses = response.json()

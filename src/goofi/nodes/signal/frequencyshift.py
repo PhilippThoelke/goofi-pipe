@@ -1,5 +1,5 @@
 import numpy as np
-from scipy.signal import stft, istft
+
 from goofi.data import Data, DataType
 from goofi.node import Node
 from goofi.params import FloatParam
@@ -19,6 +19,12 @@ class FrequencyShift(Node):
             }
         }
 
+    def setup(self):
+        from scipy.signal import istft, stft
+
+        self.istft = istft
+        self.stft = stft
+
     def process(self, data: Data):
         if data is None or data.data is None:
             return None
@@ -27,7 +33,7 @@ class FrequencyShift(Node):
         sfreq = data.meta["sfreq"]
 
         # Perform STFT
-        f, t, Zxx = stft(signal, fs=sfreq, nperseg=1024)
+        f, t, Zxx = self.stft(signal, fs=sfreq, nperseg=1024)
 
         # Frequency shifting
         frequency_shift = self.params["shift"]["frequency_shift"].value
@@ -43,7 +49,7 @@ class FrequencyShift(Node):
         Zxx_shifted[valid_bins] = Zxx[target_bins[valid_bins]] * np.exp(1j * phase_shift)
 
         # Inverse STFT to retrieve shifted signal
-        _, shifted_signal = istft(Zxx_shifted, fs=sfreq)
+        _, shifted_signal = self.istft(Zxx_shifted, fs=sfreq)
 
         # Depending on the exact length and shifts, you might want to match the output size to the input size
         shifted_signal = shifted_signal[: len(signal)]

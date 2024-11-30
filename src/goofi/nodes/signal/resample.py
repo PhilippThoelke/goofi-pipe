@@ -1,7 +1,6 @@
 from math import gcd
 
 import numpy as np
-from scipy.signal import resample_poly
 
 from goofi.data import Data, DataType
 from goofi.node import Node
@@ -23,6 +22,11 @@ class Resample(Node):
                 "new_sfreq": IntParam(1000, 10, 44100),  # New sampling frequency as a parameter
             }
         }
+
+    def setup(self):
+        from scipy.signal import resample_poly
+
+        self.resample_poly = resample_poly
 
     def process(self, data: Data):
         if data is None or data.data is None:
@@ -48,7 +52,7 @@ class Resample(Node):
 
         # Resample the signal based on its dimension
         if signal.ndim == 1:
-            resampled_signal = resample_poly(signal, up, down, padtype="line")
+            resampled_signal = self.resample_poly(signal, up, down, padtype="line")
             if "dim0" in data.meta["channels"]:
                 del data.meta["channels"]["dim0"]
         elif signal.ndim == 2:
@@ -59,7 +63,7 @@ class Resample(Node):
             resampled_signal = np.zeros((rows, int(cols * up / down)))
             # TODO: vectorize this
             for i in range(rows):
-                resampled_signal[i, :] = resample_poly(signal[i, :], up, down, padtype="line")
+                resampled_signal[i, :] = self.resample_poly(signal[i, :], up, down, padtype="line")
         else:
             raise ValueError("Data must be either 1D or 2D")
 

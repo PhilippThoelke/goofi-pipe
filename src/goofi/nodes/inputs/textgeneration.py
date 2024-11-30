@@ -1,9 +1,9 @@
-from os import path, environ
 import json
-import requests
+from os import environ, path
+
 from goofi.data import Data, DataType
 from goofi.node import Node
-from goofi.params import FloatParam, IntParam, StringParam, BoolParam
+from goofi.params import BoolParam, FloatParam, IntParam, StringParam
 
 
 class TextGeneration(Node):
@@ -31,6 +31,10 @@ class TextGeneration(Node):
         }
 
     def setup(self):
+        import requests
+
+        self.requests = requests
+        
         self.client = None
         self.previous_model = None
         self.api_key_loaded = False
@@ -159,7 +163,7 @@ class TextGeneration(Node):
             history = None
 
         return response.text
-    
+
     def generate_ollama_response(self, model, messages, temp):
         # Create an Ollama client instance
         if self.client is None:
@@ -172,10 +176,10 @@ class TextGeneration(Node):
                 "system": self.system_prompt,
                 "temperature": temp,
                 "max_tokens": self.params["text_generation"]["max_tokens"].value,
-            }
+            },
         )
-        return response['message']['content']
-    
+        return response["message"]["content"]
+
     def generate_local_response(self, content):
         url = "http://127.0.0.1:5000/v1/chat/completions"
         headers = {"Content-Type": "application/json"}
@@ -186,7 +190,7 @@ class TextGeneration(Node):
             "character": "Example",
             "messages": [{"role": "user", "content": content}],
         }
-        response = requests.post(url, headers=headers, json=data, verify=False)
+        response = self.requests.post(url, headers=headers, json=data, verify=False)
         return response.json()["choices"][0]["message"]["content"]
 
     def save_conversation_to_json(self):
@@ -223,14 +227,14 @@ class TextGeneration(Node):
             if self.api_key_loaded:
                 pass
             else:
-                self.load_api_key()  
+                self.load_api_key()
             generated_text = self.generate_anthropic_response(self.messages, temp)
-            
+
         elif model.startswith("gemini-"):
             if self.api_key_loaded:
                 pass
             else:
-                self.load_api_key()  
+                self.load_api_key()
             generated_text = self.generate_gemini_response(prompt_, temp, keep_conversation)
 
         elif model.startswith("local-"):
@@ -246,7 +250,7 @@ class TextGeneration(Node):
 
         if save_conversation:
             self.save_conversation_to_json()
-        
+
         if self.params["text_generation"]["api_key"].value != self.api_key:
             self.api_key_changed()
 

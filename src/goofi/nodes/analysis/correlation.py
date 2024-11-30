@@ -1,5 +1,4 @@
 import numpy as np
-from scipy import stats
 
 from goofi.data import Data, DataType
 from goofi.node import Node
@@ -16,6 +15,11 @@ class Correlation(Node):
 
     def config_params():
         return {"correlation": {"axis": -1}}
+
+    def setup(self):
+        from scipy import stats
+
+        self.stats = stats
 
     def process(self, data1: Data, data2: Data):
         if data1 is None or data2 is None:
@@ -36,6 +40,6 @@ class Correlation(Node):
             axis += 1
 
         # calculate correlation along axis
-        r = np.apply_along_axis(lambda x: stats.pearsonr(*x.reshape(2, -1))[0], axis, data)[0]
+        r = np.apply_along_axis(lambda x: self.stats.pearsonr(*x.reshape(2, -1))[0], axis, data)[0]
 
         return {"pearson": (r, meta)}

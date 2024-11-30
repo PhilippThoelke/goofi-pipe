@@ -2,7 +2,6 @@ import base64
 import io
 
 import numpy as np
-import requests
 from PIL import Image
 
 from goofi.data import Data, DataType
@@ -36,6 +35,10 @@ class Img2Txt(Node):
         }
 
     def setup(self):
+        import requests
+
+        self.requests = requests
+
         self.processor = None
         self.model_instance = None
         self.openai = None
@@ -193,10 +196,10 @@ class Img2Txt(Node):
         }
 
         try:
-            response = requests.post("https://api.openai.com/v1/chat/completions", headers=headers, json=payload)
+            response = self.requests.post("https://api.openai.com/v1/chat/completions", headers=headers, json=payload)
             response.raise_for_status()
             generated_text = response.json().get("choices", [{}])[0].get("message", {}).get("content", "")
-        except requests.exceptions.RequestException as e:
+        except self.requests.exceptions.RequestException as e:
             print(f"Error during OpenAI captioning request: {e}")
             return {"generated_text": ("Error generating caption.", {})}
 

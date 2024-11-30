@@ -1,9 +1,5 @@
 from typing import Any, Dict, Tuple
 
-import mne
-import pandas as pd
-from mne.datasets import eegbci
-
 from goofi.node import Node
 from goofi.params import FloatParam
 
@@ -25,6 +21,9 @@ class EEGRecording(Node):
         """
         Load the data and start the stream.
         """
+        import mne
+        import pandas as pd
+        from mne.datasets import eegbci
         from mne_lsl.player import PlayerLSL
 
         # stop previous stream if it exists

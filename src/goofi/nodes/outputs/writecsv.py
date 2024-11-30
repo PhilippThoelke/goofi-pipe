@@ -2,7 +2,6 @@ import datetime
 import os
 
 import numpy as np
-import pandas as pd
 
 from goofi.data import Data, DataType
 from goofi.node import Node
@@ -23,6 +22,10 @@ class WriteCsv(Node):
         }
 
     def setup(self):
+        import pandas as pd
+
+        self.pd = pd
+
         self.last_filename = None
         self.base_filename = None  # To track the filename without the timestamp
         self.written_files = set()  # Track files we've written headers to
@@ -69,7 +72,7 @@ class WriteCsv(Node):
         flattened_data = flatten(column_data)
 
         # Create DataFrame with the flattened data
-        df = pd.DataFrame({column_name: flattened_data})
+        df = self.pd.DataFrame({column_name: flattened_data})
 
         # Get the filename from the parameters
         filename = self.params["Write"]["filename"].value

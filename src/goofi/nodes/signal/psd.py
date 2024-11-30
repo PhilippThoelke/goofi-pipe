@@ -1,6 +1,5 @@
 import numpy as np
 from numpy.fft import fft, fftfreq
-from scipy.signal import welch
 
 # from mne.time_frequency import tfr_array_multitaper
 from goofi.data import Data, DataType
@@ -28,6 +27,11 @@ class PSD(Node):
                 # "n_cycles_multitaper": IntParam(7, 1, 20),
             }
         }
+
+    def setup(self):
+        from scipy.signal import welch
+
+        self.welch = welch
 
     def process(self, data: Data):
         if data is None or data.data is None:
@@ -62,11 +66,11 @@ class PSD(Node):
             psd = np.abs(fft_result)
         elif method == "welch":
             if data.data.ndim == 1:
-                freq, psd = welch(data.data, fs=sfreq, nperseg=nperseg, nfft=nfft, noverlap=noverlap)
+                freq, psd = self.welch(data.data, fs=sfreq, nperseg=nperseg, nfft=nfft, noverlap=noverlap)
             else:  # if 2D
                 psd = []
                 for row in data.data:
-                    f, p = welch(row, fs=sfreq, nperseg=nperseg, nfft=nfft, noverlap=noverlap)
+                    f, p = self.welch(row, fs=sfreq, nperseg=nperseg, nfft=nfft, noverlap=noverlap)
                     psd.append(p)
                 freq = f
                 psd = np.array(psd)

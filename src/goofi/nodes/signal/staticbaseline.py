@@ -1,7 +1,6 @@
 import time
 
 import numpy as np
-from scipy.stats import rankdata
 
 from goofi.data import Data, DataType
 from goofi.node import Node
@@ -25,6 +24,10 @@ class StaticBaseline(Node):
         }
 
     def setup(self):
+        from scipy.stats import rankdata
+
+        self.rankdata = rankdata
+
         self.window = []
         self.time_origin = None
 
@@ -89,7 +92,7 @@ class StaticBaseline(Node):
 
     def _quantile_transform_1D(self, arr):
         # Convert data to ranks
-        ranks = rankdata(arr)
+        ranks = self.rankdata(arr)
         # Scale ranks to [0, 1]
         scaled_ranks = (ranks - 1) / (len(arr) - 1)
         # Calculate quantile values
