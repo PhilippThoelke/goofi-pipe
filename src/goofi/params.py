@@ -240,26 +240,29 @@ class NodeParams:
                     raise ValueError(f"Parameter group '{group}' does not exist.")
                 if name not in self._data[group]._fields:
                     raise ValueError(f"Parameter '{name}' does not exist in group '{group}'.")
+
                 if not isinstance(param, Param):
                     if isinstance(param, dict):
+                        # !!! LOADING PARAMS FROM DICT IS A LEGACY FEATURE TO LOAD OLD GOOFI PATCHES !!!
                         # reconstruct serialized param object
                         param_type = TYPE_PARAM_MAP[type(param["_value"])]
                         self._data[group] = self._data[group]._replace(**{name: param_type(**param)})
                         continue
 
-                    # convert to Param object
-                    if type(param) not in TYPE_PARAM_MAP:
+                    # update only the value of the parameter, leave the rest unchanged
+                    if not isinstance(self._data[group][name], TYPE_PARAM_MAP[type(param)]):
                         raise TypeError(
-                            f"Invalid parameter type {type(param).__name__}. Must be one of "
-                            f"{list(map(lambda x: x.__name__, TYPE_PARAM_MAP.keys()))}."
+                            f"Expected parameter type {TYPE_PARAM_MAP[type(param)].__name__} but got "
+                            f"{type(self._data[group][name]).__name__}."
                         )
-                    self._data[group] = self._data[group]._replace(**{name: TYPE_PARAM_MAP[type(param)](param)})
+                    self._data[group][name]._value = param
                 else:
+                    # update the entire parameter object
                     self._data[group] = self._data[group]._replace(**{name: param})
 
     def serialize(self) -> Dict[str, Dict[str, Any]]:
         """
-        Serialize the parameters to a dictionary.
+        Serialize the parameter values to a dictionary.
 
         ### Returns
         `Dict[str, Dict[str, Any]]`
@@ -269,7 +272,7 @@ class NodeParams:
         for group, params in self._data.items():
             serialized_params = {}
             for name, param in params.items():
-                param = asdict(param)
+                param = param._value
                 serialized_params[name] = param
             serialized_data[group] = serialized_params
         return serialized_data
