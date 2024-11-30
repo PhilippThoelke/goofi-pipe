@@ -31,8 +31,6 @@ class Img2Txt(Node):
                 "max_new_tokens": IntParam(30, 10, 1024, doc="Maximum number of tokens to generate"),
                 "temperature": FloatParam(0.7, 0.1, 2.0, doc="Sampling temperature"),
                 "prompt": StringParam("What is in this image?", doc="Prompt for image captioning"),
-                "max_img_width": IntParam(-1, 128, 1024, doc="Maximum image width (-1 for no resizing)"),
-                "max_img_height": IntParam(-1, 128, 1024, doc="Maximum image height (-1 for no resizing)"),
                 "openai_key": StringParam("openai.key", doc="Path to OpenAI API key file (required for OpenAI models)"),
             }
         }
@@ -102,10 +100,9 @@ class Img2Txt(Node):
         if image_array.dtype != "uint8":
             image_array = (255 * (image_array - image_array.min()) / (image_array.max() - image_array.min())).astype("uint8")
         image = Image.fromarray(image_array)
-        buffered = io.BytesIO()
-        image.save(buffered, format="JPEG")
-        buffered.seek(0)
-        return base64.b64encode(buffered.read()).decode("utf-8")
+        buffer = io.BytesIO()
+        image.save(buffer, format="JPEG")
+        return base64.b64encode(buffer.getvalue()).decode("utf-8")
 
     def process(self, image: Data):
         if image.data is None:
@@ -139,31 +136,12 @@ class Img2Txt(Node):
             else:
                 image_array = image_array.astype(np.uint8)
 
-        image = Image.fromarray(image_array)
-        if self.params.img_to_text.max_img_width.value > 0 and self.params.img_to_text.max_img_height.value > 0:
-            image.resize(
-                (self.params.img_to_text.max_img_width.value, self.params.img_to_text.max_img_height.value),
-            )
-        elif self.params.img_to_text.max_img_width.value > 0:
-            wpercent = self.params.img_to_text.max_img_width.value / float(image.size[0])
-            hsize = int((float(image.size[1]) * float(wpercent)))
-            image = image.resize((self.params.img_to_text.max_img_width.value, hsize))
-        elif self.params.img_to_text.max_img_height.value > 0:
-            hpercent = self.params.img_to_text.max_img_height.value / float(image.size[1])
-            wsize = int((float(image.size[0]) * float(hpercent)))
-            image = image.resize((wsize, self.params.img_to_text.max_img_height.value))
-
-        image_array = np.array(image)
-
         if "/" in self.model_id.lower():
             return self.process_huggingface_llama(image_array)
         elif "gpt" in self.model_id.lower():
             return self.process_openai_gpt(image_array)
         elif "ollama" in self.model_id.lower():
             return self.process_ollama(image_array)
-
-    def img_to_text_model_changed(self, model_id):
-        self.setup()
 
     def process_huggingface_llama(self, image_array):
         if self.processor is None or self.model_instance is None:
@@ -227,7 +205,7 @@ class Img2Txt(Node):
     def process_ollama(self, image_array):
         # Process using Ollama
         base64_image = self.encode_image(image_array)
-        messages = [{"role": "user", "content": self.params.img_to_text.prompt.value, "images": [f"{base64_image}"]}]
+        messages = [{"role": "user", "content": self.params.img_to_text.prompt.value, "images": [base64_image]}]
         response = self.ollama.chat(
             model=self.model_id.replace("ollama:", ""),
             messages=messages,
@@ -239,3 +217,8 @@ class Img2Txt(Node):
         generated_text = response["message"]["content"]
 
         return {"generated_text": (generated_text, {})}
+
+    def img_to_text_model_changed(self, model_id):
+        # reinitialize the model when the model_id changes
+        if self.model_id != model_id:
+            self.setup()
