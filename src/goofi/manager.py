@@ -174,7 +174,7 @@ class Manager:
 
         # load the manager state from a file
         if filepath is not None:
-            self.load(filepath)
+            self.load(filepath, load_on_init=True)
 
         if duration > 0:
             # run for a fixed duration
@@ -188,19 +188,24 @@ class Manager:
         except KeyboardInterrupt:
             self.terminate()
 
-    def load(self, filepath: str) -> None:
+    def load(self, filepath: str, load_on_init: bool = False) -> None:
         """
         Loads the state of the manager from a file.
 
         ### Parameters
         `filepath` : str
             The path to the file to load from.
+        `load_on_init` : bool
+            Whether the file is being loaded during initialization of the manager.
         """
         if len(self.nodes) > 0:
             # make sure the manager is empty
             raise RuntimeError("This goofi-pipe already contains nodes.")
 
         if not path.exists(filepath):
+            if load_on_init:
+                # missing file during initialization, terminate the application
+                self.terminate()
             raise FileNotFoundError(f"File '{filepath}' does not exist.")
 
         # TODO: add proper logging
