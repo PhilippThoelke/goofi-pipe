@@ -158,15 +158,20 @@ class NodeParams:
 
     def __init__(self, data: Dict[str, Dict[str, Any]]):
         # insert default parameters if they are not present
-        for name, group in deepcopy(DEFAULT_PARAMS).items():
-            if name not in data:
+        for group_name, group in deepcopy(DEFAULT_PARAMS).items():
+            if group_name not in data:
                 # group is not present, insert it
-                data[name] = group
+                data[group_name] = group
             else:
                 # group is present, insert missing parameters
                 for param_name, param in group.items():
-                    if param_name not in data[name]:
-                        data[name][param_name] = param
+                    if param_name in data[group_name]:
+                        # make sure we have a Param and not just a deserialized value
+                        if not isinstance(data[group_name][param_name], Param):
+                            param._value = data[group_name][param_name]
+                            data[group_name][param_name] = param
+                    else:
+                        data[group_name][param_name] = param
 
         # convert values to Param objects
         for group, params in data.items():

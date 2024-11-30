@@ -167,13 +167,9 @@ def test_serialize():
     serialized = p.serialize()
     serialized_str = yaml.dump(serialized)
 
-    print(p)
-    print()
-
     # reconstruct from the serialized data
     reconstructed = yaml.load(serialized_str, Loader=yaml.FullLoader)
     p2 = NodeParams(reconstructed)
-    print(p2)
 
     # make sure the reconstructed object is equal to the original
     assert p == p2, "NodeParams should be equal after serialization and reconstruction."
