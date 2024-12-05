@@ -1,5 +1,5 @@
 numpy
-dearpygui
+dearpygui<2
 mne-lsl
 antropy
 biotuner
