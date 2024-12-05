@@ -24,3 +24,4 @@ pyyaml
 pyaca
 pandas
 fooof
+transformers

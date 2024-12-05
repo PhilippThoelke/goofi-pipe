@@ -46,6 +46,7 @@ class MeteoMedia(Node):
         try:
             with open(api_key_path, "r") as f:
                 api_key = f.read()
+                print("API key found in file", api_key)
         except FileNotFoundError:
             pass
         if location_name is None:

@@ -1,5 +1,6 @@
 from goofi.data import Data, DataType
 from goofi.node import Node
+import numpy as np
 
 
 class Coord2loc(Node):
@@ -9,6 +10,7 @@ class Coord2loc(Node):
     def config_output_slots():
         return {
             "coord_info": DataType.TABLE,
+            "water_situation": DataType.ARRAY
         }
 
     def setup(self):
@@ -77,6 +79,6 @@ class Coord2loc(Node):
             location_info["full_address"] = Data(DataType.STRING, location.address, {})
             value = None
 
-            return {"coord_info": (location_info, {})}
+            return {"coord_info": (location_info, {}), "water_situation": (np.array(0), {})}
         else:
-            return {"coord_info": ({"info": Data(DataType.STRING, "You're lost in the ocean", {})}, {})}
+            return {"coord_info": ({"info": Data(DataType.STRING, "You're lost in the ocean", {})}, {}), "water_situation": (np.array(1), {})}

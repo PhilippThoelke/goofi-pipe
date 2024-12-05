@@ -1,5 +1,5 @@
 import numpy as np
-
+import pandas as pd
 from goofi.data import DataType
 from goofi.node import Node
 from goofi.params import FloatParam, StringParam
@@ -12,8 +12,8 @@ class LoadFile(Node):
     def config_params():
         return {
             "file": {
-                "filename": StringParam("earth", doc="The name of the file to load"),
-                "type": StringParam("spectrum", options=["spectrum"]),
+                "filename": StringParam("earth", doc="The name of the file to load with extension"),
+                "type": StringParam("spectrum", options=['spectrum', 'time_series', 'ndarray'], doc="Type of file to load, choose between 'ndarray', 'time_series' or 'spectrum'"),
                 "freq_multiplier": FloatParam(1.0, doc="Multiplier to adjust the frequency values"),
             },
             "common": {"autotrigger": True},
@@ -27,10 +27,16 @@ class LoadFile(Node):
     def process(self):
         if self.params.file.filename.value is None:
             return None
-        asset_path = self.assets_path
+        #asset_path = self.assets_path
         file_type = self.params["file"]["type"].value
         filename = self.params["file"]["filename"].value
-        data = np.load(f"{asset_path}/{filename}.npy", allow_pickle=True)
+        extension = filename.split(".")[-1]
+        if extension == "npy":
+            data = np.load(f"{filename}", allow_pickle=True)
+        elif extension == "txt":
+            data = np.loadtxt(f"{filename}")
+        elif extension == "csv":
+            data = pd.read_csv(f"{filename}", header=None).values
         if data.shape[0] > data.shape[1]:
             data = data.T
 
@@ -50,5 +56,8 @@ class LoadFile(Node):
             spectrums = data[1]
 
             return {"data_output": (np.array(spectrums), {"freq": freq_vector})}
+
+        elif file_type == "ndarray":
+            return {"data_output": (data, {})}
 
         return None

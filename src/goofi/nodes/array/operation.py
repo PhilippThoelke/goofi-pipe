@@ -10,7 +10,7 @@ class Operation(Node):
         return {"a": DataType.ARRAY, "b": DataType.ARRAY}
 
     def config_params():
-        return {"operation": {"operation": StringParam("add", options=["add", "subtract", "multiply", "divide", "matmul"])}}
+        return {"operation": {"operation": StringParam("add", options=["add", "subtract", "multiply", "divide", "matmul", "cosine_similarity"], doc="Operation to perform on the input arrays")}}
 
     def config_output_slots():
         return {"out": DataType.ARRAY}
@@ -48,6 +48,9 @@ class Operation(Node):
             result = a.data / b.data
         elif operation == "matmul":
             result = np.dot(a.data, b.data)
+        elif operation == "cosine_similarity":
+            from sklearn.metrics.pairwise import cosine_similarity
+            result = cosine_similarity(a.data, b.data)
         else:
             raise ValueError(f"Invalid operation: {operation}")
 
