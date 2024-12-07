@@ -25,3 +25,4 @@ pyaca
 pandas
 fooof
 transformers
+umap
