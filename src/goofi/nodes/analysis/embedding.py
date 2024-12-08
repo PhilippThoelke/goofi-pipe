@@ -1,10 +1,11 @@
+import cv2
 import numpy as np
+from PIL import Image
+
 from goofi.data import Data, DataType
 from goofi.node import Node
 from goofi.params import StringParam
-from transformers import CLIPProcessor, CLIPModel
-import cv2
-from PIL import Image
+
 
 class Embedding(Node):
 
@@ -22,13 +23,19 @@ class Embedding(Node):
             "embedding": {
                 "model": StringParam(
                     "openai/clip-vit-base-patch32",
-                    options=["openai/clip-vit-base-patch32", "openai/clip-vit-large-patch14","laion/CLIP-ViT-H-14-laion2B-s32B-b79K"],
-                    doc="Model ID or name for embedding generation"
+                    options=[
+                        "openai/clip-vit-base-patch32",
+                        "openai/clip-vit-large-patch14",
+                        "laion/CLIP-ViT-H-14-laion2B-s32B-b79K",
+                    ],
+                    doc="Model ID or name for embedding generation",
                 )
             }
         }
 
     def setup(self):
+        from transformers import CLIPModel, CLIPProcessor
+
         self.model_id = self.params["embedding"]["model"].value
         self.model = CLIPModel.from_pretrained(self.model_id)
         self.model.eval()  # Set to evaluation mode
@@ -57,7 +64,6 @@ class Embedding(Node):
             # Check and preprocess numpy array
             if input_data.ndim == 4 and input_data.shape[0] == 1:  # Remove batch dimension if present
                 input_data = input_data.squeeze(0)
-
 
             # Ensure image is resized and normalized
             if input_data.shape[:2] != (224, 224):  # Resize if not already 224x224

@@ -34,7 +34,7 @@ class TextGeneration(Node):
         import requests
 
         self.requests = requests
-        
+
         self.client = None
         self.previous_model = None
         self.api_key_loaded = False
