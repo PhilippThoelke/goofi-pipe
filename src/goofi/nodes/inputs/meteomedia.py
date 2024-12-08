@@ -50,7 +50,9 @@ class MeteoMedia(Node):
         except FileNotFoundError:
             pass
         if location_name is None:
-            url = f"https://api.tomorrow.io/v4/weather/realtime?location={np.float(lat_value)},{np.float(long_value)}&apikey={api_key}"
+            url = (
+                f"https://api.tomorrow.io/v4/weather/realtime?location={float(lat_value)},{float(long_value)}&apikey={api_key}"
+            )
             headers = {"accept": "application/json"}
             response = self.requests.get(url, headers=headers)
             print(response.status_code)

@@ -20,8 +20,12 @@ class Kuramoto(Node):
         return {
             "kuramoto": {
                 "coupling_strength": FloatParam(0.5, 0.0, 10.0),
-                "natural_frequencies": StringParam("1, 1.5, 2", doc="Comma-separated list of natural frequencies"),
-                "timesteps": IntParam(1000, 0, 10000, doc="Number of timesteps to integrate"),
+                "natural_frequencies": StringParam(
+                    "1, 1.5, 2", doc="Comma-separated list of natural frequencies"
+                ),
+                "timesteps": IntParam(
+                    1000, 0, 10000, doc="Number of timesteps to integrate"
+                ),
             }
         }
 
@@ -62,6 +66,9 @@ class Kuramoto(Node):
 
         channels = {"dim0": [f"oscillator_{i}" for i in range(N)]}
         meta = {"channels": channels}
+        # add sfreq to meta
+        sfreq = 1 / dt
+        meta["sfreq"] = sfreq
 
         return {
             "phases": (theta.reshape(-1, 1), meta),
