@@ -1,6 +1,6 @@
 import traceback
 from abc import ABC, abstractmethod
-from typing import Any
+from typing import Any, Optional
 
 import cv2
 import dearpygui.dearpygui as dpg
@@ -14,16 +14,28 @@ from goofi.message import Message, MessageType
 
 
 class ViewerContainer:
-    def __init__(self, dtype: DataType, content_window: int) -> None:
+    def __init__(
+        self,
+        dtype: DataType,
+        content_window: int,
+        log_scale_x: bool = False,
+        log_scale_y: bool = False,
+        viewer_idx: int = 0,
+        width: Optional[int] = None,
+        height: Optional[int] = None,
+    ) -> None:
         self.dtype = dtype
         self.content_window = content_window
 
-        self.log_scale_x = False
-        self.log_scale_y = False
+        self.log_scale_x = log_scale_x
+        self.log_scale_y = log_scale_y
 
-        self.viewer_idx = 0
+        self.viewer_idx = viewer_idx
         self.viewer = DTYPE_VIEWER_MAP[self.dtype][self.viewer_idx](self.content_window, self)
         self.viewer.set_size()
+
+        # set viewer size if provided
+        self.set_size(width, height)
 
         with dpg.handler_registry():
             dpg.add_mouse_click_handler(button=0, callback=self.clicked)
@@ -58,16 +70,27 @@ class ViewerContainer:
             return
 
         min_size = dpg.get_item_user_data(self.content_window)
-
-        header = dpg.get_item_parent(self.content_window)
-        window = dpg.get_item_parent(header)
-
         width, height = dpg.get_item_width(self.content_window), dpg.get_item_height(self.content_window)
+
+        # increase or decrease size of viewer
         width = max(min_size[0], width + value * 10)
         height = max(min_size[1], height + value * 10)
 
+        # apply changes
+        self.set_size(width, height)
+
+    def set_size(self, width: Optional[int] = None, height: Optional[int] = None) -> None:
+        """Set the size of the viewer."""
+        if width is None:
+            width = dpg.get_item_width(self.content_window)
+        if height is None:
+            height = dpg.get_item_height(self.content_window)
+
         dpg.set_item_width(self.content_window, width)
         dpg.set_item_height(self.content_window, height)
+
+        header = dpg.get_item_parent(self.content_window)
+        window = dpg.get_item_parent(header)
 
         header_height = dpg.get_item_state(header)["rect_size"][1]
         if header_height == 0:
@@ -105,6 +128,22 @@ class ViewerContainer:
             dpg.configure_item(self.viewer.xax, log_scale=self.log_scale_x)
         if hasattr(self.viewer, "yax"):
             dpg.configure_item(self.viewer.yax, log_scale=self.log_scale_y)
+
+    def get_state(self) -> dict:
+        width = dpg.get_item_width(self.content_window)
+        height = dpg.get_item_height(self.content_window)
+
+        header = dpg.get_item_parent(self.content_window)
+        collapsed = dpg.get_item_state(header)["content_region_avail"][1] <= 0
+
+        return {
+            "viewer_idx": self.viewer_idx,
+            "width": width,
+            "height": height,
+            "collapsed": collapsed,
+            "log_scale_x": self.log_scale_x,
+            "log_scale_y": self.log_scale_y,
+        }
 
     def __call__(self, msg: Message) -> Any:
         if not msg.type == MessageType.DATA:

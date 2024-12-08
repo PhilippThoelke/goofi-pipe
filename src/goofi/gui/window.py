@@ -439,6 +439,7 @@ class Window:
         node: NodeRef,
         pos: Optional[Tuple[int, int]] = None,
         offset: Optional[Tuple[int, int]] = None,
+        viewers: Optional[List[Dict[str, Any]]] = None,
     ) -> None:
         """
         Outward facing method to add a node to the GUI.
@@ -452,6 +453,8 @@ class Window:
             Position of the node. If None, uses the mouse position.
         `offset` : Optional[Tuple[int, int]]
             Offsets the node position by the given amount.
+        `viewers` : Optional[List[Dict[str, Any]]]
+            List of data viewer configurations.
         """
         if pos is None:
             pos = self._node_editor_mouse_pos()
@@ -477,10 +480,15 @@ class Window:
                 out_slots[name] = dpg.add_node_attribute(
                     label=name, attribute_type=dpg.mvNode_Attr_Output, shape=DTYPE_SHAPE_MAP[dtype], user_data=dtype
                 )
+
+                # determine data viewer configuration
+                viewer_kwargs = viewers[name] if viewers is not None and name in viewers else {}
+                collapsed = viewer_kwargs.pop("collapsed", len(node.output_slots) > 2)
+
                 # create content window for data viewer (initialize closed if more than two output slots)
-                content = add_output_slot(out_slots[name], name, closed=len(node.output_slots) > 2)
+                content = add_output_slot(out_slots[name], name, closed=collapsed)
                 # create data viewer
-                output_draw_handlers[name] = ViewerContainer(dtype, content)
+                output_draw_handlers[name] = ViewerContainer(dtype, content, **viewer_kwargs)
 
             # add node to node list
             self.nodes[node_name] = GUINode(node_id, in_slots, out_slots, output_draw_handlers, node)
@@ -801,6 +809,7 @@ class Window:
         node = self.nodes[name]
         return {
             "pos": dpg.get_item_pos(node.item),
+            "viewers": {slot: viewer.get_state() for slot, viewer in node.output_draw_handlers.items()},
         }
 
     def _select_node(self, item: Optional[int]) -> None:
@@ -995,8 +1004,8 @@ class Window:
         cats = [n.category() for n in list_nodes()]
         cats = sorted(list(set(cats)))
 
-        def scale(color, scale):
-            return [max(min(int(c * scale), 255), 0) for c in color]
+        def scale(color, s):
+            return [max(min(int(c * s), 255), 0) for c in color]
 
         # set up node themes
         self.node_themes = {}
