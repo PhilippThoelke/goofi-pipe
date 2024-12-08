@@ -28,7 +28,11 @@ class Audio2Txt(Node):
     def setup(self):
         import librosa
         import torch
-        from transformers import AutoProcessor, Qwen2AudioForConditionalGeneration
+
+        try:
+            from transformers import AutoProcessor, Qwen2AudioForConditionalGeneration
+        except ModuleNotFoundError:
+            raise ModuleNotFoundError("Please install transformers to use Qwen2-Audio models via pip install transformers")
 
         self.librosa = librosa
         try:

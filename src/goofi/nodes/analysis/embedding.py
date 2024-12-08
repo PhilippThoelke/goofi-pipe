@@ -5,10 +5,6 @@ from PIL import Image
 from goofi.data import Data, DataType
 from goofi.node import Node
 from goofi.params import StringParam
-from transformers import CLIPProcessor, CLIPModel
-from sentence_transformers import SentenceTransformer
-import cv2
-from PIL import Image
 
 
 class Embedding(Node):
@@ -39,15 +35,26 @@ class Embedding(Node):
         }
 
     def setup(self):
-        from transformers import CLIPModel, CLIPProcessor
+        self.model_id = self.params.embedding.model.value
 
-        self.model_id = self.params["embedding"]["model"].value
         if "clip" in self.model_id.lower():  # Load CLIP model
+            try:
+                from transformers import CLIPModel, CLIPProcessor
+            except ModuleNotFoundError:
+                raise ModuleNotFoundError("Please install transformers to use CLIP models via pip install transformers")
+
             self.model = CLIPModel.from_pretrained(self.model_id)
             self.model.eval()  # Set to evaluation mode
             self.model.to("cpu")  # Ensure model is on CPU
             self.processor = CLIPProcessor.from_pretrained(self.model_id)
         elif "sbert" in self.model_id.lower() or "MiniLM" in self.model_id:  # Load SBERT model
+            try:
+                from sentence_transformers import SentenceTransformer
+            except ModuleNotFoundError:
+                raise ModuleNotFoundError(
+                    "Please install sentence-transformers to use SBERT models via pip install sentence-transformers"
+                )
+
             self.model = SentenceTransformer(self.model_id)
 
     def process(self, text: Data, data: Data):

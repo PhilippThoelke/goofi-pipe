@@ -1,10 +1,12 @@
 from typing import Any, Dict, Tuple
+
 import cv2
 import numpy as np
 from mss import mss
+
 from goofi.data import DataType
 from goofi.node import Node
-from goofi.params import IntParam, StringParam, BoolParam
+from goofi.params import BoolParam, IntParam, StringParam
 
 
 class VideoStream(Node):
@@ -74,4 +76,3 @@ class VideoStream(Node):
 
     def video_stream_capture_mode_changed(self, value):
         self.setup()
-                
