@@ -1,3 +1,5 @@
+import soundfile as sf
+
 from goofi.data import Data, DataType
 from goofi.node import Node
 from goofi.params import IntParam, StringParam
@@ -16,6 +18,7 @@ class Audio2Txt(Node):
     def config_params():
         return {
             "audio_to_text": {
+                "provider": StringParam("huggingface", options=["huggingface", "nexa"], doc="Provider for audio LMs"),
                 "model": StringParam(
                     "Qwen/Qwen2-Audio-7B-Instruct",
                     doc="Huggingface model ID for audio captioning",
@@ -27,6 +30,35 @@ class Audio2Txt(Node):
 
     def setup(self):
         import librosa
+
+        self.librosa = librosa
+
+        provider = self.params.audio_to_text.provider.value
+        if provider == "huggingface":
+            self.setup_huggingface()
+        elif provider == "nexa":
+            self.setup_nexa()
+
+    def process(self, audio: Data):
+        if audio.data is None:
+            return None
+
+        if self.params.audio_to_text.provider.value == "huggingface":
+            generated_text = self.generate_huggingface(audio)
+        elif self.params.audio_to_text.provider.value == "nexa":
+            generated_text = self.generate_nexa(audio)
+        else:
+            raise ValueError(f"Unsupported provider: {self.params.audio_to_text.provider.value}")
+
+        return {"generated_text": (generated_text, {})}
+
+    def audio_to_text_provider_changed(self, value):
+        self.setup()
+
+    def audio_to_text_model_changed(self, value):
+        self.setup()
+
+    def setup_huggingface(self):
         import torch
 
         try:
@@ -34,7 +66,6 @@ class Audio2Txt(Node):
         except ModuleNotFoundError:
             raise ModuleNotFoundError("Please install transformers to use Qwen2-Audio models via pip install transformers")
 
-        self.librosa = librosa
         try:
             self.processor = AutoProcessor.from_pretrained(
                 self.params["audio_to_text"]["model"].value, torch_dtype=torch.float16
@@ -48,20 +79,13 @@ class Audio2Txt(Node):
             print(f"Error initializing Huggingface model: {e}")
             raise
 
-    def process(self, audio: Data):
-        if audio.data is None:
-            return None
-
-        audio_array = audio.data
-        if audio_array.ndim != 1:
-            raise ValueError(f"Unexpected audio array dimensions: {audio_array.shape}")
-
+    def generate_huggingface(self, audio):
         # Ensure the audio is sampled at the model's expected rate
         sampling_rate = self.processor.feature_extractor.sampling_rate
-        audio_array = self.librosa.resample(audio_array, orig_sr=audio.meta["sfreq"], target_sr=sampling_rate)
+        audio_array = self.librosa.resample(audio.data, orig_sr=audio.meta["sfreq"], target_sr=sampling_rate)
 
-        max_new_tokens = self.params["audio_to_text"]["max_new_tokens"].value
-        prompt = self.params["audio_to_text"]["prompt"].value
+        max_new_tokens = self.params.audio_to_text.max_new_tokens.value
+        prompt = self.params.audio_to_text.prompt.value
 
         # Prepare the conversation input
         conversation = [
@@ -91,5 +115,30 @@ class Audio2Txt(Node):
         generated_text = self.processor.batch_decode(
             generate_ids, skip_special_tokens=True, clean_up_tokenization_spaces=False
         )[0]
+        return generated_text
 
-        return {"generated_text": (generated_text, {})}
+    def setup_nexa(self):
+        try:
+            from nexa.gguf.nexa_inference_audio_lm import NexaAudioLMInference
+        except Exception as e:
+            print(f"Error initializing Nexa model: {e}")
+            raise
+
+        self.model = NexaAudioLMInference(self.params.audio_to_text.model.value)
+
+    def generate_nexa(self, audio):
+        # save audio to temp file (nexa expects 16kHz audio)
+        audio_file = "./temp_audio.wav"
+        sf.write(audio_file, self.librosa.resample(audio.data, orig_sr=audio.meta["sfreq"], target_sr=16000), 16000)
+
+        try:
+            # generate text
+            response = self.model.inference(audio_file, self.params.audio_to_text.prompt.value)
+        except Exception as e:
+            print(f"Error generating text with Nexa model: {e}")
+            raise
+        finally:
+            # TODO: avoid reloading the model for each inference, the model should stay loaded in memory but currently it seems to reload every time so we need to cleanup
+            self.model.cleanup()
+
+        return response
