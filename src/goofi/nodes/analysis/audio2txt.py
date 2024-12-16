@@ -78,6 +78,7 @@ class Audio2Txt(Node):
         inputs = self.processor(
             text=text,
             audios=[audio_array],
+            sampling_rate=sampling_rate,
             return_tensors="pt",
             padding=True,
         )
