@@ -18,6 +18,10 @@ class VideoStream(Node):
                 "capture_mode": StringParam("screen", ["camera", "screen"]),
                 "screen_region": StringParam("full", ["full", "custom"]),
                 "screen_index": IntParam(1, 1, 10),
+                "crop_top": IntParam(0, 0, 2000),
+                "crop_down": IntParam(0, 0, 2000),
+                "crop_left": IntParam(0, 0, 2000),
+                "crop_right": IntParam(0, 0, 2000),
             },
             "common": {"autotrigger": BoolParam(True)},
         }
@@ -41,22 +45,27 @@ class VideoStream(Node):
                 if self.params.video_stream.mirror.value:
                     frame = cv2.flip(frame, 1)
         elif self.capture_mode == "screen":
-            # Initialize mss in the process method
             with mss() as sct:
                 screen_index = self.params.video_stream.screen_index.value
                 monitors = sct.monitors
-                print(f"Available screens: {monitors}")
                 if screen_index >= len(monitors):
                     print(f"Invalid screen index: {screen_index}. Defaulting to screen 1.")
                     screen_index = 1
                 monitor = monitors[screen_index]
+
+                # Crop customization
                 if self.params.video_stream.screen_region.value == "custom":
                     monitor = {
-                        "top": monitor["top"] + 100,
-                        "left": monitor["left"] + 100,
-                        "width": 800,
-                        "height": 600,
+                        "top": monitor["top"] + self.params.video_stream.crop_top.value,
+                        "left": monitor["left"] + self.params.video_stream.crop_left.value,
+                        "width": monitor["width"]
+                                 - self.params.video_stream.crop_left.value
+                                 - self.params.video_stream.crop_right.value,
+                        "height": monitor["height"]
+                                  - self.params.video_stream.crop_top.value
+                                  - self.params.video_stream.crop_down.value,
                     }
+
                 screen_capture = sct.grab(monitor)
                 frame = np.array(screen_capture)
                 frame = cv2.cvtColor(frame, cv2.COLOR_BGRA2RGB)
