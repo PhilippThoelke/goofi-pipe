@@ -31,7 +31,7 @@ class PCA(Node):
     def setup(self):
         from sklearn.manifold import TSNE
 
-        self.tsne = TSNE
+        self.tsne = TSNE  # Assign the TSNE class to a class attribute
 
         self.buffer = None
         self.buffer_full = False
@@ -89,7 +89,7 @@ class PCA(Node):
 
         elif method == "t-SNE":
             perplexity = self.params.Control.tsne_perplexity.value
-            tsne = self.TSNE(n_components=n_components, perplexity=perplexity, init="pca", random_state=42)
+            tsne = self.tsne(n_components=n_components, perplexity=perplexity, init="pca", random_state=42)  # Use self.tsne
             principal_components = tsne.fit_transform(self.buffer)
 
             last_principal_components = (principal_components, {})
