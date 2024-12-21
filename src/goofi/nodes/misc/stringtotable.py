@@ -51,27 +51,16 @@ class StringToTable(Node):
 
 
 def parse_table(table, meta):
+    print(table)
     for key, value in table.items():
         if isinstance(value, dict):
-            table[key] = Data(DataType.TABLE, parse_table(value), meta)
+            table[key] = Data(DataType.TABLE, parse_table(value, meta), meta)
             continue
 
-        if isinstance(value, list):
-            if len(value) == 1:
-                value = value[0]
-            elif any(isinstance(v, str) for v in value):
-                table[key] = Data(DataType.STRING, str(value), meta)
-                continue
-            else:
-                table[key] = Data(DataType.ARRAY, np.array(value), meta)
-                continue
-
-        try:
-            table[key] = Data(DataType.ARRAY, float(value), meta)
+        if isinstance(value, str):
+            table[key] = Data(DataType.STRING, value, meta)
             continue
-        except Exception:
-            pass
 
-        table[key] = Data(DataType.STRING, str(value), meta)
+        table[key] = Data(DataType.ARRAY, np.array(value), meta)
 
     return table
