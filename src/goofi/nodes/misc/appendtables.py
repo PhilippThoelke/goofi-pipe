@@ -13,8 +13,12 @@ class AppendTables(Node):
         return {}
 
     def process(self, table1: Data, table2: Data):
-        if table1 is None or table2 is None:
+        if table1 is None and table2 is None:
             return None
+        if table2 is None:
+            return {"output_table": (table1.data, table1.meta)}
+        if table1 is None:
+            return {"output_table": (table2.data, table2.meta)}
 
         # Combine the two tables' data dictionaries
         combined_data = {**table1.data, **table2.data}
