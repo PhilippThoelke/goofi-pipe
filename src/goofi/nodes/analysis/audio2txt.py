@@ -1,14 +1,17 @@
 import soundfile as sf
 
 from goofi.data import Data, DataType
-from goofi.node import Node
-from goofi.params import IntParam, StringParam
+from goofi.node import InputSlot, Node
+from goofi.params import FloatParam, IntParam, StringParam
 
 
 class Audio2Txt(Node):
     @staticmethod
     def config_input_slots():
-        return {"audio": DataType.ARRAY}
+        return {
+            "prompt": InputSlot(DataType.STRING, trigger_process=False),
+            "audio": DataType.ARRAY,
+        }
 
     @staticmethod
     def config_output_slots():
@@ -24,7 +27,7 @@ class Audio2Txt(Node):
                     doc="Huggingface model ID for audio captioning",
                 ),
                 "max_new_tokens": IntParam(30, 10, 1024, doc="Maximum number of tokens to generate"),
-                "prompt": StringParam("What is in this audio?", doc="Prompt for audio captioning"),
+                "temperature": FloatParam(0.7, 0.1, 2.0, doc="Sampling temperature for text generation"),
             }
         }
 
@@ -39,14 +42,16 @@ class Audio2Txt(Node):
         elif provider == "nexa":
             self.setup_nexa()
 
-    def process(self, audio: Data):
+    def process(self, prompt: Data, audio: Data):
         if audio.data is None:
             return None
 
+        prompt = prompt.data
+
         if self.params.audio_to_text.provider.value == "huggingface":
-            generated_text = self.generate_huggingface(audio)
+            generated_text = self.generate_huggingface(prompt, audio)
         elif self.params.audio_to_text.provider.value == "nexa":
-            generated_text = self.generate_nexa(audio)
+            generated_text = self.generate_nexa(prompt, audio)
         else:
             raise ValueError(f"Unsupported provider: {self.params.audio_to_text.provider.value}")
 
@@ -79,13 +84,10 @@ class Audio2Txt(Node):
             print(f"Error initializing Huggingface model: {e}")
             raise
 
-    def generate_huggingface(self, audio):
+    def generate_huggingface(self, prompt, audio):
         # Ensure the audio is sampled at the model's expected rate
         sampling_rate = self.processor.feature_extractor.sampling_rate
         audio_array = self.librosa.resample(audio.data, orig_sr=audio.meta["sfreq"], target_sr=sampling_rate)
-
-        max_new_tokens = self.params.audio_to_text.max_new_tokens.value
-        prompt = self.params.audio_to_text.prompt.value
 
         # Prepare the conversation input
         conversation = [
@@ -109,7 +111,11 @@ class Audio2Txt(Node):
         inputs = {k: v.to(self.model.device) for k, v in inputs.items()}
 
         # Generate text
-        generate_ids = self.model.generate(**inputs, max_new_tokens=max_new_tokens)
+        generate_ids = self.model.generate(
+            **inputs,
+            max_new_tokens=self.params.audio_to_text.max_new_tokens.value,
+            temperature=self.params.audio_to_text.temperature.value,
+        )
         generate_ids = generate_ids[:, inputs["input_ids"].size(1) :]
 
         generated_text = self.processor.batch_decode(
@@ -126,19 +132,19 @@ class Audio2Txt(Node):
 
         self.model = NexaAudioLMInference(self.params.audio_to_text.model.value)
 
-    def generate_nexa(self, audio):
+    def generate_nexa(self, prompt, audio):
         # save audio to temp file (nexa expects 16kHz audio)
         audio_file = "./temp_audio.wav"
         sf.write(audio_file, self.librosa.resample(audio.data, orig_sr=audio.meta["sfreq"], target_sr=16000), 16000)
 
-        try:
-            # generate text
-            response = self.model.inference(audio_file, self.params.audio_to_text.prompt.value)
-        except Exception as e:
-            print(f"Error generating text with Nexa model: {e}")
-            raise
-        finally:
-            # TODO: avoid reloading the model for each inference, the model should stay loaded in memory but currently it seems to reload every time so we need to cleanup
-            self.model.cleanup()
+        # TODO: this doesn't work due to current limitiation in Nexa
+        self.model.params["max_new_tokens"] = self.params.audio_to_text.max_new_tokens.value
+        self.model.params["temperature"] = self.params.audio_to_text.temperature.value
+
+        # generate text
+        response = self.model.inference(audio_file, prompt)
+
+        # TODO: avoid reloading the model for each inference, the model should stay loaded in memory but currently it seems to reload every time so we need to cleanup
+        self.model.cleanup()
 
         return response
