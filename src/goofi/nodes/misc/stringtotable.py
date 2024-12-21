@@ -54,13 +54,18 @@ def parse_table(table, meta):
     for key, value in table.items():
         if isinstance(value, dict):
             table[key] = Data(DataType.TABLE, parse_table(value), meta)
+            continue
+
+        if isinstance(value, list):
+            table[key] = Data(DataType.ARRAY, np.array(value), meta)
+            continue
 
         try:
-            table[key] = Data(DataType.ARRAY, np.array(float(value)), meta)
+            table[key] = Data(DataType.ARRAY, np.fromstring(value, sep=","), meta)
             continue
         except Exception:
             pass
-        
+
         table[key] = Data(DataType.STRING, str(value), meta)
 
     return table
