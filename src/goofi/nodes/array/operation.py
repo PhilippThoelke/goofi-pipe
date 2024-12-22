@@ -1,8 +1,10 @@
+from copy import deepcopy
+
 import numpy as np
+
 from goofi.data import Data, DataType
 from goofi.node import Node
 from goofi.params import StringParam
-from copy import deepcopy
 
 
 class Operation(Node):
@@ -10,7 +12,15 @@ class Operation(Node):
         return {"a": DataType.ARRAY, "b": DataType.ARRAY}
 
     def config_params():
-        return {"operation": {"operation": StringParam("add", options=["add", "subtract", "multiply", "divide", "matmul", "cosine_similarity"], doc="Operation to perform on the input arrays")}}
+        return {
+            "operation": {
+                "operation": StringParam(
+                    "add",
+                    options=["add", "subtract", "multiply", "divide", "matmul", "cosine_similarity"],
+                    doc="Operation to perform on the input arrays",
+                )
+            }
+        }
 
     def config_output_slots():
         return {"out": DataType.ARRAY}
@@ -21,7 +31,7 @@ class Operation(Node):
 
         operation = self.params.operation.operation.value
         if operation == "matmul":
-            new_meta = deepcopy(b.meta).update(deepcopy(a.meta))
+            new_meta = deepcopy(a.meta)
             # matmul is n x m * m x p -> n x p
             if "dim0" in a.meta["channels"]:
                 new_meta["channels"]["dim0"] = a.meta["channels"]["dim0"]
@@ -36,7 +46,7 @@ class Operation(Node):
             if "channels" in a.meta and "channels" in b.meta:
                 if a.meta["channels"] != b.meta["channels"]:
                     print("Channels are not the same, metadata from a is used")
-                new_meta = deepcopy(b.meta).update(deepcopy(a.meta))
+                new_meta = deepcopy(a.meta)
 
         if operation == "add":
             result = a.data + b.data
@@ -50,6 +60,7 @@ class Operation(Node):
             result = np.dot(a.data, b.data)
         elif operation == "cosine_similarity":
             from sklearn.metrics.pairwise import cosine_similarity
+
             result = cosine_similarity(a.data, b.data)
         else:
             raise ValueError(f"Invalid operation: {operation}")
