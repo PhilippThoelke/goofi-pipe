@@ -51,7 +51,6 @@ class StringToTable(Node):
 
 
 def parse_table(table, meta):
-    print(table)
     for key, value in table.items():
         if isinstance(value, dict):
             table[key] = Data(DataType.TABLE, parse_table(value, meta), meta)
