@@ -48,6 +48,15 @@ class Operation(Node):
                     print("Channels are not the same, metadata from a is used")
                 new_meta = deepcopy(a.meta)
 
+        if "sfreq" in a.meta and "sfreq" in b.meta:
+            if a.meta["sfreq"] != b.meta["sfreq"]:
+                print("Sampling frequencies are not the same, metadata from a is used")
+            new_meta["sfreq"] = a.meta["sfreq"]
+        elif "sfreq" in a.meta:
+            new_meta["sfreq"] = a.meta["sfreq"]
+        elif "sfreq" in b.meta:
+            new_meta["sfreq"] = b.meta["sfreq"]
+
         if operation == "add":
             result = a.data + b.data
         elif operation == "subtract":
