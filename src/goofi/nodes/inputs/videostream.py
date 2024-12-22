@@ -59,11 +59,11 @@ class VideoStream(Node):
                         "top": monitor["top"] + self.params.video_stream.crop_top.value,
                         "left": monitor["left"] + self.params.video_stream.crop_left.value,
                         "width": monitor["width"]
-                                 - self.params.video_stream.crop_left.value
-                                 - self.params.video_stream.crop_right.value,
+                        - self.params.video_stream.crop_left.value
+                        - self.params.video_stream.crop_right.value,
                         "height": monitor["height"]
-                                  - self.params.video_stream.crop_top.value
-                                  - self.params.video_stream.crop_down.value,
+                        - self.params.video_stream.crop_top.value
+                        - self.params.video_stream.crop_down.value,
                     }
 
                 screen_capture = sct.grab(monitor)
