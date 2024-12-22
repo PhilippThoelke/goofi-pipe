@@ -27,3 +27,4 @@ pandas
 fooof
 umap
 mss
+usearch
