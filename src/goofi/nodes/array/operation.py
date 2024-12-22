@@ -21,7 +21,7 @@ class Operation(Node):
 
         operation = self.params.operation.operation.value
         if operation == "matmul":
-            new_meta = deepcopy(a.meta).update(deepcopy(b.meta))
+            new_meta = deepcopy(b.meta).update(deepcopy(a.meta))
             # matmul is n x m * m x p -> n x p
             if "dim0" in a.meta["channels"]:
                 new_meta["channels"]["dim0"] = a.meta["channels"]["dim0"]
@@ -36,7 +36,7 @@ class Operation(Node):
             if "channels" in a.meta and "channels" in b.meta:
                 if a.meta["channels"] != b.meta["channels"]:
                     print("Channels are not the same, metadata from a is used")
-                new_meta = deepcopy(a.meta).update(deepcopy(b.meta))
+                new_meta = deepcopy(b.meta).update(deepcopy(a.meta))
 
         if operation == "add":
             result = a.data + b.data
