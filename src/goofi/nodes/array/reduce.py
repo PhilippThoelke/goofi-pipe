@@ -17,7 +17,7 @@ class Reduce(Node):
             "reduce": {
                 "method": StringParam(
                     "mean",
-                    options=["mean", "median", "min", "max", "std", "norm"],
+                    options=["mean", "median", "min", "max", "std", "norm", "sum"],
                 ),
                 "axis": 0,
             }
