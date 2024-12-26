@@ -20,6 +20,7 @@ class Resample(Node):
         return {
             "resample": {
                 "new_sfreq": IntParam(1000, 10, 44100),  # New sampling frequency as a parameter
+                "axis": IntParam(-1, -1, 4),  # Axis to resample the signal
             }
         }
 
@@ -38,6 +39,7 @@ class Resample(Node):
 
         # Retrieve new sampling frequency parameter
         new_sfreq = self.params["resample"]["new_sfreq"].value
+        axis = self.params["resample"]["axis"].value
 
         # Calculate up and down factors based on the gcd of sf and new_sfreq
         factor = gcd(int(sf), int(new_sfreq))
@@ -50,22 +52,16 @@ class Resample(Node):
         if np.any(np.isnan(signal)) or np.any(np.isinf(signal)):
             print("Signal contains NaN or inf values")
 
-        # Resample the signal based on its dimension
-        if signal.ndim == 1:
-            resampled_signal = self.resample_poly(signal, up, down, padtype="line")
-            if "dim0" in data.meta["channels"]:
-                del data.meta["channels"]["dim0"]
-        elif signal.ndim == 2:
-            if "dim1" in data.meta["channels"]:
-                del data.meta["channels"]["dim1"]
+        # Resample the signal based on the specified axis
+        resampled_signal = self.resample_poly(signal, up, down, axis=axis, padtype="line")
 
-            rows, cols = signal.shape
-            resampled_signal = np.zeros((rows, int(cols * up / down)))
-            # TODO: vectorize this
-            for i in range(rows):
-                resampled_signal[i, :] = self.resample_poly(signal[i, :], up, down, padtype="line")
-        else:
-            raise ValueError("Data must be either 1D or 2D")
+        # Adjust axis for negative values
+        if axis < 0:
+            axis += signal.ndim
+
+        # Remove the corresponding channel metadata if it exists
+        if f"dim{axis}" in data.meta["channels"]:
+            del data.meta["channels"][f"dim{axis}"]
 
         # Update the 'sfreq' metadata
         data.meta["sfreq"] = new_sfreq
