@@ -19,6 +19,7 @@ class LoadFile(Node):
                 "freq_multiplier": FloatParam(1.0, doc="Multiplier to adjust the frequency values"),
                 "header": 0,
                 "index_column": True,
+                "name_column": False,
                 "select": StringParam("", doc="NumPy selection string"),
             },
             "common": {"autotrigger": True},
@@ -80,6 +81,10 @@ class LoadFile(Node):
         if dtypes is not None and any([dtype == "object" for dtype in dtypes]):
             return {"data_output": None, "string_output": ("\n".join(data), {})}
 
+        if self.params.file.name_column.value:
+            self.meta = {"channels": {"dim0": list(df.iloc[:, 0].values)}}
+            data = data[:, 1:]
+
         data = data.astype(np.float32)
 
         # Handle time_series type
@@ -103,6 +108,6 @@ class LoadFile(Node):
             return {"data_output": (data, {}), "string_output": None}
 
         elif file_type == "embedding_csv":
-            return {"data_output": (data, {}), "string_output": None}
+            return {"data_output": (data, self.meta if self.params.file.name_column.value else {}), "string_output": None}
 
         return None

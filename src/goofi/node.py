@@ -381,6 +381,10 @@ class Node(ABC):
             # send output data
             for name in self.output_slots.keys():
                 data = output_data[name]
+                if data is None:
+                    # skip sending None data
+                    continue
+
                 try:
                     data = Data(self.output_slots[name].dtype, data[0], data[1])
                 except Exception:
