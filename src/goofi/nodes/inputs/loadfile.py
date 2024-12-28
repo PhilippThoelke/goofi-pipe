@@ -77,7 +77,6 @@ class LoadFile(Node):
             except (ValueError, IndexError) as e:
                 print(f"Invalid selection string: {selection}")
 
-        print([str(d) for d in dtypes], dtypes is not None and any([dtype == "object" for dtype in dtypes]))
         if dtypes is not None and any([dtype == "object" for dtype in dtypes]):
             return {"data_output": None, "string_output": ("\n".join(data), {})}
 
