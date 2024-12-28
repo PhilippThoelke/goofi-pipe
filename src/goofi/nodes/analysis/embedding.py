@@ -4,10 +4,11 @@ from PIL import Image
 
 from goofi.data import Data, DataType
 from goofi.node import Node
-from goofi.params import StringParam
+from goofi.params import StringParam, BoolParam
 
 
 class Embedding(Node):
+    NO_MULTIPROCESSING = True
 
     def config_input_slots():
         return {"text": DataType.STRING, "data": DataType.ARRAY}
@@ -30,7 +31,11 @@ class Embedding(Node):
                         "all-MiniLM-L6-v2",
                     ],
                     doc="Model ID or name for embedding generation",
-                )
+                ),
+                "split_by_comma": BoolParam(
+                    False,
+                    doc="Whether to split text input by comma and generate embeddings for each part separately",
+                ),
             }
         }
 
@@ -68,12 +73,17 @@ class Embedding(Node):
             input_text = text.data
             metadata["text"] = text.meta
 
+            if self.params.embedding.split_by_comma.value:
+                input_texts = [t.strip() for t in input_text.split(",")]
+            else:
+                input_texts = [input_text]
+
             if "clip" in self.model_id.lower():  # Use CLIP for text
-                inputs_text = self.processor(text=input_text, return_tensors="pt", padding=True)
+                inputs_text = self.processor(text=input_texts, return_tensors="pt", padding=True)
                 outputs_text = self.model.get_text_features(**inputs_text)
                 text_embeddings = outputs_text.detach().numpy()
             elif "sbert" in self.model_id.lower() or "MiniLM" in self.model_id:  # Use SBERT for text
-                text_embeddings = self.model.encode(input_text, convert_to_numpy=True)
+                text_embeddings = self.model.encode(input_texts, convert_to_numpy=True)
 
         # Compute image embeddings if data input is provided
         if data is not None:
