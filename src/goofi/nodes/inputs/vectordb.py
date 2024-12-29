@@ -83,5 +83,5 @@ class VectorDB(Node):
 
         return {"top_labels": (top_labels, {}), "vectors": (vectors, {})}
 
-    def update_control_database_path_changed(self, value):
+    def Control_database_path_changed(self, value):
         self.setup()
