@@ -5,43 +5,54 @@ from goofi.node import Node
 
 class Compass(Node):
     """
-    A Goofi node that calculates the angle from Cartesian coordinates derived from
-    directional inputs (north, south, east, west).
+    A Goofi node that calculates angles from polar arrays in N-dimensional space.
+    Takes two inputs (pole1, pole2) and computes the angles corresponding to N-1 dimensions.
     """
 
     def config_input_slots():
-        return {"north": DataType.ARRAY, "south": DataType.ARRAY, "east": DataType.ARRAY, "west": DataType.ARRAY}
+        return {"pole1": DataType.ARRAY, "pole2": DataType.ARRAY}
 
     def config_output_slots():
-        return {
-            "angle": DataType.ARRAY,
-        }
+        return {"angles": DataType.ARRAY}
 
-    def process(self, north: Data, south: Data, east: Data, west: Data):
+    def process(self, pole1: Data, pole2: Data):
         """
-        Processes the input directions to compute the angle of the resultant vector
-        formed by the differences of west-east and north-south.
+        Processes the input polar arrays to compute angles in N-dimensional space.
+
+        Args:
+            pole1 (Data): First input array (1D, length N).
+            pole2 (Data): Second input array (1D, length N).
+
+        Returns:
+            dict: Angles in N-1 dimensions.
         """
-        if north is None or south is None or east is None or west is None:
+        if pole1 is None or pole2 is None:
             return None
+
         # Extract the float values from Data objects
-        north_val = north.data
-        south_val = south.data
-        east_val = east.data
-        west_val = west.data
+        pole1_val = pole1.data
+        pole2_val = pole2.data
 
-        # Calculate differences
-        horizontal_diff = west_val - east_val
-        vertical_diff = north_val - south_val
+        # Ensure the inputs are valid 1D arrays of the same length
+        if pole1_val.ndim != 1 or pole2_val.ndim != 1 or len(pole1_val) != len(pole2_val):
+            raise ValueError("Inputs pole1 and pole2 must be 1D arrays of the same length.")
 
-        # Calculate the angle in radians
-        angle_radians = np.arctan2(vertical_diff, horizontal_diff)
+        # Calculate the vector difference
+        vector_diff = pole2_val - pole1_val
 
-        # Convert angle to degrees and normalize to 0-360
-        angle_degrees = np.degrees(angle_radians)
-        if angle_degrees < 0:
-            angle_degrees += 360
-        # check if sf in metadata and add it to the output metadata
+        # Initialize angles array
+        angles = []
 
-        # Return the angle as a Data object
-        return {"angle": (angle_degrees, {})}
+        # Compute angles iteratively
+        for i in range(len(vector_diff) - 1):
+            y = vector_diff[i + 1]
+            x = vector_diff[i]
+            angle = np.arctan2(y, x)  # Use arctan2 for full circle coverage
+            angles.append(angle)
+
+        # Convert angles to degrees and normalize to [0, 360)
+        angles_degrees = np.degrees(angles)
+        angles_degrees = np.mod(angles_degrees, 360)  # Ensure values are in [0, 360)
+
+        # Return the angles as a Data object
+        return {"angles": (np.array(angles_degrees), {})}
