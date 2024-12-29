@@ -76,11 +76,14 @@ class ImageGeneration(Node):
         elif self.params.image_generation.model_id.value in ["dall-e-2", "dall-e-3"]:
             self.base64, self.openai = import_libs("dall-e")
 
+            api_key = self.params.image_generation.openai_key.value
+            with open(api_key, "r") as f:
+                api_key = f.read().strip()
             # load Dall-E model
             if self.params.img2img.enabled.value:
-                self.dalle_pipe = self.openai.OpenAI().images.edit
+                self.dalle_pipe = self.openai.OpenAI(api_key=api_key).images.edit
             else:
-                self.dalle_pipe = self.openai.OpenAI().images.generate
+                self.dalle_pipe = self.openai.OpenAI(api_key=api_key).images.generate
             # initialize last image
             if not hasattr(self, "last_img"):
                 self.last_img = None
@@ -151,13 +154,13 @@ class ImageGeneration(Node):
                             f"\n1024x1024 is minimum for Dall-E3"
                         )
                     raise e
-              
+
             img = response.data[0].b64_json
             # Decode base64 to bytes
             decoded_bytes = self.base64.b64decode(img)
             # Convert bytes to numpy array using OpenCV
             img_array = cv2.imdecode(np.frombuffer(decoded_bytes, np.uint8), cv2.IMREAD_COLOR)
-            
+
             # save numpy array using OpenCV
             if self.params.image_generation.save_image.value:
                 makedirs(join(self.assets_path, "imgs"), exist_ok=True)
@@ -165,14 +168,14 @@ class ImageGeneration(Node):
                 # make sure not to overwrite
                 filename = f"{join(self.assets_path, 'imgs', self.params.image_generation.save_filename.value)}"
                 n = 0
-                while exists(join(self.assets_path,"imgs", f"default_value_{n:02d}.png")):
+                while exists(join(self.assets_path, "imgs", f"default_value_{n:02d}.png")):
                     n += 1
                 # Save the image and check if it was successful
-                if cv2.imwrite(join(self.assets_path,"imgs", f"default_value_{n:02d}.png"), img_array):
+                if cv2.imwrite(join(self.assets_path, "imgs", f"default_value_{n:02d}.png"), img_array):
                     print(f"{join(self.assets_path,'imgs', f'default_value_{n:02d}.png')}")
                 else:
                     print(f"Failed to save image to {filename}_{n:02d}.png")
-    
+
             # Convert to float32 to display in goofi
             img_array = img_array.astype(np.float32) / 255.0
             # Ensure correct shape
