@@ -22,7 +22,7 @@ class LoadFile(Node):
                 "name_column": False,
                 "select": StringParam("", doc="NumPy selection string"),
             },
-            "common": {"autotrigger": True},
+            "common": {"autotrigger": True, "max_frequency": 1.0},
         }
 
     def setup(self):
