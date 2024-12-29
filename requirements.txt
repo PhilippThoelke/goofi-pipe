@@ -25,7 +25,7 @@ pyyaml
 pyaca
 pandas
 fooof
-umap
+umap-learn
 mss
 usearch
 gdown
