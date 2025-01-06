@@ -23,8 +23,8 @@ class Img2Txt(Node):
         return {
             "img_to_text": {
                 "model": StringParam(
-                    "ollama:llama3.2-vision",
-                    # options=["meta-llama/Llama-3.2-11B-Vision-Instruct", "gpt-4o-mini", "ollama"],
+                    "gpt-4o-mini",
+                    options=["ollama:llama3.2-vision", "meta-llama/Llama-3.2-11B-Vision-Instruct", "gpt-4o-mini", "ollama"],
                     doc="Model ID or name for image captioning (Huggingface Llama, OpenAI, or Ollama)",
                 ),
                 "max_new_tokens": IntParam(30, 10, 1024, doc="Maximum number of tokens to generate"),
