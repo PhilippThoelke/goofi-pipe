@@ -4,7 +4,7 @@
 
 <h1 align="center">goofi-pipe</h1>
 <h3 align="center">Generative Organic Oscillation Feedback Isomorphism Pipeline</h3>
-<h3 align="center"><a href="https://notebooklm.google.com/notebook/b28ee248-db68-4b41-b914-1fc8312f86a8/audio?pli=1">AI Podcast about goofi-pipe</a></h3>
+<h3 align="center"><a href="https://notebooklm.google.com/notebook/b28ee248-db68-4b41-b914-1fc8312f86a8/audio?pli=1" target="_blank" rel="noopener noreferrer">AI Podcast about goofi-pipe</a></h3>
 
 
 # Installation
