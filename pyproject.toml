@@ -12,6 +12,14 @@ line-length = 128
 goofi-pipe = "goofi.manager:main"
 
 [project]
+classifiers = [
+  "Programming Language :: Python :: 3.9",
+  "Programming Language :: Python :: 3.10",
+  "Programming Language :: Python :: 3.11",
+  "Programming Language :: Python :: 3.12",
+  "Operating System :: OS Independent",
+  "License :: OSI Approved :: MIT License",
+]
 description = "Real-time neuro-/biosignal processing and streaming pipeline."
 dynamic = ["dependencies"]
 keywords = ["signal-processing", "neurofeedback", "biofeedback", "real-time", "EEG", "ECG"]
