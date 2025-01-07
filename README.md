@@ -6,10 +6,10 @@
 <h3 align="center">Generative Organic Oscillation Feedback Isomorphism Pipeline</h3>
 
 <p align="center">
-  <a href="https://pypi.org/project/goofi/"><img alt="PyPI - Python Version" src="https://img.shields.io/pypi/pyversions/goofi"></a>
+  <a href="https://github.com/PhilippThoelke/goofi-pipe/actions/workflows/pytest.yml"><img alt="GitHub Actions Workflow Status" src="https://img.shields.io/github/actions/workflow/status/PhilippThoelke/goofi-pipe/pytest.yml"></a>
   <a href="https://pypi.org/project/goofi/"><img alt="PyPI - Version" src="https://img.shields.io/pypi/v/goofi"></a>
   <a href="https://github.com/PhilippThoelke/goofi-pipe/blob/main/LICENSE"><img alt="GitHub License" src="https://img.shields.io/github/license/PhilippThoelke/goofi-pipe"></a>
-  <a href="https://github.com/PhilippThoelke/goofi-pipe/actions/workflows/pytest.yml"><img alt="GitHub Actions Workflow Status" src="https://img.shields.io/github/actions/workflow/status/PhilippThoelke/goofi-pipe/pytest.yml"></a>
+  <a href="https://pypi.org/project/goofi/"><img alt="PyPI - Python Version" src="https://img.shields.io/pypi/pyversions/goofi"></a>
 </p>
 
 <h3 align="center"><a href="https://notebooklm.google.com/notebook/b28ee248-db68-4b41-b914-1fc8312f86a8/audio?pli=1">AI Podcast about goofi-pipe</a></h3>
