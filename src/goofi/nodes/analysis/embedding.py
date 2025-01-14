@@ -6,7 +6,6 @@ from goofi.data import Data, DataType
 from goofi.node import Node
 from goofi.params import StringParam, BoolParam
 
-
 class Embedding(Node):
     NO_MULTIPROCESSING = True
 
@@ -29,6 +28,8 @@ class Embedding(Node):
                         "openai/clip-vit-large-patch14",
                         "laion/CLIP-ViT-H-14-laion2B-s32B-b79K",
                         "all-MiniLM-L6-v2",
+                        #"fasttext",
+                        "word2vec",
                     ],
                     doc="Model ID or name for embedding generation",
                 ),
@@ -40,32 +41,50 @@ class Embedding(Node):
         }
 
     def setup(self):
+        # Explicitly reset attributes
+        self.model = None
+        self.processor = None
+        self.model_type = None
+
         self.model_id = self.params.embedding.model.value
+        print(f"Selected model: {self.model_id}")
 
-        if "clip" in self.model_id.lower():  # Load CLIP model
-            try:
+        try:
+            # Load CLIP models
+            if "clip" in self.model_id.lower():
+                print("Initializing CLIP model...")
                 from transformers import CLIPModel, CLIPProcessor
-            except ModuleNotFoundError:
-                raise ModuleNotFoundError("Please install transformers to use CLIP models via pip install transformers")
-
-            self.model = CLIPModel.from_pretrained(self.model_id)
-            self.model.eval()  # Set to evaluation mode
-            self.model.to("cpu")  # Ensure model is on CPU
-            self.processor = CLIPProcessor.from_pretrained(self.model_id)
-        elif "sbert" in self.model_id.lower() or "MiniLM" in self.model_id:  # Load SBERT model
-            try:
+                self.model = CLIPModel.from_pretrained(self.model_id)
+                self.processor = CLIPProcessor.from_pretrained(self.model_id)
+                self.model_type = "clip"
+            # Load other models
+            elif "sbert" in self.model_id.lower() or "MiniLM" in self.model_id:
+                print("Initializing SBERT model...")
                 from sentence_transformers import SentenceTransformer
-            except ModuleNotFoundError:
-                raise ModuleNotFoundError(
-                    "Please install sentence-transformers to use SBERT models via pip install sentence-transformers"
-                )
+                self.model = SentenceTransformer(self.model_id)
+                self.model_type = "sbert"
+            elif "fasttext" in self.model_id.lower():
+                print("Initializing FastText model...")
+                import gensim.downloader as api
+                self.model = api.load("fasttext-wiki-news-subwords-300")
+                self.model_type = "fasttext"
+            elif "word2vec" in self.model_id.lower():
+                print("Initializing Word2Vec model...")
+                import gensim.downloader as api
+                self.model = api.load("word2vec-google-news-300")
+                self.model_type = "word2vec"
+            else:
+                raise ValueError(f"Unsupported model type: {self.model_id}")
+            print(f"Model {self.model_id} initialized successfully as {self.model_type}.")
+        except Exception as e:
+            print(f"Error initializing model {self.model_id}: {e}")
 
-            self.model = SentenceTransformer(self.model_id)
+
 
     def process(self, text: Data, data: Data):
         # Initialize outputs and metadata
-        text_embeddings = None
-        data_embeddings = None
+        text_embeddings = None  # Default to None
+        data_embeddings = None  # Default to None
         metadata = {}
 
         # Compute text embeddings if text input is provided
@@ -78,12 +97,32 @@ class Embedding(Node):
             else:
                 input_texts = [input_text]
 
-            if "clip" in self.model_id.lower():  # Use CLIP for text
+            if self.model_type == "clip":  # Use CLIP for text
                 inputs_text = self.processor(text=input_texts, return_tensors="pt", padding=True)
                 outputs_text = self.model.get_text_features(**inputs_text)
                 text_embeddings = outputs_text.detach().numpy()
-            elif "sbert" in self.model_id.lower() or "MiniLM" in self.model_id:  # Use SBERT for text
+            elif self.model_type == "sbert":  # Use SBERT for text
                 text_embeddings = self.model.encode(input_texts, convert_to_numpy=True)
+            elif self.model_type == "fasttext":  # Use FastText for text
+                text_embeddings = []
+                word_vectors = {word: self.model[word] for sentence in input_texts for word in sentence.split() if word in self.model}
+                for sentence in input_texts:
+                    words = sentence.split()
+                    vectors = [word_vectors[word] for word in words if word in word_vectors]
+                    if vectors:
+                        sentence_embedding = np.mean(vectors, axis=0)
+                        text_embeddings.append(sentence_embedding)
+                text_embeddings = np.array(text_embeddings) if text_embeddings else None
+
+            elif self.model_type == "word2vec":  # Use Word2Vec for text
+                text_embeddings = []
+                for sentence in input_texts:
+                    words = sentence.split()
+                    vectors = [self.model[word] for word in words if word in self.model]
+                    if vectors:
+                        sentence_embedding = np.mean(vectors, axis=0)
+                        text_embeddings.append(sentence_embedding)
+                text_embeddings = np.array(text_embeddings) if text_embeddings else None
 
         # Compute image embeddings if data input is provided
         if data is not None:
@@ -91,7 +130,7 @@ class Embedding(Node):
             metadata["data"] = data.meta  # Preserve metadata
 
             # Preprocess and generate image embeddings using CLIP
-            if "clip" in self.model_id.lower():
+            if self.model_type == "clip":
                 # Check and preprocess numpy array
                 if input_data.ndim == 4 and input_data.shape[0] == 1:  # Remove batch dimension if present
                     input_data = input_data.squeeze(0)
@@ -114,10 +153,14 @@ class Embedding(Node):
                 outputs_data = self.model.get_image_features(**inputs_data)
                 data_embeddings = outputs_data.detach().numpy()
 
+        # Log a message if no embeddings are computed
+        if text_embeddings is None and data_embeddings is None:
+            print("No embeddings were generated. Check the input data and model configuration.")
+
         # Return separate embeddings and a dictionary of metadata
         return {
-            "text_embeddings": (text_embeddings, metadata),
-            "data_embeddings": (data_embeddings, metadata),
+            "text_embeddings": (text_embeddings, metadata) if text_embeddings is not None else None,
+            "data_embeddings": (data_embeddings, metadata) if data_embeddings is not None else None,
         }
 
     def embedding_model_changed(self, _):
