@@ -28,7 +28,6 @@ class Embedding(Node):
                         "openai/clip-vit-large-patch14",
                         "laion/CLIP-ViT-H-14-laion2B-s32B-b79K",
                         "all-MiniLM-L6-v2",
-                        #"fasttext",
                         "word2vec",
                     ],
                     doc="Model ID or name for embedding generation",
@@ -37,6 +36,7 @@ class Embedding(Node):
                     False,
                     doc="Whether to split text input by comma and generate embeddings for each part separately",
                 ),
+                'processing': StringParam('cpu', options=['cpu', 'gpu'])
             }
         }
 
@@ -45,23 +45,27 @@ class Embedding(Node):
         self.model = None
         self.processor = None
         self.model_type = None
-
+        self.device = None
+        
+        # Select device
+        import torch
+        self.device = torch.device("cuda" if self.params.embedding.processing.value == "gpu" and torch.cuda.is_available() else "cpu")
         self.model_id = self.params.embedding.model.value
-        print(f"Selected model: {self.model_id}")
+        print(f"Selected model: {self.model_id}, using device: {self.device}")
 
         try:
             # Load CLIP models
             if "clip" in self.model_id.lower():
                 print("Initializing CLIP model...")
                 from transformers import CLIPModel, CLIPProcessor
-                self.model = CLIPModel.from_pretrained(self.model_id)
+                self.model = CLIPModel.from_pretrained(self.model_id).to(self.device)
                 self.processor = CLIPProcessor.from_pretrained(self.model_id)
                 self.model_type = "clip"
             # Load other models
             elif "sbert" in self.model_id.lower() or "MiniLM" in self.model_id:
                 print("Initializing SBERT model...")
                 from sentence_transformers import SentenceTransformer
-                self.model = SentenceTransformer(self.model_id)
+                self.model = SentenceTransformer(self.model_id).to(self.device)
                 self.model_type = "sbert"
             elif "fasttext" in self.model_id.lower():
                 print("Initializing FastText model...")
@@ -75,11 +79,9 @@ class Embedding(Node):
                 self.model_type = "word2vec"
             else:
                 raise ValueError(f"Unsupported model type: {self.model_id}")
-            print(f"Model {self.model_id} initialized successfully as {self.model_type}.")
+            print(f"Model {self.model_id} initialized successfully as {self.model_type} on {self.device}.")
         except Exception as e:
             print(f"Error initializing model {self.model_id}: {e}")
-
-
 
     def process(self, text: Data, data: Data):
         # Initialize outputs and metadata
@@ -98,9 +100,9 @@ class Embedding(Node):
                 input_texts = [input_text]
 
             if self.model_type == "clip":  # Use CLIP for text
-                inputs_text = self.processor(text=input_texts, return_tensors="pt", padding=True)
+                inputs_text = self.processor(text=input_texts, return_tensors="pt", padding=True).to(self.device)
                 outputs_text = self.model.get_text_features(**inputs_text)
-                text_embeddings = outputs_text.detach().numpy()
+                text_embeddings = outputs_text.detach().cpu().numpy()
             elif self.model_type == "sbert":  # Use SBERT for text
                 text_embeddings = self.model.encode(input_texts, convert_to_numpy=True)
             elif self.model_type == "fasttext":  # Use FastText for text
@@ -147,11 +149,11 @@ class Embedding(Node):
                 input_data_pil = Image.fromarray((input_data * 255).astype(np.uint8))
 
                 # Use CLIPProcessor for final preprocessing
-                inputs_data = self.processor(images=input_data_pil, return_tensors="pt", padding=True)
+                inputs_data = self.processor(images=input_data_pil, return_tensors="pt", padding=True).to(self.device)
 
                 # Generate embeddings
                 outputs_data = self.model.get_image_features(**inputs_data)
-                data_embeddings = outputs_data.detach().numpy()
+                data_embeddings = outputs_data.detach().cpu().numpy()
 
         # Log a message if no embeddings are computed
         if text_embeddings is None and data_embeddings is None:
@@ -164,5 +166,9 @@ class Embedding(Node):
         }
 
     def embedding_model_changed(self, _):
+        """Reinitialize the stream."""
+        self.setup()
+    
+    def embedding_processing_changed(self, _):
         """Reinitialize the stream."""
         self.setup()
