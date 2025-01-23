@@ -109,9 +109,10 @@ class Node(ABC):
         # set up dict of possibly timed out output connections
         self.pending_connections = {}
 
-        # initialize data processing thread
-        self.processing_thread = Thread(target=self._processing_loop, daemon=True)
-        self.processing_thread.start()
+        if environment != NodeEnv.STANDALONE:
+            # initialize data processing thread
+            self.processing_thread = Thread(target=self._processing_loop, daemon=True)
+            self.processing_thread.start()
 
         if environment == NodeEnv.MULTIPROCESSING:
             # this is a separate process, run the messaging loop in the current thread
