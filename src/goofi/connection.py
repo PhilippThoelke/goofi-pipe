@@ -306,34 +306,3 @@ class IPCZeroMQConnection(ZeroMQConnection):
     @staticmethod
     def protocol() -> str:
         return "ipc"
-
-
-class DummyConnection(Connection):
-    """
-    A dummy connection that does not send or receive any data. This connection type is used
-    when using nodes in a standalone mode without the goofi-pipe manager.
-    """
-
-    def __init__(self) -> None:
-        # we don't call the parent constructor to avoid creating a a multiprocessing manager
-
-        from goofi.message import Message, MessageType
-
-        self.empty_msg = Message(MessageType.PING, {})
-
-    @staticmethod
-    def _create() -> Tuple[Connection, Connection]:
-        return DummyConnection(), DummyConnection()
-
-    def send(self, obj: object) -> None:
-        print("DUMMY SEND")
-
-    def recv(self) -> object:
-        print("DUMMY RECEIVE")
-        return self.empty_msg
-
-    def close(self) -> None:
-        pass
-
-    def __del__(self) -> None:
-        pass
