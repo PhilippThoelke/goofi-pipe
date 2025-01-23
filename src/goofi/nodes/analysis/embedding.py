@@ -4,7 +4,8 @@ from PIL import Image
 
 from goofi.data import Data, DataType
 from goofi.node import Node
-from goofi.params import StringParam, BoolParam
+from goofi.params import BoolParam, StringParam
+
 
 class Embedding(Node):
     NO_MULTIPROCESSING = True
@@ -36,7 +37,7 @@ class Embedding(Node):
                     False,
                     doc="Whether to split text input by comma and generate embeddings for each part separately",
                 ),
-                'processing': StringParam('cpu', options=['cpu', 'gpu'])
+                "processing": StringParam("cpu", options=["cpu", "gpu"]),
             }
         }
 
@@ -46,10 +47,13 @@ class Embedding(Node):
         self.processor = None
         self.model_type = None
         self.device = None
-        
+
         # Select device
         import torch
-        self.device = torch.device("cuda" if self.params.embedding.processing.value == "gpu" and torch.cuda.is_available() else "cpu")
+
+        self.device = torch.device(
+            "cuda" if self.params.embedding.processing.value == "gpu" and torch.cuda.is_available() else "cpu"
+        )
         self.model_id = self.params.embedding.model.value
         print(f"Selected model: {self.model_id}, using device: {self.device}")
 
@@ -58,6 +62,7 @@ class Embedding(Node):
             if "clip" in self.model_id.lower():
                 print("Initializing CLIP model...")
                 from transformers import CLIPModel, CLIPProcessor
+
                 self.model = CLIPModel.from_pretrained(self.model_id).to(self.device)
                 self.processor = CLIPProcessor.from_pretrained(self.model_id)
                 self.model_type = "clip"
@@ -65,16 +70,19 @@ class Embedding(Node):
             elif "sbert" in self.model_id.lower() or "MiniLM" in self.model_id:
                 print("Initializing SBERT model...")
                 from sentence_transformers import SentenceTransformer
+
                 self.model = SentenceTransformer(self.model_id).to(self.device)
                 self.model_type = "sbert"
             elif "fasttext" in self.model_id.lower():
                 print("Initializing FastText model...")
                 import gensim.downloader as api
+
                 self.model = api.load("fasttext-wiki-news-subwords-300")
                 self.model_type = "fasttext"
             elif "word2vec" in self.model_id.lower():
                 print("Initializing Word2Vec model...")
                 import gensim.downloader as api
+
                 self.model = api.load("word2vec-google-news-300")
                 self.model_type = "word2vec"
             else:
@@ -107,7 +115,9 @@ class Embedding(Node):
                 text_embeddings = self.model.encode(input_texts, convert_to_numpy=True)
             elif self.model_type == "fasttext":  # Use FastText for text
                 text_embeddings = []
-                word_vectors = {word: self.model[word] for sentence in input_texts for word in sentence.split() if word in self.model}
+                word_vectors = {
+                    word: self.model[word] for sentence in input_texts for word in sentence.split() if word in self.model
+                }
                 for sentence in input_texts:
                     words = sentence.split()
                     vectors = [word_vectors[word] for word in words if word in word_vectors]
@@ -168,7 +178,7 @@ class Embedding(Node):
     def embedding_model_changed(self, _):
         """Reinitialize the stream."""
         self.setup()
-    
+
     def embedding_processing_changed(self, _):
         """Reinitialize the stream."""
         self.setup()
