@@ -3,6 +3,7 @@ import time
 import traceback
 from abc import ABC, abstractmethod
 from copy import deepcopy
+from enum import Enum
 from multiprocessing import Process
 from os.path import dirname, join
 from pathlib import PosixPath
@@ -45,6 +46,16 @@ def require_init(func: Callable) -> Callable:
     return wrapper
 
 
+class NodeEnv(Enum):
+    """
+    Enumeration of the possible node environments.
+    """
+
+    MULTIPROCESSING = 1  # the node owns its own process
+    LOCAL = 2  # the node is running in the manager's process
+    STANDALONE = 3  # running in the main process, but without a manager
+
+
 class Node(ABC):
     """
     The base class for all nodes. A node is a processing unit that can receive data from other nodes, process the
@@ -63,8 +74,8 @@ class Node(ABC):
         are the output slots themselves.
     `params` : NodeParams
         An instance of the NodeParams class containing the parameters of the node.
-    `is_local` : bool
-        Whether the node is running in the same process as the manager.
+    `environment` : NodeEnv
+        The environment in which the node is running.
     """
 
     NO_MULTIPROCESSING = False
@@ -72,11 +83,11 @@ class Node(ABC):
 
     def __init__(
         self,
-        connection: Connection,
+        connection: Optional[Connection],
         input_slots: Dict[str, InputSlot],
         output_slots: Dict[str, OutputSlot],
         params: NodeParams,
-        is_local: bool,
+        environment: NodeEnv,
     ) -> None:
         # initialize the base class
         self._alive = True
@@ -88,7 +99,7 @@ class Node(ABC):
         self._output_slots = output_slots
         self._params = params
 
-        self._validate_attrs()
+        self._validate_attrs(environment)
 
         # initialize node flags
         self.process_flag = Event()
@@ -98,39 +109,52 @@ class Node(ABC):
         # set up dict of possibly timed out output connections
         self.pending_connections = {}
 
-        # initialize data processing thread
-        self.processing_thread = Thread(target=self._processing_loop, daemon=True)
-        self.processing_thread.start()
+        if environment != NodeEnv.STANDALONE:
+            # initialize data processing thread
+            self.processing_thread = Thread(target=self._processing_loop, daemon=True)
+            self.processing_thread.start()
 
-        if is_local:
-            # this is the main process, create a new thread to not block it
-            self.messaging_thread = Thread(target=self._messaging_loop, daemon=True)
-            self.messaging_thread.start()
-        else:
+        if environment == NodeEnv.MULTIPROCESSING:
             # this is a separate process, run the messaging loop in the current thread
             # NOTE: if we don't block the current thread, the node's process will die
             self._messaging_loop()
+        elif environment == NodeEnv.LOCAL:
+            # this is the main process, create a new thread to not block it
+            self.messaging_thread = Thread(target=self._messaging_loop, daemon=True)
+            self.messaging_thread.start()
+        elif environment == NodeEnv.STANDALONE:
+            # the node does not have a messaging, or processing loop when running in standalone mode
+            pass
+        else:
+            raise ValueError(f"Invalid environment: {environment}")
 
     @require_init
-    def _validate_attrs(self):
+    def _validate_attrs(self, environment: NodeEnv) -> None:
         """
         Check that all attributes are present and of the correct type.
         """
         # check connection type
-        if not isinstance(self.connection, Connection):
-            raise TypeError(f"Expected Connection, got {type(self.connection)}")
+        if environment == NodeEnv.STANDALONE:
+            if self.connection is not None:
+                raise ValueError("Running in standalone mode, connection should be None.")
+        else:
+            if not isinstance(self.connection, Connection):
+                raise TypeError(f"Expected Connection, got {type(self.connection)}")
+
         # check input slots type
         for name, slot in self._input_slots.items():
             if not isinstance(name, str) or len(name) == 0:
                 raise ValueError(f"Expected input slot name '{name}' to be a non-empty string.")
             if not isinstance(slot, InputSlot):
                 raise TypeError(f"Expected InputSlot for input slot '{name}', got {type(slot)}")
+
         # check output slots type
         for name, slot in self._output_slots.items():
             if not isinstance(name, str) or len(name) == 0:
                 raise ValueError(f"Expected output slot name '{name}' to be a non-empty string.")
             if not isinstance(slot, OutputSlot):
                 raise TypeError(f"Expected OutputSlot for output slot '{name}', got {type(slot)}")
+
         # check params type
         if not isinstance(self._params, NodeParams):
             raise TypeError(f"Expected NodeParams, got {type(self._params)}")
@@ -479,7 +503,7 @@ class Node(ABC):
                 conn1, conn2 = Connection.create()
 
                 # instantiate the node in a separate process
-                proc = Process(target=cls, args=(conn2, in_slots, out_slots, params, False), daemon=True)
+                proc = Process(target=cls, args=(conn2, in_slots, out_slots, params, NodeEnv.MULTIPROCESSING), daemon=True)
                 proc.start()
                 break
             except Exception as e:
@@ -520,7 +544,7 @@ class Node(ABC):
             params.update(initial_params)
         conn1, conn2 = Connection.create()
         # instantiate the node in the current process
-        node = cls(conn2, in_slots, out_slots, params, True)
+        node = cls(conn2, in_slots, out_slots, params, NodeEnv.LOCAL)
         # create the node reference
         return (
             NodeRef(
@@ -532,6 +556,20 @@ class Node(ABC):
             ),
             node,
         )
+
+    @classmethod
+    def create_standalone(cls) -> "Node":
+        """
+        Create a new node instance in the current process without a connection to the manager.
+
+        ### Returns
+        `Node`
+            The node instance.
+        """
+        # generate arguments for the node
+        in_slots, out_slots, params = cls._configure(cls)
+        # instantiate the node in the current process
+        return cls(None, in_slots, out_slots, params, NodeEnv.STANDALONE)
 
     @classmethod
     def category(cls) -> str:

@@ -1,6 +1,6 @@
 from dataclasses import dataclass
 from enum import Enum
-from typing import Any, Dict
+from typing import Any, Dict, Optional
 
 import numpy as np
 
@@ -126,6 +126,27 @@ class Data:
             # make sure that table values are Data objects
             if not isinstance(value, Data):
                 raise ValueError(f"Expected table values of type Data, got {type(value)}.")
+
+
+def to_data(obj: Any, meta: Optional[Dict[str, Any]] = None):
+    """
+    Convert an object to a Data object. The data type of the Data object is determined by the type of the object.
+    The object must be of a supported type (i.e. numpy array, string, or dict).
+
+    ### Parameters
+    `obj` : Any
+        The object to convert to a Data object.
+    `meta` : Dict[str, Any], optional
+        The metadata dictionary.
+
+    ### Returns
+    Data
+        The converted Data object.
+    """
+    for dtype, types in DTYPE_TO_TYPE.items():
+        if isinstance(obj, types):
+            return Data(dtype=dtype, data=obj, meta=meta or {})
+    raise ValueError(f"Could not parse goofi dtype for object of type {type(obj)}.")
 
 
 DTYPE_TO_TYPE = {
