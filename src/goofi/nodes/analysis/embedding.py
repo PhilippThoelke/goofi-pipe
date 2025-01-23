@@ -51,6 +51,8 @@ class Embedding(Node):
         # Select device
         import torch
 
+        torch.set_grad_enabled(False)
+
         self.device = torch.device(
             "cuda" if self.params.embedding.processing.value == "gpu" and torch.cuda.is_available() else "cpu"
         )
