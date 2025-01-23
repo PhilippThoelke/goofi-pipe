@@ -10,7 +10,7 @@ from threading import Event, Thread
 from typing import Any, Callable, Dict, Optional, Tuple, Union
 
 from goofi import assets
-from goofi.connection import Connection
+from goofi.connection import Connection, DummyConnection
 from goofi.data import Data, DataType
 from goofi.message import Message, MessageType
 from goofi.node_helpers import InputSlot, NodeRef, OutputSlot
@@ -532,6 +532,20 @@ class Node(ABC):
             ),
             node,
         )
+
+    @classmethod
+    def create_standalone(cls) -> "Node":
+        """
+        Create a new node instance in the current process without a connection to the manager.
+
+        ### Returns
+        `Node`
+            The node instance.
+        """
+        # generate arguments for the node
+        in_slots, out_slots, params = cls._configure(cls)
+        # instantiate the node in the current process
+        return cls(DummyConnection(), in_slots, out_slots, params, True)
 
     @classmethod
     def category(cls) -> str:
