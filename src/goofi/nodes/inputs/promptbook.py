@@ -8,7 +8,7 @@ class PromptBook(Node):
         return {"input_prompt": DataType.STRING}
 
     def config_params():
-        prompt_choices = list(prompts.keys())
+        prompt_choices = list(PROMPTS.keys())
 
         return {
             "Text_Generation": {"selected_prompt": StringParam(prompt_choices[0], options=prompt_choices)},
@@ -20,16 +20,20 @@ class PromptBook(Node):
 
     def process(self, input_prompt: Data):
         # retrieving the selected prompt
-        selected_prompt = self.params["Text_Generation"]["selected_prompt"].value
-        prompt_ = prompts.get(selected_prompt, [])
+        selected_prompt = self.params.Text_Generation.selected_prompt.value
+        if selected_prompt not in PROMPTS:
+            raise ValueError(f"Prompt {selected_prompt} not found in the prompt book.")
+
+        prompt = PROMPTS[selected_prompt]
         if input_prompt:
             # append the input prompt to the selected prompt
-            prompt_ = prompt_ + input_prompt.data
+            prompt = prompt + input_prompt.data
+
         # returning the value of the selected prompt
-        return {"out": (prompt_, {})}
+        return {"out": (prompt, {})}
 
 
-prompts = {
+PROMPTS = {
     "POETRY_PROMPT": "I want you to inspire yourself from a list of words to write surrealist poetry. Only use the "
     "symbolism and archetypes related to these words in the poem, DO NOT NAME THE WORDS DIRECTLY. "
     "Be creative in your imagery. You are going to write the poem line by line, meaning you should "
