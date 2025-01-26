@@ -139,6 +139,7 @@ class Embedding(Node):
                 text_embeddings = np.array(text_embeddings) if text_embeddings else None
 
         # Compute image embeddings if data input is provided
+            # Compute image embeddings if data input is provided
         if data is not None:
             input_data = data.data
             metadata["data"] = data.meta  # Preserve metadata
@@ -161,11 +162,12 @@ class Embedding(Node):
                 input_data_pil = Image.fromarray((input_data * 255).astype(np.uint8))
 
                 # Use CLIPProcessor for final preprocessing
-                inputs_data = self.processor(images=input_data_pil, return_tensors="pt", padding=True).to(self.device)
+                inputs_data = self.processor(images=input_data_pil, return_tensors="pt", padding=True)
 
                 # Generate embeddings
                 outputs_data = self.model.get_image_features(**inputs_data)
-                data_embeddings = outputs_data.detach().cpu().numpy()
+                data_embeddings = outputs_data.detach().numpy()
+
 
         # Log a message if no embeddings are computed
         if text_embeddings is None and data_embeddings is None:
