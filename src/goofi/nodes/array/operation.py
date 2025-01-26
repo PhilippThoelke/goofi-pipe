@@ -16,7 +16,7 @@ class Operation(Node):
             "operation": {
                 "operation": StringParam(
                     "add",
-                    options=["add", "subtract", "multiply", "divide", "matmul", "cosine_similarity"],
+                    options=["add", "subtract", "multiply", "divide", "matmul", 'max', 'min', 'avg', "cosine_similarity"],
                     doc="Operation to perform on the input arrays",
                 )
             }
@@ -67,6 +67,12 @@ class Operation(Node):
             result = a.data / b.data
         elif operation == "matmul":
             result = np.dot(a.data, b.data)
+        elif operation == "max":
+            result = np.maximum(a.data, b.data)
+        elif operation == "min":
+            result = np.minimum(a.data, b.data)
+        elif operation == "avg":
+            result = (a.data + b.data) / 2
         elif operation == "cosine_similarity":
             from sklearn.metrics.pairwise import cosine_similarity
 
