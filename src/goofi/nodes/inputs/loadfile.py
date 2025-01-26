@@ -1,3 +1,5 @@
+from copy import deepcopy
+
 import numpy as np
 
 from goofi.data import DataType
@@ -30,17 +32,29 @@ class LoadFile(Node):
 
         self.pd = pd
 
-        self.time_series = None
-        self.meta = None
-        self.freq_vector = None
+        self.data_output = None
+        self.string_output = None
+        self.last_params = None
 
     def process(self):
-        if self.params.file.filename.value is None:
-            return None
+        if self.last_params == self.params.file:
+            # if the parameters are the same, return the previous output
+            return {"data_output": self.data_output, "string_output": self.string_output}
 
-        # asset_path = self.assets_path
-        file_type = self.params["file"]["type"].value
-        filename = self.params["file"]["filename"].value
+        # if the parameters are different, load the file
+        self.last_params = deepcopy(self.params.file)
+        self.load_file()
+
+        return {"data_output": self.data_output, "string_output": self.string_output}
+
+    def load_file(self):
+        if self.params.file.filename.value is None:
+            self.data_output = None
+            self.string_output = None
+            return
+
+        file_type = self.params.file.type.value
+        filename = self.params.file.filename.value
         extension = filename.split(".")[-1]
 
         df = None
@@ -79,22 +93,25 @@ class LoadFile(Node):
                 print(f"Invalid selection string: {selection}")
 
         if dtypes is not None and any([dtype == "object" for dtype in dtypes]):
-            return {"data_output": None, "string_output": ("\n".join(data), {})}
+            self.data_output = None
+            self.string_output = ("\n".join(data), {})
+            return
 
         if self.params.file.name_column.value:
-            self.meta = {"channels": {"dim0": list(df.iloc[:, 0].values)}}
+            meta = {"channels": {"dim0": list(df.iloc[:, 0].values)}}
             data = data[:, 1:]
 
         data = data.astype(np.float32)
 
         # Handle time_series type
         if file_type == "time_series":
-            if self.time_series is None:
-                assert data.shape[1] == 2, "Invalid time series shape"
-                self.time_series, self.meta = data[0], data[1]
-                assert isinstance(self.meta, dict), "Metadata should be a dictionary"
+            assert data.shape[1] == 2, "Invalid time series shape"
+            time_series, meta = data[0], data[1]
+            assert isinstance(meta, dict), "Metadata should be a dictionary"
 
-            return {"data_output": (self.time_series, self.meta), "string_output": None}
+            self.data_output = (time_series, meta)
+            self.string_output = None
+            return
 
         # Handle spectrum type
         elif file_type == "spectrum":
@@ -102,12 +119,16 @@ class LoadFile(Node):
             freq_vector = data[0] * freq_multiplier  # Multiply the frequency values
             spectrums = data[1]
 
-            return {"data_output": (np.array(spectrums), {"freq": freq_vector}), "string_output": None}
+            self.data_output = (np.array(spectrums), {"freq": freq_vector})
+            self.string_output = None
+            return
 
         elif file_type == "ndarray":
-            return {"data_output": (data, {}), "string_output": None}
+            self.data_output = (data, {})
+            self.string_output = None
+            return
 
         elif file_type == "embedding_csv":
-            return {"data_output": (data, self.meta if self.params.file.name_column.value else {}), "string_output": None}
-
-        return None
+            self.data_output = (data, meta if self.params.file.name_column.value else {})
+            self.string_output = None
+            return

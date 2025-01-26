@@ -1,5 +1,5 @@
 import numpy as np
-from neurodsp.sim import sim_combined
+
 from goofi.data import Data, DataType
 from goofi.node import Node
 from goofi.params import FloatParam, IntParam
@@ -30,6 +30,10 @@ class SimulatedEEG(Node):
         }
 
     def setup(self):
+        from neurodsp.sim import sim_combined
+
+        self.sim_combined = sim_combined
+
         # Retrieve parameters
         self.num_channels = self.params["signal"]["num_channels"].value
         self.signal_length = self.params["signal"]["signal_length"].value
@@ -76,7 +80,7 @@ class SimulatedEEG(Node):
             ]  # Square amplitude for variance scaling
 
             # Generate signal for the channel
-            signal = sim_combined(self.signal_length, self.sampling_rate, components, component_variances)
+            signal = self.sim_combined(self.signal_length, self.sampling_rate, components, component_variances)
 
             # Add noise to the signal
             noise = np.random.normal(0, self.noise_factor * np.std(signal), len(signal))
