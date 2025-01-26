@@ -229,4 +229,7 @@ prompts = {
     "the artstyle, inspired by the emotions and elements, and describe the lighting and perspective using cinematic terminology.  Ensure the entire image captures "
     "the symbolic essence of the provided words. Include relevant artists at the end of the prompt, whose work resonates with the symbolism of the guiding words. "
     "Keep the prompt VERY SHORT AND CONCISE, limited to a MAXIMUM OF 20 WORDS.",
+    'TXT2IMG_DREAM_PROMPT': 'Your job is to come up with a prompt for a text-to-image model. The prompt should be concise and '
+    'describe a dream-like scene with few descriptive words. Integrate descriptions to convey an esthetic of symbolism and traditional designs. Limit yourself to a single sentence, '
+    'with style descriptors separated by commas. Be purely descriptive, your response does not have to be a complete sentence. The description of the dream is: '
 }
