@@ -9,8 +9,10 @@ class Switch(Node):
             "selector": DataType.ARRAY,  # Input 1: Selector array
             "array1": DataType.ARRAY,  # Input 2: First array input
             "array2": DataType.ARRAY,  # Input 3: Second array input
-            "string1": DataType.STRING,  # Input 4: First string input
-            "string2": DataType.STRING,  # Input 5: Second string input
+            "array3": DataType.ARRAY,  # Input 4: Third array input
+            "string1": DataType.STRING,  # Input 5: First string input
+            "string2": DataType.STRING,  # Input 6: Second string input
+            "string3": DataType.STRING,  # Input 7: Third string input
         }
 
     def config_output_slots():
@@ -26,7 +28,7 @@ class Switch(Node):
             }
         }
 
-    def process(self, selector: Data, array1: Data, array2: Data, string1: Data, string2: Data):
+    def process(self, selector: Data, array1: Data, array2: Data, array3: Data, string1: Data, string2: Data, string3: Data):
         if selector is None or selector.data is None:
             return
 
@@ -42,6 +44,10 @@ class Switch(Node):
                 if array2 is not None:
                     return {"array_out": (array2.data, {}), "string_out": None}
                 return
+            elif selector_value == 3:
+                if array3 is not None:
+                    return {"array_out": (array3.data, {}), "string_out": None}
+                return
             else:
                 raise ValueError("Selector value must be 1 or 2")
 
@@ -53,6 +59,10 @@ class Switch(Node):
             elif selector_value == 2:
                 if string2 is not None:
                     return {"array_out": None, "string_out": (string2.data, {})}
+                return
+            elif selector_value == 3:
+                if string3 is not None:
+                    return {"array_out": None, "string_out": (string3.data, {})}
                 return
             else:
                 raise ValueError("Selector value must be 1 or 2")
