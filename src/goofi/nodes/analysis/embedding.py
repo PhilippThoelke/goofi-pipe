@@ -8,7 +8,6 @@ from goofi.params import BoolParam, StringParam
 
 
 class Embedding(Node):
-    NO_MULTIPROCESSING = True
 
     def config_input_slots():
         return {"text": DataType.STRING, "data": DataType.ARRAY}
@@ -65,7 +64,13 @@ class Embedding(Node):
                 print("Initializing CLIP model...")
                 from transformers import CLIPModel, CLIPProcessor
 
-                self.model = CLIPModel.from_pretrained(self.model_id).to(self.device)
+                try:
+                    # try loading the local model (local_files_only=False interferes with goofi-pipe's multiprocessing environment)
+                    # related issue: https://github.com/CompVis/stable-diffusion/issues/90#issuecomment-1228726914
+                    self.model = CLIPModel.from_pretrained(self.model_id, local_files_only=True).to(self.device)
+                except OSError:
+                    self.model = CLIPModel.from_pretrained(self.model_id).to(self.device)
+
                 self.processor = CLIPProcessor.from_pretrained(self.model_id)
                 self.model_type = "clip"
             # Load other models
@@ -139,7 +144,7 @@ class Embedding(Node):
                 text_embeddings = np.array(text_embeddings) if text_embeddings else None
 
         # Compute image embeddings if data input is provided
-            # Compute image embeddings if data input is provided
+        # Compute image embeddings if data input is provided
         if data is not None:
             input_data = data.data
             metadata["data"] = data.meta  # Preserve metadata
@@ -167,7 +172,6 @@ class Embedding(Node):
                 # Generate embeddings
                 outputs_data = self.model.get_image_features(**inputs_data)
                 data_embeddings = outputs_data.detach().numpy()
-
 
         # Log a message if no embeddings are computed
         if text_embeddings is None and data_embeddings is None:
