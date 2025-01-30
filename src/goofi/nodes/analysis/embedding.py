@@ -36,7 +36,7 @@ class Embedding(Node):
                     False,
                     doc="Whether to split text input by comma and generate embeddings for each part separately",
                 ),
-                "processing": StringParam("cpu", options=["cpu", "gpu"]),
+                "device": StringParam("cpu", options=["cpu", "cuda"]),
             }
         }
 
@@ -50,11 +50,11 @@ class Embedding(Node):
         # Select device
         import torch
 
+        self.torch = torch
+
         torch.set_grad_enabled(False)
 
-        self.device = torch.device(
-            "cuda" if self.params.embedding.processing.value == "gpu" and torch.cuda.is_available() else "cpu"
-        )
+        self.device = torch.device(self.params.embedding.device.value)
         self.model_id = self.params.embedding.model.value
         print(f"Selected model: {self.model_id}, using device: {self.device}")
 
@@ -114,64 +114,67 @@ class Embedding(Node):
             else:
                 input_texts = [input_text]
 
-            if self.model_type == "clip":  # Use CLIP for text
-                inputs_text = self.processor(text=input_texts, return_tensors="pt", padding=True).to(self.device)
-                outputs_text = self.model.get_text_features(**inputs_text)
-                text_embeddings = outputs_text.detach().cpu().numpy()
-            elif self.model_type == "sbert":  # Use SBERT for text
-                text_embeddings = self.model.encode(input_texts, convert_to_numpy=True)
-            elif self.model_type == "fasttext":  # Use FastText for text
-                text_embeddings = []
-                word_vectors = {
-                    word: self.model[word] for sentence in input_texts for word in sentence.split() if word in self.model
-                }
-                for sentence in input_texts:
-                    words = sentence.split()
-                    vectors = [word_vectors[word] for word in words if word in word_vectors]
-                    if vectors:
-                        sentence_embedding = np.mean(vectors, axis=0)
-                        text_embeddings.append(sentence_embedding)
-                text_embeddings = np.array(text_embeddings) if text_embeddings else None
+            with self.torch.inference_mode():
+                if self.model_type == "clip":  # Use CLIP for text
+                    inputs_text = self.processor(text=input_texts, return_tensors="pt", padding=True).to(self.device)
+                    outputs_text = self.model.get_text_features(**inputs_text)
+                    text_embeddings = outputs_text.cpu().numpy()
 
-            elif self.model_type == "word2vec":  # Use Word2Vec for text
-                text_embeddings = []
-                for sentence in input_texts:
-                    words = sentence.split()
-                    vectors = [self.model[word] for word in words if word in self.model]
-                    if vectors:
-                        sentence_embedding = np.mean(vectors, axis=0)
-                        text_embeddings.append(sentence_embedding)
-                text_embeddings = np.array(text_embeddings) if text_embeddings else None
+                elif self.model_type == "sbert":  # Use SBERT for text
+                    text_embeddings = self.model.encode(input_texts, convert_to_numpy=True)
 
-        # Compute image embeddings if data input is provided
+                elif self.model_type == "fasttext":  # Use FastText for text
+                    text_embeddings = []
+                    word_vectors = {
+                        word: self.model[word] for sentence in input_texts for word in sentence.split() if word in self.model
+                    }
+                    for sentence in input_texts:
+                        words = sentence.split()
+                        vectors = [word_vectors[word] for word in words if word in word_vectors]
+                        if vectors:
+                            sentence_embedding = np.mean(vectors, axis=0)
+                            text_embeddings.append(sentence_embedding)
+                    text_embeddings = np.array(text_embeddings) if text_embeddings else None
+
+                elif self.model_type == "word2vec":  # Use Word2Vec for text
+                    text_embeddings = []
+                    for sentence in input_texts:
+                        words = sentence.split()
+                        vectors = [self.model[word] for word in words if word in self.model]
+                        if vectors:
+                            sentence_embedding = np.mean(vectors, axis=0)
+                            text_embeddings.append(sentence_embedding)
+                    text_embeddings = np.array(text_embeddings) if text_embeddings else None
+
         # Compute image embeddings if data input is provided
         if data is not None:
             input_data = data.data
             metadata["data"] = data.meta  # Preserve metadata
 
-            # Preprocess and generate image embeddings using CLIP
-            if self.model_type == "clip":
-                # Check and preprocess numpy array
-                if input_data.ndim == 4 and input_data.shape[0] == 1:  # Remove batch dimension if present
-                    input_data = input_data.squeeze(0)
+            with self.torch.inference_mode():
+                # Preprocess and generate image embeddings using CLIP
+                if self.model_type == "clip":
+                    # Check and preprocess numpy array
+                    if input_data.ndim == 4 and input_data.shape[0] == 1:  # Remove batch dimension if present
+                        input_data = input_data.squeeze(0)
 
-                # Ensure image is resized and normalized
-                if input_data.shape[:2] != (224, 224):  # Resize if not already 224x224
-                    input_data = cv2.resize(input_data, (224, 224))
+                    # Ensure image is resized and normalized
+                    if input_data.shape[:2] != (224, 224):  # Resize if not already 224x224
+                        input_data = cv2.resize(input_data, (224, 224))
 
-                # Normalize pixel values if necessary
-                if input_data.max() > 1.0:  # Normalize to [0, 1] if data is in [0, 255]
-                    input_data = np.clip(input_data / 255.0, 0.0, 1.0)
+                    # Normalize pixel values if necessary
+                    if input_data.max() > 1.0:  # Normalize to [0, 1] if data is in [0, 255]
+                        input_data = np.clip(input_data / 255.0, 0.0, 1.0)
 
-                # Convert to PIL Image for CLIP compatibility
-                input_data_pil = Image.fromarray((input_data * 255).astype(np.uint8))
+                    # Convert to PIL Image for CLIP compatibility
+                    input_data_pil = Image.fromarray((input_data * 255).astype(np.uint8))
 
-                # Use CLIPProcessor for final preprocessing
-                inputs_data = self.processor(images=input_data_pil, return_tensors="pt", padding=True)
+                    # Use CLIPProcessor for final preprocessing
+                    inputs_data = self.processor(images=input_data_pil, return_tensors="pt", padding=True)
 
-                # Generate embeddings
-                outputs_data = self.model.get_image_features(**inputs_data)
-                data_embeddings = outputs_data.detach().numpy()
+                    # Generate embeddings
+                    outputs_data = self.model.get_image_features(**inputs_data)
+                    data_embeddings = outputs_data.numpy()
 
         # Log a message if no embeddings are computed
         if text_embeddings is None and data_embeddings is None:
@@ -187,6 +190,6 @@ class Embedding(Node):
         """Reinitialize the stream."""
         self.setup()
 
-    def embedding_processing_changed(self, _):
+    def embedding_device_changed(self, _):
         """Reinitialize the stream."""
         self.setup()
