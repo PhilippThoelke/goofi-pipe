@@ -217,6 +217,7 @@ class Node(ABC):
                 continue
 
             # potentially restart the processing thread
+            # TODO: this might be starting too many threads and not cleaning up properly
             if not self.processing_thread.is_alive():
                 self.processing_thread = Thread(target=self._processing_loop, daemon=True)
                 self.processing_thread.start()
