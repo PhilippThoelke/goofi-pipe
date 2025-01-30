@@ -57,7 +57,7 @@ class VideoStream(Node):
         elif capture_mode == "screen":
             screen_index = self.params.video_stream.device_index.value
 
-            with mss() as sct:
+            with mss(display=screen_index) as sct:
                 if screen_index >= len(sct.monitors):
                     print(f"Screen index {screen_index} is out of range.")
 
