@@ -15,7 +15,7 @@ from goofi.connection import Connection
 from goofi.data import Data, DataType
 from goofi.message import Message, MessageType
 from goofi.node_helpers import InputSlot, NodeRef, OutputSlot
-from goofi.params import NodeParams
+from goofi.params import InvalidParamError, NodeParams
 
 
 class MultiprocessingForbiddenError(Exception):
@@ -496,7 +496,15 @@ class Node(ABC):
         in_slots, out_slots, params = cls._configure(cls)
         # integrate initial parameters if they are provided
         if initial_params is not None:
-            params.update(initial_params)
+            try:
+                params.update(initial_params)
+            except InvalidParamError:
+                print(
+                    "\n====================== ERROR ======================\n"
+                    f"Setting parameters failed for {cls.__name__}. This is likely due to updates"
+                    " in the node's code. Make sure to reconfigure the node."
+                    "\n===================================================\n"
+                )
 
         tries = 0
         while True:
@@ -540,9 +548,19 @@ class Node(ABC):
         """
         # generate arguments for the node
         in_slots, out_slots, params = cls._configure(cls)
+
         # integrate initial parameters if they are provided
         if initial_params is not None:
-            params.update(initial_params)
+            try:
+                params.update(initial_params)
+            except InvalidParamError:
+                print(
+                    "\n====================== ERROR ======================\n"
+                    f"Setting parameters failed for {cls.__name__}. This is likely due to updates"
+                    " in the node's code. Make sure to reconfigure the node."
+                    "\n===================================================\n"
+                )
+
         conn1, conn2 = Connection.create()
         # instantiate the node in the current process
         node = cls(conn2, in_slots, out_slots, params, NodeEnv.LOCAL)

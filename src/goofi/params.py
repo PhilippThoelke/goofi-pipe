@@ -143,6 +143,10 @@ TYPE_PARAM_MAP = {
 }
 
 
+class InvalidParamError(Exception):
+    pass
+
+
 class NodeParams:
     """
     A class for storing node parameters, which store the configuration state of the node, and are exposed
@@ -238,13 +242,20 @@ class NodeParams:
         `params` : Dict[str, Dict[str, Any]]
             A dictionary of parameter groups, where each group is a dictionary of parameter names and values.
         """
+        encountered_invalid_params = False
+
         # TODO: avoid code duplication with __init__
         for group, params in params.items():
+            if group not in self._data:
+                encountered_invalid_params = True
+                print(f"Invalid parameter group '{group}'.")
+                continue
+
             for name, param in params.items():
-                if group not in self._data:
-                    raise ValueError(f"Parameter group '{group}' does not exist.")
                 if name not in self._data[group]._fields:
-                    raise ValueError(f"Parameter '{name}' does not exist in group '{group}'.")
+                    encountered_invalid_params = True
+                    print(f"Invalid parameter '{name}' in group '{group}'.")
+                    continue
 
                 if not isinstance(param, Param):
                     if isinstance(param, dict):
@@ -264,6 +275,9 @@ class NodeParams:
                 else:
                     # update the entire parameter object
                     self._data[group] = self._data[group]._replace(**{name: param})
+
+        if encountered_invalid_params:
+            raise InvalidParamError("Invalid parameters encountered.")
 
     def serialize(self) -> Dict[str, Dict[str, Any]]:
         """
