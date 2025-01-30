@@ -27,13 +27,13 @@ class DimensionalityReduction(Node):
         }
 
     def setup(self):
-        import umap
         from sklearn.decomposition import PCA
         from sklearn.manifold import TSNE
+        from umap import UMAP
 
-        self.tsne = TSNE
-        self.pca = PCA
-        self.umap = umap
+        self.tsne_cls = TSNE
+        self.pca_cls = PCA
+        self.umap_cls = UMAP
 
         self.model = None
         self.components = None
@@ -43,6 +43,7 @@ class DimensionalityReduction(Node):
         if data is None:
             return None
 
+        method = self.params.Control.method.value
         data_array = np.squeeze(data.data)
 
         if self.params.Control.reset.value:
@@ -53,45 +54,55 @@ class DimensionalityReduction(Node):
         if self.components is not None:
             new_components = None
             if new_data is not None and self.model is not None:
+                if method == "t-SNE":
+                    raise ValueError("The t-SNE algorithm does not support transforming new data")
+
                 new_components = self.model.transform(new_data.data)
+                new_meta = new_data.meta
+                if "channels" in new_meta and "dim1" in new_meta["channels"]:
+                    del new_meta["channels"]["dim1"]
+
             return {
                 "transformed": (self.components, self.meta),
-                "new_components": (new_components, self.meta) if new_components is not None else None,
+                "new_components": (new_components, new_meta) if new_components is not None else None,
             }
 
         if data_array.ndim != 2:
             raise ValueError("Data must be 2D")
 
-        method = self.params.Control.method.value
         n_components = int(self.params.Control.n_components.value)
         perplexity = self.params.Control.tsne_perplexity.value
         n_neighbors = int(self.params.Control.umap_neighbors.value)
 
-        self.meta = data.meta.copy()
-        if "channels" in self.meta and "dim0" in self.meta["channels"]:
-            del self.meta["channels"]["dim0"]
+        self.meta = data.meta
+        if "channels" in self.meta and "dim1" in self.meta["channels"]:
+            del self.meta["channels"]["dim1"]
 
         new_components = None
         if method == "PCA":
-            self.model = self.pca(n_components=n_components)
+            self.model = self.pca_cls(n_components=n_components)
             self.components = self.model.fit_transform(data_array)
 
             if new_data is not None:
                 new_components = self.model.transform(new_data.data)
+                new_meta = new_data.meta
+                if "channels" in new_meta and "dim1" in new_meta["channels"]:
+                    del new_meta["channels"]["dim1"]
+
         elif method == "t-SNE":
-            self.model = self.tsne(n_components=n_components, perplexity=perplexity, init="pca", random_state=42)
+            self.model = self.tsne_cls(n_components=n_components, perplexity=perplexity, init="pca", random_state=42)
             self.components = self.model.fit_transform(data_array)
+
         elif method == "UMAP":
             # Initialize UMAP model
-            self.model = self.umap.UMAP(n_neighbors=n_neighbors, n_components=n_components, random_state=42)
-            # Train UMAP on the original dataset
-            self.model = self.model.fit(data_array)  # Save the model for future use
-            self.components = self.model.transform(data_array)  # Project original data into the UMAP space
+            self.model = self.umap_cls(n_neighbors=n_neighbors, n_components=n_components, random_state=42)
+            self.components = self.model.fit_transform(data_array)
 
             if new_data is not None:
-                new_components = self.umap_model.transform(new_data.data)  # Project new data
-        else:
-            raise ValueError(f"Unsupported method: {method}")
+                new_components = self.model.transform(new_data.data)
+                new_meta = new_data.meta
+                if "channels" in new_meta and "dim1" in new_meta["channels"]:
+                    del new_meta["channels"]["dim1"]
 
         return {
             "transformed": (self.components, self.meta),
