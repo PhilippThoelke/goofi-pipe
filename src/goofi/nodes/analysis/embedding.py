@@ -171,10 +171,11 @@ class Embedding(Node):
 
                     # Use CLIPProcessor for final preprocessing
                     inputs_data = self.processor(images=input_data_pil, return_tensors="pt", padding=True)
+                    inputs_data = {k: v.to(self.device) for k, v in inputs_data.items()}
 
                     # Generate embeddings
                     outputs_data = self.model.get_image_features(**inputs_data)
-                    data_embeddings = outputs_data.numpy()
+                    data_embeddings = outputs_data.cpu().numpy()
 
         # Log a message if no embeddings are computed
         if text_embeddings is None and data_embeddings is None:
