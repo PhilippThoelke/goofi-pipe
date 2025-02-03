@@ -206,6 +206,15 @@ Nodes that perform analysis on the data.
 
 <details><summary>View Nodes</summary>
 
+<details><summary>&emsp;Audio2Txt</summary>
+
+  - **Inputs:**
+    - prompt: InputSlot(dtype=<DataType.STRING: 1>, trigger_process=False, data=None)
+    - audio: ARRAY
+  - **Outputs:**
+    - generated_text: STRING
+  </details>
+
 <details><summary>&emsp;AudioTagging</summary>
 
   - **Inputs:**
@@ -290,15 +299,16 @@ Nodes that perform analysis on the data.
   - **Inputs:**
     - data: ARRAY
   - **Outputs:**
-    - MeanNN: ARRAY
+    - Mean: ARRAY
     - SDNN: ARRAY
     - SDSD: ARRAY
     - RMSSD: ARRAY
-    - pNN50: ARRAY
+    - VLF: ARRAY
     - LF: ARRAY
     - HF: ARRAY
     - LF/HF: ARRAY
-    - LZC: ARRAY
+    - Peaks: ARRAY
+    - Rate: ARRAY
   </details>
 
 <details><summary>&emsp;Classifier</summary>
@@ -322,12 +332,10 @@ Nodes that perform analysis on the data.
 <details><summary>&emsp;Compass</summary>
 
   - **Inputs:**
-    - north: ARRAY
-    - south: ARRAY
-    - east: ARRAY
-    - west: ARRAY
+    - pole1: ARRAY
+    - pole2: ARRAY
   - **Outputs:**
-    - angle: ARRAY
+    - angles: ARRAY
   </details>
 
 <details><summary>&emsp;Connectivity</summary>
@@ -345,6 +353,7 @@ Nodes that perform analysis on the data.
     - longitude: ARRAY
   - **Outputs:**
     - coord_info: TABLE
+    - water_situation: ARRAY
   </details>
 
 <details><summary>&emsp;Correlation</summary>
@@ -354,6 +363,17 @@ Nodes that perform analysis on the data.
     - data2: ARRAY
   - **Outputs:**
     - pearson: ARRAY
+    - pval: ARRAY
+  </details>
+
+<details><summary>&emsp;DimensionalityReduction</summary>
+
+  - **Inputs:**
+    - data: ARRAY
+    - new_data: ARRAY
+  - **Outputs:**
+    - transformed: ARRAY
+    - new_components: ARRAY
   </details>
 
 <details><summary>&emsp;DissonanceCurve</summary>
@@ -367,6 +387,14 @@ Nodes that perform analysis on the data.
     - avg_dissonance: ARRAY
   </details>
 
+<details><summary>&emsp;EEGEmbedding</summary>
+
+  - **Inputs:**
+    - eeg: ARRAY
+  - **Outputs:**
+    - embeddings: ARRAY
+  </details>
+
 <details><summary>&emsp;EigenDecomposition</summary>
 
   - **Inputs:**
@@ -374,6 +402,16 @@ Nodes that perform analysis on the data.
   - **Outputs:**
     - eigenvalues: ARRAY
     - eigenvectors: ARRAY
+  </details>
+
+<details><summary>&emsp;Embedding</summary>
+
+  - **Inputs:**
+    - text: STRING
+    - data: ARRAY
+  - **Outputs:**
+    - text_embeddings: ARRAY
+    - data_embeddings: ARRAY
   </details>
 
 <details><summary>&emsp;ERP</summary>
@@ -487,6 +525,14 @@ Nodes that perform analysis on the data.
     - data: ARRAY
   </details>
 
+<details><summary>&emsp;ReveEEG</summary>
+
+  - **Inputs:**
+    - eeg: ARRAY
+  - **Outputs:**
+    - embedding: ARRAY
+  </details>
+
 <details><summary>&emsp;SpectroMorphology</summary>
 
   - **Inputs:**
@@ -560,6 +606,17 @@ Nodes that perform analysis on the data.
     - burst_label: STRING
     - prosody_score: ARRAY
     - burst_score: ARRAY
+  </details>
+
+<details><summary>&emsp;Walker</summary>
+
+  - **Inputs:**
+    - angle: ARRAY
+    - velocity: ARRAY
+    - water: ARRAY
+  - **Outputs:**
+    - latitude: ARRAY
+    - longitude: ARRAY
   </details>
 
 </details>
@@ -673,6 +730,13 @@ Nodes that provide data to the pipeline.
     - out: STRING
   </details>
 
+<details><summary>&emsp;ConstantTable</summary>
+
+  - **Inputs:**
+  - **Outputs:**
+    - table: TABLE
+  </details>
+
 <details><summary>&emsp;EEGRecording</summary>
 
   - **Inputs:**
@@ -731,6 +795,7 @@ Nodes that provide data to the pipeline.
   - **Inputs:**
   - **Outputs:**
     - data_output: ARRAY
+    - string_output: STRING
   </details>
 
 <details><summary>&emsp;LSLClient</summary>
@@ -765,6 +830,13 @@ Nodes that provide data to the pipeline.
     - out: STRING
   </details>
 
+<details><summary>&emsp;RandomArray</summary>
+
+  - **Inputs:**
+  - **Outputs:**
+    - random_array: ARRAY
+  </details>
+
 <details><summary>&emsp;Reservoir</summary>
 
   - **Inputs:**
@@ -780,11 +852,30 @@ Nodes that provide data to the pipeline.
     - out: ARRAY
   </details>
 
+<details><summary>&emsp;SimulatedEEG</summary>
+
+  - **Inputs:**
+    - exponents: ARRAY
+    - peaks: ARRAY
+    - variances: ARRAY
+    - peak_amplitudes: ARRAY
+  - **Outputs:**
+    - eeg_signal: ARRAY
+  </details>
+
 <details><summary>&emsp;Sine</summary>
 
   - **Inputs:**
   - **Outputs:**
     - out: ARRAY
+  </details>
+
+<details><summary>&emsp;SpikingNetwork</summary>
+
+  - **Inputs:**
+    - input: ARRAY
+  - **Outputs:**
+    - potentials: ARRAY
   </details>
 
 <details><summary>&emsp;Table</summary>
@@ -802,6 +893,15 @@ Nodes that provide data to the pipeline.
     - prompt: STRING
   - **Outputs:**
     - generated_text: STRING
+  </details>
+
+<details><summary>&emsp;VectorDB</summary>
+
+  - **Inputs:**
+    - input_vector: ARRAY
+  - **Outputs:**
+    - top_labels: TABLE
+    - vectors: ARRAY
   </details>
 
 <details><summary>&emsp;VideoStream</summary>
@@ -888,6 +988,15 @@ Miscellaneous nodes that do not fit into other categories.
     - output: STRING
   </details>
 
+<details><summary>&emsp;LatentRotator</summary>
+
+  - **Inputs:**
+    - latent_vector: ARRAY
+    - angles: ARRAY
+  - **Outputs:**
+    - rotated_vector: ARRAY
+  </details>
+
 <details><summary>&emsp;RGBtoHSV</summary>
 
   - **Inputs:**
@@ -913,6 +1022,29 @@ Miscellaneous nodes that do not fit into other categories.
     - out: STRING
   </details>
 
+<details><summary>&emsp;StringToTable</summary>
+
+  - **Inputs:**
+    - text: STRING
+  - **Outputs:**
+    - table: TABLE
+  </details>
+
+<details><summary>&emsp;Switch</summary>
+
+  - **Inputs:**
+    - selector: ARRAY
+    - array1: ARRAY
+    - array2: ARRAY
+    - array3: ARRAY
+    - string1: STRING
+    - string2: STRING
+    - string3: STRING
+  - **Outputs:**
+    - array_out: ARRAY
+    - string_out: STRING
+  </details>
+
 <details><summary>&emsp;TableSelectArray</summary>
 
   - **Inputs:**
@@ -927,6 +1059,14 @@ Miscellaneous nodes that do not fit into other categories.
     - input_table: TABLE
   - **Outputs:**
     - output_string: STRING
+  </details>
+
+<details><summary>&emsp;TableToString</summary>
+
+  - **Inputs:**
+    - table: TABLE
+  - **Outputs:**
+    - text: STRING
   </details>
 
 </details>
@@ -1018,12 +1158,28 @@ Nodes implementing signal processing operations.
     - out: ARRAY
   </details>
 
+<details><summary>&emsp;BufferString</summary>
+
+  - **Inputs:**
+    - val: STRING
+  - **Outputs:**
+    - out: STRING
+  </details>
+
 <details><summary>&emsp;Cycle</summary>
 
   - **Inputs:**
     - signal: ARRAY
   - **Outputs:**
     - cycle: ARRAY
+  </details>
+
+<details><summary>&emsp;EEGHeadsetDetection</summary>
+
+  - **Inputs:**
+    - eeg_data: ARRAY
+  - **Outputs:**
+    - headset_status: ARRAY
   </details>
 
 <details><summary>&emsp;EMD</summary>
@@ -1087,6 +1243,14 @@ Nodes implementing signal processing operations.
     - phase: ARRAY
   - **Outputs:**
     - reconstructed: ARRAY
+  </details>
+
+<details><summary>&emsp;Normalization</summary>
+
+  - **Inputs:**
+    - data: ARRAY
+  - **Outputs:**
+    - normalized: ARRAY
   </details>
 
 <details><summary>&emsp;PSD</summary>
