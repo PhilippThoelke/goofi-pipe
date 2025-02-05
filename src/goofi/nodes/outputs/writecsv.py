@@ -11,7 +11,7 @@ from goofi.params import StringParam
 class WriteCsv(Node):
     @staticmethod
     def config_input_slots():
-        # This node will accept only a table as its input.
+        # This node will accept a table as its input.
         return {"table_input": DataType.TABLE}
 
     @staticmethod
@@ -25,76 +25,61 @@ class WriteCsv(Node):
         import pandas as pd
 
         self.pd = pd
-
         self.last_filename = None
-        self.base_filename = None  # To track the filename without the timestamp
-        self.written_files = set()  # Track files we've written headers to
+        self.base_filename = None  # Track the base filename without timestamp
+        self.written_files = set()  # Track files to ensure headers are written
 
     def process(self, table_input: Data):
-        # Check the value of write_control.
-        # If False, return without doing anything.
+        # Check if writing is enabled
         if not self.params["Write"]["write"].value:
             return
 
         table_data = table_input.data
-        # Extract the actual data content
-        actual_data = {key: (value.data if isinstance(value, Data) else value) for key, value in table_data.items()}
+        
+        # Extract actual data content, handling multiple columns
+        actual_data = {
+            key: (value.data if isinstance(value, Data) else value)
+            for key, value in table_data.items()
+        }
 
-        # Assume there's only one key (e.g., 'value1') as per your example
-        if len(actual_data) != 1:
-            raise ValueError("Expected exactly one column in the table input.")
-
-        column_name, column_data = next(iter(actual_data.items()))
-
-        # Function to flatten the data
+        # Function to flatten data
         def flatten(data):
             if isinstance(data, (list, tuple, np.ndarray)):
-                # Check if it's multi-dimensional
-                if isinstance(data, np.ndarray):
-                    if data.ndim > 1:
-                        return data.flatten().tolist()
-                    else:
-                        return data.tolist()
-                else:
-                    # For lists or tuples, attempt to flatten only one level
-                    flattened = []
-                    for item in data:
-                        if isinstance(item, (list, tuple, np.ndarray)):
-                            flattened.extend(item)
-                        else:
-                            flattened.append(item)
-                    return flattened
-            else:
-                # If data is a single scalar value
-                return [data]
+                if isinstance(data, np.ndarray) and data.ndim > 1:
+                    return data.flatten().tolist()
+                return [item for sublist in data for item in (sublist if isinstance(sublist, (list, tuple, np.ndarray)) else [sublist])]
+            return [data]
 
-        # Flatten the column data
-        flattened_data = flatten(column_data)
+        # Flatten all columns
+        flattened_data = {col: flatten(values) for col, values in actual_data.items()}
 
-        # Create DataFrame with the flattened data
-        df = self.pd.DataFrame({column_name: flattened_data})
+        # Ensure all columns have the same length by padding with None
+        max_length = max(map(len, flattened_data.values()))
+        for col in flattened_data:
+            flattened_data[col] += [None] * (max_length - len(flattened_data[col]))
 
-        # Get the filename from the parameters
+        # Convert to DataFrame
+        df = self.pd.DataFrame(flattened_data)
+
+        # Get the filename from parameters
         filename = self.params["Write"]["filename"].value
 
-        # Check if the filename has changed.
+        # Check if filename has changed, then update with timestamp
         if filename != self.base_filename:
             basename, ext = os.path.splitext(filename)
             datetime_str = datetime.datetime.now().strftime("%Y%m%d_%H%M%S")
             fn = f"{basename}_{datetime_str}{ext}"
-            self.last_filename = fn  # Update the last used filename with timestamp
-            self.base_filename = filename  # Update the base filename
+            self.last_filename = fn
+            self.base_filename = filename
         else:
             fn = self.last_filename
 
-        # Determine if headers need to be written
+        # Determine if headers should be written
         write_header = fn not in self.written_files
 
-        # Write the DataFrame to CSV
+        # Append new data to CSV
         df.to_csv(fn, mode="a", header=write_header, index=False)
 
+        # Mark file as written to prevent duplicate headers
         if write_header:
             self.written_files.add(fn)
-
-        # Optionally, you can return the path to the generated CSV file as an output
-        # return fn
