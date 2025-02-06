@@ -1,8 +1,6 @@
 import datetime
 import os
-
 import numpy as np
-
 from goofi.data import Data, DataType
 from goofi.node import Node
 from goofi.params import StringParam
@@ -28,6 +26,7 @@ class WriteCsv(Node):
         self.last_filename = None
         self.base_filename = None  # Track the base filename without timestamp
         self.written_files = set()  # Track files to ensure headers are written
+        self.last_values = {}  # Store the last known value for each column
 
     def process(self, table_input: Data):
         # Check if writing is enabled
@@ -35,7 +34,7 @@ class WriteCsv(Node):
             return
 
         table_data = table_input.data
-        
+
         # Extract actual data content, handling multiple columns
         actual_data = {
             key: (value.data if isinstance(value, Data) else value)
@@ -57,6 +56,16 @@ class WriteCsv(Node):
         max_length = max(map(len, flattened_data.values()))
         for col in flattened_data:
             flattened_data[col] += [None] * (max_length - len(flattened_data[col]))
+
+        # Replace None with the last known value
+        for col in flattened_data:
+            if col not in self.last_values:
+                self.last_values[col] = None  # Initialize with None if not present
+            for i in range(len(flattened_data[col])):
+                if flattened_data[col][i] is None:
+                    flattened_data[col][i] = self.last_values[col]
+                else:
+                    self.last_values[col] = flattened_data[col][i]  # Update the last known value
 
         # Convert to DataFrame
         df = self.pd.DataFrame(flattened_data)
