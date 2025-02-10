@@ -1,8 +1,21 @@
+import ast
 import os
+
 import numpy as np
-from goofi.data import Data, DataType
+
+from goofi.data import DataType, to_data
 from goofi.node import Node
-from goofi.params import StringParam, BoolParam
+from goofi.params import BoolParam, StringParam
+
+
+def convert_to_numpy(val):
+    try:
+        parsed_val = ast.literal_eval(val)  # Convert string to Python list/dict
+        if isinstance(parsed_val, list):
+            return np.array(parsed_val, dtype=np.float32)  # Convert lists to NumPy arrays
+        return parsed_val  # Keep as is if it's not a list
+    except (ValueError, SyntaxError):
+        return val  # Return as is if it can't be parsed
 
 
 class Replay(Node):
@@ -28,11 +41,14 @@ class Replay(Node):
 
     def load_csv(self):
         import pandas as pd
-        
+
         filename = self.params["Read"]["filename"].value
         if filename != self.last_filename:  # Only reload if filename changed
             if os.path.exists(filename):
-                self.df = pd.read_csv(filename)
+                self.df = pd.read_csv(
+                    filename,
+                    converters={col: convert_to_numpy for col in pd.read_csv(filename, nrows=1).columns},
+                )
                 self.current_index = 0
             else:
                 self.df = None
@@ -54,14 +70,7 @@ class Replay(Node):
         row_data = self.df.iloc[self.current_index].to_dict()
 
         # Convert each value to the appropriate Data format
-        table_output = {
-            key: Data(
-                DataType.ARRAY if not isinstance(value, str) else DataType.STRING,
-                np.array([value]) if isinstance(value, (int, float)) else value,  # Convert lists, ints, and floats to NumPy arrays
-                {}
-            )
-            for key, value in row_data.items()
-        }
+        table_output = {key: to_data(value) for key, value in row_data.items()}
 
         # Increment index, loop back to the start when reaching the end
         self.current_index = (self.current_index + 1) % len(self.df)
