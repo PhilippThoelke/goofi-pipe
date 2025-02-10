@@ -162,8 +162,11 @@ class MultiprocessingConnection(Connection):
 
     def __del__(self) -> None:
         """Destructor to close the connection and free any resources associated with it."""
-        self.close()
-        self.conn._handle = None
+        try:
+            self.close()
+            self.conn._handle = None
+        except Exception:
+            pass
 
 
 class ZeroMQConnection(Connection, ABC):
