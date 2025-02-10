@@ -135,12 +135,15 @@ class Manager:
         self._save_path = None
         self._unsaved_changes = False
 
-        # start the blocking non-daemon post-initialization thread to leave the main thread free for the GUI (limitation of MacOS)
-        Thread(target=self.post_init, args=(filepath, duration), daemon=False).start()
+        if self.headless:
+            # there is no GUI, so we can run everything in the main thread
+            self.post_init(filepath, duration)
+        else:
+            # start the blocking non-daemon post-initialization thread to leave the main thread free for the GUI (limitation of MacOS)
+            Thread(target=self.post_init, args=(filepath, duration), daemon=False).start()
 
-        # initialize the GUI
-        # NOTE: this is a blocking call, so it must be the last thing we do
-        if not self.headless:
+            # initialize the GUI
+            # NOTE: this is a blocking call, so it must be the last thing we do
             Window(self)
 
     def post_init(self, filepath: Optional[str] = None, duration: float = 0) -> None:
