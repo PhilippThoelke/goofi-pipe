@@ -4,7 +4,7 @@ import numpy as np
 from goofi.data import Data, DataType
 from goofi.node import Node
 from goofi.params import StringParam
-
+import json
 
 class WriteCsv(Node):
     @staticmethod
@@ -41,16 +41,21 @@ class WriteCsv(Node):
             for key, value in table_data.items()
         }
 
-        # Function to flatten data
-        def flatten(data):
-            if isinstance(data, (list, tuple, np.ndarray)):
-                if isinstance(data, np.ndarray) and data.ndim > 1:
-                    return data.flatten().tolist()
-                return [item for sublist in data for item in (sublist if isinstance(sublist, (list, tuple, np.ndarray)) else [sublist])]
-            return [data]
 
-        # Flatten all columns
-        flattened_data = {col: flatten(values) for col, values in actual_data.items()}
+        def flatten(data):
+            """ Ensure lists and NumPy arrays are stored as JSON strings to keep their structure. """
+            if isinstance(data, np.ndarray):
+                return json.dumps(data.tolist())  # Convert ndarray to list before serializing
+            elif isinstance(data, (list, tuple)):
+                return json.dumps(data)  # Serialize list as a JSON string
+            return data  # Return scalars as-is
+
+
+        flattened_data = {col: [flatten(values)] if not isinstance(values, list) 
+                  else [flatten(v) for v in values]
+                  for col, values in actual_data.items()}
+
+
 
         # Ensure all columns have the same length by padding with None
         max_length = max(map(len, flattened_data.values()))
