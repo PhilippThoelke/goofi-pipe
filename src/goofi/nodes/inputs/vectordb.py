@@ -36,7 +36,7 @@ class VectorDB(Node):
         Load the database index and mapping during initialization.
         """
         database_path = self.params.Control.database_path.value
-        database_path = os.path.join(self.assets_path, database_path)
+        #database_path = os.path.join(self.assets_path, database_path)
         try:
             with open(database_path, "rb") as f:
                 index_data, self.idx2word = pickle.load(f)
