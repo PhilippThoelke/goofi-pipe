@@ -1,5 +1,4 @@
 import os
-import pandas as pd
 import numpy as np
 from goofi.data import Data, DataType
 from goofi.node import Node
@@ -28,6 +27,8 @@ class Replay(Node):
         self.load_csv()
 
     def load_csv(self):
+        import pandas as pd
+        
         filename = self.params["Read"]["filename"].value
         if filename != self.last_filename:  # Only reload if filename changed
             if os.path.exists(filename):

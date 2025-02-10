@@ -1,5 +1,4 @@
 import numpy as np
-from fooof import FOOOF
 
 from goofi.data import Data, DataType
 from goofi.node import Node
@@ -25,12 +24,17 @@ class FOOOFaperiodic(Node):
             }
         }
 
+    def setup(self):
+        from fooof import FOOOF
+
+        self.FOOOF = FOOOF
+
     def process(self, psd_data: Data):
         if psd_data is None or psd_data.data is None:
             return None
 
         # Create FOOOF object & set its parameters
-        fm = FOOOF(max_n_peaks=self.params["fooof"]["max_n_peaks"].value)
+        fm = self.FOOOF(max_n_peaks=self.params["fooof"]["max_n_peaks"].value)
 
         # Extract the PSD and freqs from the Data object
         psd = psd_data.data
