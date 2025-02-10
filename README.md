@@ -837,6 +837,13 @@ Nodes that provide data to the pipeline.
     - random_array: ARRAY
   </details>
 
+<details><summary>&emsp;Replay</summary>
+
+  - **Inputs:**
+  - **Outputs:**
+    - table_output: TABLE
+  </details>
+
 <details><summary>&emsp;Reservoir</summary>
 
   - **Inputs:**
