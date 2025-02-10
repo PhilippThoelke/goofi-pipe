@@ -1,14 +1,15 @@
 import numpy as np
-from goofi.data import Data, DataType
+
+from goofi.data import DataType
 from goofi.node import Node
-from goofi.params import FloatParam, IntParam
+from goofi.params import FloatParam
+
 
 class EEGHeadsetDetection(Node):
     def config_params():
         return {
-            "threshold": {
-                "average_value": FloatParam(500.0, 0.0, 10000.0),  # Threshold for average signal value
-            },
+            "threshold": {"average_value": FloatParam(500.0, 0.0, 10000.0, doc="Threshold for average signal value")},
+            "common": {"autotrigger": True},
         }
 
     def config_input_slots():
@@ -33,5 +34,8 @@ class EEGHeadsetDetection(Node):
             headset_worn = np.array(1)  # Not worn (average too high)
         else:
             headset_worn = np.array(2)  # Worn (average below threshold)
+
+        # handle the case where the EEG LSL cuts out
+        self.input_slots["eeg_data"].clear()
 
         return {"headset_status": (headset_worn, {})}
