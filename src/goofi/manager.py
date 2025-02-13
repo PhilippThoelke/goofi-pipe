@@ -112,11 +112,29 @@ class Manager:
         same process as the manager.
     `duration` : float
         The duration to run the manager for. If `0`, runs indefinitely.
+    `communication_backend` : str
+        The communication backend to use for node communication. Default is "mp" (multiprocessing).
     """
 
     def __init__(
-        self, filepath: Optional[str] = None, headless: bool = True, use_multiprocessing: bool = True, duration: float = 0
+        self,
+        filepath: Optional[str] = None,
+        headless: bool = True,
+        use_multiprocessing: bool = True,
+        duration: float = 0,
+        communication_backend: str = "mp",
     ) -> None:
+        # create a multiprocessing manager
+        self._mp_manager = MPManager()
+
+        try:
+            # set up communication backend
+            Connection.set_backend(communication_backend, self._mp_manager)
+        except AssertionError:
+            print("Connection backend already set. Skipping.")
+        # make sure the connection backend is set correctly
+        assert Connection._BACKEND == communication_backend
+
         # TODO: add proper logging
         print("Starting goofi-pipe...")
         # preload all nodes to avoid delays
@@ -319,7 +337,9 @@ class Manager:
             Window().remove_node(name, **gui_kwargs)
 
     @mark_unsaved_changes
-    def add_link(self, node_out: str, node_in: str, slot_out: str, slot_in: str, notify_gui: bool = True, **gui_kwargs) -> None:
+    def add_link(
+        self, node_out: str, node_in: str, slot_out: str, slot_in: str, notify_gui: bool = True, **gui_kwargs
+    ) -> None:
         """
         Adds a link between two nodes.
 
@@ -402,6 +422,9 @@ class Manager:
         self._running = False
         for node in self.nodes:
             self.nodes[node].terminate()
+
+        # close the communication backend
+        self._mp_manager.shutdown()
 
     def save(self, filepath: Optional[str] = None, overwrite: bool = False, timeout: float = 3.0) -> None:
         """
@@ -585,21 +608,14 @@ def main(duration: float = 0, args=None):
         docs()
         return
 
-    with MPManager() as manager:
-        # set the communication backend
-        try:
-            Connection.set_backend(args.comm, manager)
-        except AssertionError:
-            # connection backend is already set (occurrs when running tests)
-            pass
-
-        # create and run the manager (this blocks until the manager is terminated)
-        Manager(
-            filepath=args.filepath,
-            headless=args.headless,
-            use_multiprocessing=not args.no_multiprocessing,
-            duration=duration,
-        )
+    # create and run the manager (this blocks until the manager is terminated)
+    Manager(
+        filepath=args.filepath,
+        headless=args.headless,
+        use_multiprocessing=not args.no_multiprocessing,
+        duration=duration,
+        communication_backend=args.comm,
+    )
 
 
 def docs():

@@ -48,14 +48,15 @@ class Connection(ABC):
         `mp_manager` : multiprocessing.Manager
             The multiprocessing manager to use for creating shared objects.
         """
+        # initialize a shared set of connection ids
+        assert Connection._CONNECTION_IDS is None, "Connection._CONNECTION_IDS is not None."
+        Connection._CONNECTION_IDS = mp_manager.list()
+
+        # set the backend if discovering connection IDs was successful (prevents overwriting the backend)
         assert (
             backend in Connection.get_backends().keys()
         ), f"Invalid backend: {backend}. Choose from {list(Connection.get_backends().keys())}"
         Connection._BACKEND = backend
-
-        # initialize a shared set of connection ids
-        assert Connection._CONNECTION_IDS is None, "Connection._CONNECTION_IDS is not None."
-        Connection._CONNECTION_IDS = mp_manager.list()
 
     @staticmethod
     def create() -> Tuple["Connection", "Connection"]:

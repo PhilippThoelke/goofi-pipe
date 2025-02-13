@@ -1,6 +1,5 @@
 import platform
 import time
-from multiprocessing import Manager as MPManager
 from os import path
 
 import pytest
@@ -10,16 +9,22 @@ from goofi.connection import Connection
 from goofi.manager import Manager
 from goofi.message import Message, MessageType
 
+MANAGER_TEST_DURATION = 0.1
 
-def create_simple_manager() -> Manager:
+
+def create_simple_manager(comm_backend: str = "mp") -> Manager:
     """
     Creates a simple manager with a constant node, a sine node, and an add node.
+
+    ### Parameters
+    `comm_backend` : str
+        The communication backend to use. Choose from "mp", "zmq-tcp" or "zmq-ipc".
 
     ### Returns
     manager : Manager
         The manager object.
     """
-    manager = Manager()
+    manager = Manager(duration=MANAGER_TEST_DURATION, communication_backend=comm_backend)
     manager.add_node("ConstantArray", "inputs")
     manager.add_node("Sine", "inputs")
     manager.add_node("Operation", "array")
@@ -30,11 +35,11 @@ def create_simple_manager() -> Manager:
 
 
 def test_creation():
-    Manager()
+    Manager(duration=MANAGER_TEST_DURATION)
 
 
 def test_main():
-    goofi.manager.main(1, ["--headless"])
+    goofi.manager.main(MANAGER_TEST_DURATION, ["--headless"])
 
 
 @pytest.mark.skipif(platform.system() == "Windows", reason="Multiprocessing is very slow on Windows.")
@@ -44,14 +49,7 @@ def test_simple(comm_backend):
         # TODO: make sure zmq backend works
         pytest.skip("ZeroMQ backend still has some issues.")
 
-    try:
-        mp_manager = MPManager()
-        Connection.set_backend("mp", mp_manager)
-    except AssertionError:
-        # connection backend is already set
-        pass
-
-    manager = create_simple_manager()
+    manager = create_simple_manager(comm_backend=comm_backend)
     my_conn, node_conn = Connection.create()
     manager.nodes["operation0"].connection.send(
         Message(MessageType.ADD_OUTPUT_PIPE, {"slot_name_out": "out", "slot_name_in": "in", "node_connection": my_conn})
@@ -80,7 +78,7 @@ def test_simple(comm_backend):
 
 
 def test_save_empty(tmpdir):
-    manager = Manager()
+    manager = Manager(duration=MANAGER_TEST_DURATION)
 
     # if path is a file, save to that file
     manager.save(path.join(tmpdir, "test.gfi"))
