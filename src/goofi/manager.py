@@ -337,9 +337,7 @@ class Manager:
             Window().remove_node(name, **gui_kwargs)
 
     @mark_unsaved_changes
-    def add_link(
-        self, node_out: str, node_in: str, slot_out: str, slot_in: str, notify_gui: bool = True, **gui_kwargs
-    ) -> None:
+    def add_link(self, node_out: str, node_in: str, slot_out: str, slot_in: str, notify_gui: bool = True, **gui_kwargs) -> None:
         """
         Adds a link between two nodes.
 
