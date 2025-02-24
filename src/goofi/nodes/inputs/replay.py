@@ -1,5 +1,4 @@
 import ast
-import os
 
 import numpy as np
 
@@ -44,19 +43,14 @@ class Replay(Node):
 
         filename = self.params["Read"]["filename"].value
         if filename != self.last_filename:  # Only reload if filename changed
-            if os.path.exists(filename):
-                self.df = pd.read_csv(
-                    filename,
-                    converters={col: convert_to_numpy for col in pd.read_csv(filename, nrows=1).columns},
-                )
-                self.current_index = 0
-            else:
-                self.df = None
+            self.df = pd.read_csv(
+                filename,
+                converters={col: convert_to_numpy for col in pd.read_csv(filename, nrows=1).columns},
+            )
+            self.current_index = 0
             self.last_filename = filename
 
     def process(self):
-        filename = self.params["Read"]["filename"].value
-
         # Reload CSV if filename has changed
         self.load_csv()
 
