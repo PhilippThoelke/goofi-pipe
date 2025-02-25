@@ -530,6 +530,12 @@ class Manager:
         for node in serialized_nodes.values():
             node.pop("out_conns")
 
+        # make sure the number of serialized nodes is correct
+        if len(serialized_nodes) != len(self.nodes):
+            filepath = f"{filepath}.incomplete"
+            # TODO: add proper logging
+            print(f"WARNING: Mismatch between serialized nodes and actual nodes, saving may be incomplete. Saving to '{filepath}'.")
+
         # convert the manager instance into yaml format
         manager_yaml = yaml.dump({"nodes": serialized_nodes, "links": links})
 
