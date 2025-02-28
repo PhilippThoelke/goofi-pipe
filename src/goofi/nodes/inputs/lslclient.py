@@ -51,14 +51,15 @@ class LSLClient(Node):
         try:
             # fetch data
             samples, _ = self.client.pull_chunk()
-        except self.pylsl.LostError:
+        except Exception as e:
+            print(f"Error fetching data from LSL stream: {e}")
             self.setup()
-            return None
+            return
 
         samples = np.array(samples).T
 
         if samples.size == 0:
-            return None
+            return
 
         try:
             ch_info = self.client.info().desc().child("channels").child("channel")
@@ -68,8 +69,10 @@ class LSLClient(Node):
                 ch_names.append(ch_info.child_value("label") or "{} {:03d}".format(ch_type.upper(), k))
                 ch_info = ch_info.next_sibling()
             self.ch_names = ch_names
-        except Exception:
+        except Exception as e:
+            print(f"Error fetching channel names from LSL stream: {e}")
             self.setup()
+            return
 
         meta = {
             "sfreq": self.client.info().nominal_srate(),
