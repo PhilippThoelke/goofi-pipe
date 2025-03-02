@@ -65,19 +65,10 @@ class Filter(Node):
     def setup(self):
         from scipy import signal
 
-        # import (
-        #     butter,
-        #     cheby1,
-        #     detrend,
-        #     ellip,
-        #     filtfilt,
-        #     lfilter,
-        #     lfilter_zi,
-        # )
-
         self.signal = signal
 
-        self.filter_state = None
+        self.filter_state_bp = None
+        self.filter_state_notch = None
         self.internal_buffer = deque(maxlen=self.params["signal"]["buffer_size"].value)
 
     def process(self, data: Data):
@@ -112,7 +103,7 @@ class Filter(Node):
             elif filter_type == "elliptic":
                 b, a = self.signal.ellip(order, ripple, ripple, [low, high], btype="band")
 
-            filtered_data = self.apply_filter(b, a, filtered_data, method, padding)
+            filtered_data = self.apply_filter(b, a, filtered_data, method, padding, "bandpass")
 
         # Notch Filtering
         if self.params["notch"]["apply"].value:
@@ -137,7 +128,7 @@ class Filter(Node):
             elif filter_type == "elliptic":
                 b, a = self.signal.ellip(order, ripple, ripple, [w_low, w_high], btype="bandstop")
 
-            filtered_data = self.apply_filter(b, a, filtered_data, method, padding)
+            filtered_data = self.apply_filter(b, a, filtered_data, method, padding, "notch")
 
         if self.params["signal"]["internal_buffer"].value:
             filtered_data = filtered_data[..., -data.data.shape[-1] :]
@@ -150,7 +141,7 @@ class Filter(Node):
 
         return {"filtered_data": (filtered_data, data.meta)}
 
-    def apply_filter(self, b, a, data, method, padding):
+    def apply_filter(self, b, a, data, method, padding, filter_type):
         if method == "Zero-phase":
             if data.ndim == 1:
                 padlen = int(padding * len(data))
@@ -158,17 +149,31 @@ class Filter(Node):
                 padlen = int(padding * data.shape[-1])
             return self.signal.filtfilt(b, a, data, padlen=padlen)
         elif method == "Causal":
+            if filter_type == "bandpass":
+                filter_state = self.filter_state_bp
+            elif filter_type == "notch":
+                filter_state = self.filter_state_notch
+
             if data.ndim == 1:
                 zi = self.signal.lfilter_zi(b, a)
-                if self.filter_state is None or self.filter_state.shape != zi.shape:
-                    self.filter_state = zi * data[0]
-                return self.signal.lfilter(b, a, data, zi=self.filter_state)[0]
+                if filter_state is None or filter_state.shape != zi.shape:
+                    filter_state = zi * data[0]
+                filtered_data, new_state = self.signal.lfilter(b, a, data, zi=filter_state)
             elif data.ndim == 2:
                 num_channels = data.shape[0]
                 zi = self.signal.lfilter_zi(b, a).reshape(-1, 1)
-                if self.filter_state is None or self.filter_state.shape[1] != num_channels:
-                    self.filter_state = np.tile(zi, (1, num_channels)) * data[:, 0]
-                return self.signal.lfilter(b, a, data.T, axis=0, zi=self.filter_state)[0].T
+                if filter_state is None or filter_state.shape[1] != num_channels:
+                    filter_state = np.tile(zi, (1, num_channels)) * data[:, 0]
+                filtered_data, new_state = self.signal.lfilter(b, a, data.T, axis=0, zi=filter_state)
+                filtered_data = filtered_data.T
+
+            # Update the appropriate filter state
+            if filter_type == "bandpass":
+                self.filter_state_bp = new_state
+            elif filter_type == "notch":
+                self.filter_state_notch = new_state
+
+            return filtered_data
         else:
             return data
 
