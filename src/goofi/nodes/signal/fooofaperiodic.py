@@ -36,17 +36,13 @@ class FOOOFaperiodic(Node):
         if psd_data is None or psd_data.data is None:
             return None
 
-        freq_annot = None
         ch_annot = None
-
         try:
             if psd_data.data.ndim == 1:
                 freqs = np.array(psd_data.meta["channels"]["dim0"])
-                freq_annot = psd_data.meta["channels"]["dim0"]
                 ch_annot = psd_data.meta["channels"]["dim1"] if "dim1" in psd_data.meta["channels"] else None
             elif psd_data.data.ndim == 2:
                 freqs = np.array(psd_data.meta["channels"]["dim1"])
-                freq_annot = psd_data.meta["channels"]["dim1"]
                 ch_annot = psd_data.meta["channels"]["dim0"] if "dim0" in psd_data.meta["channels"] else None
             else:
                 raise ValueError("Invalid data shape. Expected 1D or 2D array.")
@@ -93,7 +89,6 @@ class FOOOFaperiodic(Node):
         exponents = np.array(exponents)
         cf_peaks = pad_to_max_len(cf_peaks)
         cleaned_psds = pad_to_max_len(cleaned_psds)
-        print(cleaned_psds.shape)
 
         return {
             "offset": (offsets, {"channels": {"dim0": ch_annot}, "sfreq": psd_data.meta["sfreq"]}),
