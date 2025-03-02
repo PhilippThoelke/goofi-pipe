@@ -1,7 +1,6 @@
 import numpy as np
 from numpy.fft import fft, fftfreq
 
-# from mne.time_frequency import tfr_array_multitaper
 from goofi.data import Data, DataType
 from goofi.node import Node
 from goofi.params import FloatParam, IntParam, StringParam
@@ -18,13 +17,11 @@ class PSD(Node):
         return {
             "psd": {
                 "method": StringParam("welch", options=["fft", "welch"]),
-                "noverlap": IntParam(0, 0, 500),
-                "precision": FloatParam(0.1, 0.01, 10.0),
-                "f_min": FloatParam(1.0, 0.01, 9999.0),
-                "f_max": FloatParam(60.0, 1.0, 10000.0),
-                "smooth_welch": IntParam(1, 1, 10),
-                # "time_bandwidth_multitaper": FloatParam(2.0, 0.1, 10.0),
-                # "n_cycles_multitaper": IntParam(7, 1, 20),
+                "nperseg": IntParam(-1, 1, 1000),
+                "noverlap": IntParam(-1, 0, 1000),
+                "f_min": FloatParam(-1, 0.0, 9999.0),
+                "f_max": FloatParam(-1, 1.0, 10000.0),
+                "axis": -1,
             }
         }
 
@@ -40,72 +37,31 @@ class PSD(Node):
         if data.data.ndim not in [1, 2]:
             raise ValueError("Data must be 1D or 2D")
 
-        method = self.params["psd"]["method"].value
-        noverlap = self.params["psd"]["noverlap"].value
-        precision = self.params["psd"]["precision"].value
-        f_min = self.params["psd"]["f_min"].value  # Get the min frequency
-        f_max = self.params["psd"]["f_max"].value  # Get the max frequency
-        smooth = self.params["psd"]["smooth_welch"].value
-        # time_bandwidth = self.params["psd"]["time_bandwidth_multitaper"].value
-        # n_cycles = self.params["psd"]["n_cycles_multitaper"].value
+        method = self.params.psd.method.value
+        nperseg = self.params.psd.nperseg.value if self.params.psd.nperseg.value > 0 else None
+        noverlap = self.params.psd.noverlap.value if self.params.psd.noverlap.value >= 0 else None
+        f_min = self.params.psd.f_min.value
+        f_max = self.params.psd.f_max.value
+        axis = self.params.psd.axis.value if self.params.psd.axis.value >= 0 else data.data.ndim + self.params.psd.axis.value
 
         sfreq = data.meta["sfreq"]
-        nperseg = int(sfreq / precision)
-        nfft = nperseg / smooth
-
-        # Sanity check for recommended parameters
-        if data.data.shape[-1] < f_min * 3 * sfreq:
-            print(
-                "Warning: The minimum frequency is too low for the length of the signal. "
-                "Consider increasing the minimum frequency or increasing the signal length."
-            )
 
         if method == "fft":
-            freq = fftfreq(data.data.shape[-1], 1 / sfreq)
-            fft_result = fft(data.data, axis=-1)
-            psd = np.abs(fft_result)
+            freq = fftfreq(data.data.shape[axis], 1 / sfreq)
+            psd = np.abs(fft(data.data, axis=axis))
         elif method == "welch":
-            if data.data.ndim == 1:
-                freq, psd = self.welch(data.data, fs=sfreq, nperseg=nperseg, nfft=nfft, noverlap=noverlap)
-            else:  # if 2D
-                psd = []
-                for row in data.data:
-                    f, p = self.welch(row, fs=sfreq, nperseg=nperseg, nfft=nfft, noverlap=noverlap)
-                    psd.append(p)
-                freq = f
-                psd = np.array(psd)
-        """elif method == "multitaper":
-            fmin, fmax = f_min, f_max
-            # Computing the TFR using multitaper
-            power_tfr = tfr_array_multitaper(
-                data.data[None],
-                sfreq=sfreq,
-                freqs=np.arange(fmin, fmax, precision),
-                n_cycles=n_cycles,  # This can be adjusted or parameterized
-                time_bandwidth=time_bandwidth,
-                use_fft=True,
-                verbose=False,
-            )
+            freq, psd = self.welch(data.data, fs=sfreq, nperseg=nperseg, noverlap=noverlap, axis=axis)
 
-            # Extract the PSD data
-            # Sum the power across the time dimension to get PSD
-            psd = np.mean(power_tfr.data, axis=-1)
-
-            # The first dimension in the result is redundant and needs to be removed
-            psd = psd.squeeze()
-            freq = np.arange(fmin, fmax, precision)"""
-
-        # prepare metadata
-        meta = data.meta.copy()
-
-        # Selecting the range of frequencies
+        # selecting the range of frequencies
+        if f_min < 0:
+            f_min = freq.min()
+        if f_max < 0:
+            f_max = freq.max()
         valid_indices = np.where((freq >= f_min) & (freq <= f_max))[0]
+
+        meta = data.meta.copy()
         freq = freq[valid_indices]
-        if data.data.ndim == 1:
-            psd = psd[valid_indices]
-            meta["channels"]["dim0"] = freq.tolist()
-        else:  # if 2D
-            psd = psd[:, valid_indices]
-            meta["channels"]["dim1"] = freq.tolist()
+        psd = np.take(psd, valid_indices, axis=axis)
+        meta["channels"][f"dim{axis}"] = freq.tolist()
 
         return {"psd": (psd, meta)}
