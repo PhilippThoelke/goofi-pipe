@@ -92,6 +92,9 @@ class Normalization(Node):
                     feature_range=(self.params.minmax.feature_min.value, self.params.minmax.feature_max.value),
                 )
 
+        # return only as much data as was passed in
+        normalized = normalized[..., -array.shape[-1] :]
+
         # move axis back
         if self.params.normalization.axis.value != -1:
             normalized = np.moveaxis(normalized, -1, self.params.normalization.axis.value)
