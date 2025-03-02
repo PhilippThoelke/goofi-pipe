@@ -17,12 +17,11 @@ class PSD(Node):
         return {
             "psd": {
                 "method": StringParam("welch", options=["fft", "welch"]),
-                "nperseg": IntParam(-1, 1, 1000),
-                "noverlap": IntParam(-1, 0, 1000),
                 "f_min": FloatParam(-1, 0.0, 9999.0),
                 "f_max": FloatParam(-1, 1.0, 10000.0),
                 "axis": -1,
-            }
+            },
+            "welch": {"nperseg": IntParam(-1, 1, 1000), "noverlap": IntParam(-1, 0, 1000)},
         }
 
     def setup(self):
@@ -38,11 +37,12 @@ class PSD(Node):
             raise ValueError("Data must be 1D or 2D")
 
         method = self.params.psd.method.value
-        nperseg = self.params.psd.nperseg.value if self.params.psd.nperseg.value > 0 else None
-        noverlap = self.params.psd.noverlap.value if self.params.psd.noverlap.value >= 0 else None
         f_min = self.params.psd.f_min.value
         f_max = self.params.psd.f_max.value
         axis = self.params.psd.axis.value if self.params.psd.axis.value >= 0 else data.data.ndim + self.params.psd.axis.value
+
+        nperseg = self.params.welch.nperseg.value if self.params.welch.nperseg.value > 0 else None
+        noverlap = self.params.welch.noverlap.value if self.params.welch.noverlap.value >= 0 else None
 
         sfreq = data.meta["sfreq"]
 
