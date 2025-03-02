@@ -12,7 +12,7 @@ class Select(Node):
         return {"out": DataType.ARRAY}
 
     def config_params():
-        return {"select": {"axis": 0, "include": "", "exclude": ""}}
+        return {"select": {"axis": 0, "include": "", "exclude": "", "expand_asterisk": False}}
 
     def setup(self):
         from mne import pick_channels
@@ -31,10 +31,40 @@ class Select(Node):
         include = [ch.strip() for ch in include if len(ch.strip()) > 0]
         exclude = self.params.select.exclude.value.split(",") or []
         exclude = [ch.strip() for ch in exclude if len(ch.strip()) > 0]
+        expand_asterisk = self.params.select.expand_asterisk.value
 
         if f"dim{axis}" in data.meta["channels"]:
             # use channel names from metadata
             chs = data.meta["channels"][f"dim{axis}"]
+
+            # Handle asterisk expansion
+            if expand_asterisk:
+                # Process include patterns
+                expanded_include = []
+                for pattern in include:
+                    if "*" in pattern:
+                        # Convert glob pattern to regex pattern
+                        import re
+
+                        regex_pattern = "^" + pattern.replace("*", ".*") + "$"
+                        expanded_include.extend([ch for ch in chs if re.match(regex_pattern, ch)])
+                    else:
+                        expanded_include.append(pattern)
+
+                # Process exclude patterns
+                expanded_exclude = []
+                for pattern in exclude:
+                    if "*" in pattern:
+                        import re
+
+                        regex_pattern = "^" + pattern.replace("*", ".*") + "$"
+                        expanded_exclude.extend([ch for ch in chs if re.match(regex_pattern, ch)])
+                    else:
+                        expanded_exclude.append(pattern)
+
+                include = expanded_include
+                exclude = expanded_exclude
+
             idxs = self.pick_channels(chs, include=include, exclude=exclude, ordered=False)
         else:
             # no channel names for this axis, use indices
