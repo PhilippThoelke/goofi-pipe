@@ -20,10 +20,12 @@ class FOOOFaperiodic(Node):
     def config_params():
         return {
             "fooof": {
-                "max_n_peaks": IntParam(5, 1, 20, doc="The maximum number of peaks to fit."),
+                "max_n_peaks": IntParam(-1, 1, 20, doc="The maximum number of peaks to fit."),
                 "mode": StringParam("fixed", options=["fixed", "knee"], doc="The mode to fit the aperiodic component."),
                 "freq_min": FloatParam(-1.0, 0.0, 512.0, doc="The minimum frequency to consider for fitting."),
                 "freq_max": FloatParam(-1.0, 0.0, 512.0, doc="The maximum frequency to consider for fitting."),
+                "peak_width_min": FloatParam(0.5, 0.0, 100.0, doc="The minimum width of a peak, in Hz."),
+                "peak_width_max": FloatParam(12.0, 0.0, 512.0, doc="The maximum width of a peak, in Hz."),
             }
         }
 
@@ -49,6 +51,7 @@ class FOOOFaperiodic(Node):
         except KeyError:
             raise ValueError("No frequency information. Make sure to pass a power spectrum with frequency information.")
 
+        max_n_peaks = self.params.fooof.max_n_peaks.value if self.params.fooof.max_n_peaks.value > 0 else float("inf")
         freq_range = [
             self.params.fooof.freq_min.value if self.params.fooof.freq_min.value > 0 else freqs.min(),
             self.params.fooof.freq_max.value if self.params.fooof.freq_max.value > 0 else freqs.max(),
@@ -58,7 +61,11 @@ class FOOOFaperiodic(Node):
         for psd in psd_data.data:
             try:
                 # fit FOOOF model
-                fm = self.FOOOF(max_n_peaks=self.params.fooof.max_n_peaks.value)
+                fm = self.FOOOF(
+                    peak_width_limits=(self.params.fooof.peak_width_min.value, self.params.fooof.peak_width_max.value),
+                    max_n_peaks=max_n_peaks,
+                    aperiodic_mode=self.params.fooof.mode.value,
+                )
                 fm.fit(freqs, psd, freq_range=freq_range)
             except Exception as e:
                 offsets.append(np.nan)
