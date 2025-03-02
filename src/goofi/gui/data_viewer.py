@@ -34,6 +34,9 @@ class ViewerContainer:
         self.viewer = DTYPE_VIEWER_MAP[self.dtype][self.viewer_idx](self.content_window, self)
         self.viewer.set_size()
 
+        # initialize axis scaling
+        self.update_axis_scaling()
+
         # set viewer size if provided
         self.set_size(width, height)
 
