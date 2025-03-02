@@ -2,7 +2,7 @@ import numpy as np
 
 from goofi.data import Data, DataType
 from goofi.node import Node
-from goofi.params import IntParam
+from goofi.params import FloatParam, IntParam, StringParam
 
 
 class FOOOFaperiodic(Node):
@@ -21,6 +21,9 @@ class FOOOFaperiodic(Node):
         return {
             "fooof": {
                 "max_n_peaks": IntParam(5, 1, 20, doc="The maximum number of peaks to fit."),
+                "mode": StringParam("fixed", options=["fixed", "knee"], doc="The mode to fit the aperiodic component."),
+                "freq_min": FloatParam(-1.0, 0.0, 512.0, doc="The minimum frequency to consider for fitting."),
+                "freq_max": FloatParam(-1.0, 0.0, 512.0, doc="The maximum frequency to consider for fitting."),
             }
         }
 
@@ -33,38 +36,74 @@ class FOOOFaperiodic(Node):
         if psd_data is None or psd_data.data is None:
             return None
 
-        # Create FOOOF object & set its parameters
-        fm = self.FOOOF(max_n_peaks=self.params["fooof"]["max_n_peaks"].value)
-
-        # Extract the PSD and freqs from the Data object
-        psd = psd_data.data
+        freq_annot = None
+        ch_annot = None
 
         try:
             if psd_data.data.ndim == 1:
                 freqs = np.array(psd_data.meta["channels"]["dim0"])
-            else:  # if 2D
+                freq_annot = psd_data.meta["channels"]["dim0"]
+                ch_annot = psd_data.meta["channels"]["dim1"] if "dim1" in psd_data.meta["channels"] else None
+            elif psd_data.data.ndim == 2:
                 freqs = np.array(psd_data.meta["channels"]["dim1"])
+                freq_annot = psd_data.meta["channels"]["dim1"]
+                ch_annot = psd_data.meta["channels"]["dim0"] if "dim0" in psd_data.meta["channels"] else None
+            else:
+                raise ValueError("Invalid data shape. Expected 1D or 2D array.")
         except KeyError:
             raise ValueError("No frequency information. Make sure to pass a power spectrum with frequency information.")
 
-        # Fit FOOOF model
-        fm.fit(freqs, psd)
+        freq_range = [
+            self.params.fooof.freq_min.value if self.params.fooof.freq_min.value > 0 else freqs.min(),
+            self.params.fooof.freq_max.value if self.params.fooof.freq_max.value > 0 else freqs.max(),
+        ]
 
-        # Extract aperiodic component and peak parameters
-        aperiodic_params = fm.get_params("aperiodic_params")
-        peak_params = fm.get_params("peak_params")
-        cleaned_psd = fm._spectrum_peak_rm
+        offsets, exponents, cf_peaks, cleaned_psds = [], [], [], []
+        for psd in psd_data.data:
+            try:
+                # fit FOOOF model
+                fm = self.FOOOF(max_n_peaks=self.params.fooof.max_n_peaks.value)
+                fm.fit(freqs, psd, freq_range=freq_range)
+            except Exception as e:
+                offsets.append(np.nan)
+                exponents.append(np.nan)
+                cf_peaks.append(np.array([]))
+                cleaned_psds.append(np.array([]))
+                continue
 
-        # Extracting specific parameters
-        offset = aperiodic_params[0]  # Extracting the offset
-        exponent = aperiodic_params[-1]  # Extracting the exponent (if there's no knee value)
+            # extract aperiodic component and peak parameters
+            aperiodic_params = fm.get_params("aperiodic_params")
+            peak_params = fm.get_params("peak_params")
+            cleaned_psd = fm._spectrum_peak_rm
 
-        # Getting all center frequencies of detected peaks
-        cf_peaks = peak_params[:, 0] if peak_params.size else np.array([])
+            # extracting specific parameters
+            offset = aperiodic_params[0]
+            exponent = aperiodic_params[-1]
+            # getting all center frequencies of detected peaks
+            cf_peak = peak_params[:, 0] if peak_params.size else np.array([])
+
+            # add to lists
+            offsets.append(offset)
+            exponents.append(exponent)
+            cf_peaks.append(cf_peak)
+            cleaned_psds.append(cleaned_psd)
+
+        # convert lists to numpy arrays
+        offsets = np.array(offsets)
+        exponents = np.array(exponents)
+        cf_peaks = pad_to_max_len(cf_peaks)
+        cleaned_psds = pad_to_max_len(cleaned_psds)
+        print(cleaned_psds.shape)
 
         return {
-            "offset": (offset, {}),
-            "exponent": (exponent, {}),
-            "cf_peaks": (cf_peaks, {}),
-            "cleaned_psd": (cleaned_psd, {}),
+            "offset": (offsets, {"channels": {"dim0": ch_annot}, "sfreq": psd_data.meta["sfreq"]}),
+            "exponent": (exponents, {"channels": {"dim0": ch_annot}, "sfreq": psd_data.meta["sfreq"]}),
+            "cf_peaks": (cf_peaks, {"channels": {"dim0": ch_annot}, "sfreq": psd_data.meta["sfreq"]}),
+            "cleaned_psd": (cleaned_psds, {"channels": {"dim0": ch_annot}, "sfreq": psd_data.meta["sfreq"]}),
         }
+
+
+def pad_to_max_len(arrays):
+    max_len = max([len(arr) for arr in arrays], default=0)
+    padded_arrays = [np.pad(arr, (0, max_len - len(arr)), "constant", constant_values=np.nan) for arr in arrays]
+    return np.array(padded_arrays)
