@@ -1,8 +1,8 @@
-import time
 import numpy as np
+
 from goofi.data import Data, DataType
 from goofi.node import Node
-from goofi.params import BoolParam, IntParam, StringParam
+from goofi.params import BoolParam, FloatParam, IntParam, StringParam
 
 
 class Normalization(Node):
@@ -15,65 +15,85 @@ class Normalization(Node):
     def config_params():
         return {
             "normalization": {
-                "method": StringParam("quantile", options=["quantile", "z"]),
-                "n_seconds": IntParam(30, 1, 120),
+                "method": StringParam("z-score", options=["z-score", "quantile", "robust", "minmax"]),
+                "buffer_size": IntParam(1024, 2, 10000),
                 "reset": BoolParam(trigger=True),
-            }
+                "axis": -1,
+            },
+            "quantile": {
+                "n_quantiles": IntParam(1000, 100, 10000),
+                "output_distribution": StringParam("uniform", options=["uniform", "normal"]),
+            },
+            "robust": {
+                "quantile_min": IntParam(25, 0, 100),
+                "quantile_max": IntParam(75, 0, 100),
+                "unit_variance": BoolParam(False),
+            },
+            "minmax": {
+                "feature_min": FloatParam(0.0, -1.0, 1.0),
+                "feature_max": FloatParam(1.0, -1.0, 1.0),
+            },
         }
 
     def setup(self):
-        from scipy.stats import rankdata
+        from sklearn import preprocessing
 
-        self.rankdata = rankdata
-        self.window = []
+        self.preprocessing = preprocessing
+        self.buffer = None
 
     def process(self, data: Data):
         if data is None or data.data is None:
             return None
 
-        val = np.asarray(data.data)
-        if val.ndim > 2:
-            print("Error: Normalization only accepts 1D or 2D arrays")
-            return None
+        array = data.data
+        if self.params.normalization.axis.value != -1:
+            array = np.moveaxis(array, self.params.normalization.axis.value, -1)
 
-        # Handle reset trigger
-        if self.params["normalization"]["reset"].value:
-            self.window = []
-            print("Reset triggered: clearing data window.")
+        # handle reset trigger
+        if self.params.normalization.reset.value:
+            self.buffer = None
 
-        # Accumulate data in the moving window
-        self.window.extend(val)
-        window_size = self.params["normalization"]["n_seconds"].value
-        self.window = self.window[-window_size:]  # Keep only the last `n_seconds` of data
-
-        # Perform normalization if the window has data
-        if len(self.window) > 0:
-            if self.params["normalization"]["method"].value == "quantile":
-                normalized_value = self.quantile_transform(val)
-            elif self.params["normalization"]["method"].value == "z":
-                normalized_value = self.zscore(val)
+        if self.buffer is None:
+            self.buffer = array
         else:
-            print("No data in window: returning raw input.")
-            normalized_value = val
+            try:
+                self.buffer = np.concatenate((self.buffer, array), axis=-1)
+            except Exception as e:
+                print(f"Failed to extend buffer, resetting ({e})")
+                self.buffer = None
+                return
 
-        return {"normalized": (normalized_value, data.meta)}
+        # limit buffer size
+        if self.buffer.shape[-1] > self.params.normalization.buffer_size.value:
+            self.buffer = self.buffer[..., -self.params.normalization.buffer_size.value :]
 
-    def zscore(self, val):
-        mean = np.mean(self.window)
-        std = np.std(self.window) + 1e-8
-        return (val - mean) / std
+        # normalize data
+        normalized = np.zeros_like(self.buffer)
+        for idxs in np.ndindex(self.buffer.shape[:-1]):
+            current_slice = self.buffer[idxs]
 
-    def quantile_transform(self, val):
-        if val.ndim == 2:
-            normalized = np.zeros_like(val)
-            for i in range(val.shape[0]):
-                normalized[i, :] = self._quantile_transform_1D(val[i, :])
-            return normalized
-        else:
-            return self._quantile_transform_1D(val)
+            if self.params.normalization.method.value == "z-score":
+                normalized[idxs] = self.preprocessing.scale(current_slice)
+            elif self.params.normalization.method.value == "quantile":
+                normalized[idxs] = self.preprocessing.quantile_transform(
+                    current_slice.reshape(-1, 1),
+                    n_quantiles=min(self.params.quantile.n_quantiles.value, current_slice.size),
+                    output_distribution=self.params.quantile.output_distribution.value,
+                ).squeeze(1)
+            elif self.params.normalization.method.value == "robust":
+                normalized[idxs] = self.preprocessing.robust_scale(
+                    current_slice,
+                    quantile_range=(self.params.robust.quantile_min.value, self.params.robust.quantile_max.value),
+                    unit_variance=self.params.robust.unit_variance.value,
+                )
+            elif self.params.normalization.method.value == "minmax":
+                normalized[idxs] = self.preprocessing.minmax_scale(
+                    current_slice,
+                    feature_range=(self.params.minmax.feature_min.value, self.params.minmax.feature_max.value),
+                )
 
-    def _quantile_transform_1D(self, arr):
-        ranks = self.rankdata(arr)
-        scaled_ranks = np.clip((ranks - 1) / (len(self.window) - 1), 0, 1)
-        quantiles = np.percentile(self.window, 100 * scaled_ranks)
-        return (arr - np.mean(quantiles)) / (np.std(quantiles) + 1e-8)
+        # move axis back
+        if self.params.normalization.axis.value != -1:
+            normalized = np.moveaxis(normalized, -1, self.params.normalization.axis.value)
+
+        return {"normalized": (normalized, data.meta)}
