@@ -3,7 +3,7 @@ import os
 import numpy as np
 from goofi.data import Data, DataType
 from goofi.node import Node
-from goofi.params import StringParam
+from goofi.params import StringParam, BoolParam
 import json
 
 class WriteCsv(Node):
@@ -14,9 +14,13 @@ class WriteCsv(Node):
 
     @staticmethod
     def config_params():
-        # Parameters can include the CSV filename and the write control.
+        # Parameters can include the CSV filename, write control, and timestamp option.
         return {
-            "Write": {"filename": StringParam("output.csv"), "write": False},
+            "Write": {
+                "filename": StringParam("output.csv"),
+                "write": False,
+                "timestamps": BoolParam(False),  # New timestamp parameter
+            },
         }
 
     def setup(self):
@@ -41,24 +45,22 @@ class WriteCsv(Node):
             for key, value in table_data.items()
         }
 
-
         def flatten(data):
-            """ Ensure lists and NumPy arrays are stored as JSON strings to keep their structure. """
+            """Ensure lists and NumPy arrays are stored as JSON strings to keep their structure."""
             if isinstance(data, np.ndarray):
                 return json.dumps(data.tolist())  # Convert ndarray to list before serializing
             elif isinstance(data, (list, tuple)):
                 return json.dumps(data)  # Serialize list as a JSON string
             return data  # Return scalars as-is
 
-
-        flattened_data = {col: [flatten(values)] if not isinstance(values, list) 
-                  else [flatten(v) for v in values]
-                  for col, values in actual_data.items()}
-
-
+        flattened_data = {
+            col: [flatten(values)] if not isinstance(values, list) 
+            else [flatten(v) for v in values]
+            for col, values in actual_data.items()
+        }
 
         # Ensure all columns have the same length by padding with None
-        max_length = max(map(len, flattened_data.values()))
+        max_length = max(map(len, flattened_data.values()), default=0)
         for col in flattened_data:
             flattened_data[col] += [None] * (max_length - len(flattened_data[col]))
 
@@ -71,6 +73,11 @@ class WriteCsv(Node):
                     flattened_data[col][i] = self.last_values[col]
                 else:
                     self.last_values[col] = flattened_data[col][i]  # Update the last known value
+
+        # Add timestamp column if enabled
+        if self.params["Write"]["timestamps"].value:
+            timestamps = [datetime.datetime.utcnow().isoformat()] * max_length
+            flattened_data["timestamp"] = timestamps
 
         # Convert to DataFrame
         df = self.pd.DataFrame(flattened_data)
