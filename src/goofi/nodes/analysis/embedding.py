@@ -58,45 +58,46 @@ class Embedding(Node):
         self.model_id = self.params.embedding.model.value
         print(f"Selected model: {self.model_id}, using device: {self.device}")
 
-        try:
-            # Load CLIP models
-            if "clip" in self.model_id.lower():
-                print("Initializing CLIP model...")
-                from transformers import CLIPModel, CLIPProcessor
+        # Load CLIP models
+        if "clip" in self.model_id.lower():
+            self.model_type = "clip"
 
-                try:
-                    # try loading the local model (local_files_only=False interferes with goofi-pipe's multiprocessing environment)
-                    # related issue: https://github.com/CompVis/stable-diffusion/issues/90#issuecomment-1228726914
-                    self.model = CLIPModel.from_pretrained(self.model_id, local_files_only=True).to(self.device)
-                except OSError:
-                    self.model = CLIPModel.from_pretrained(self.model_id).to(self.device)
+            print("Initializing CLIP model...")
+            from transformers import CLIPModel, CLIPProcessor
 
-                self.processor = CLIPProcessor.from_pretrained(self.model_id)
-                self.model_type = "clip"
-            # Load other models
-            elif "sbert" in self.model_id.lower() or "MiniLM" in self.model_id:
-                print("Initializing SBERT model...")
-                from sentence_transformers import SentenceTransformer
+            try:
+                # try loading the local model (local_files_only=False interferes with goofi-pipe's multiprocessing environment)
+                # related issue: https://github.com/CompVis/stable-diffusion/issues/90#issuecomment-1228726914
+                self.model = CLIPModel.from_pretrained(self.model_id, local_files_only=True).to(self.device)
+            except OSError:
+                self.model = CLIPModel.from_pretrained(self.model_id).to(self.device)
 
-                self.model = SentenceTransformer(self.model_id).to(self.device)
-                self.model_type = "sbert"
-            elif "fasttext" in self.model_id.lower():
-                print("Initializing FastText model...")
-                import gensim.downloader as api
+            self.processor = CLIPProcessor.from_pretrained(self.model_id)
+        # Load other models
+        elif "sbert" in self.model_id.lower() or "MiniLM" in self.model_id:
+            self.model_type = "sbert"
 
-                self.model = api.load("fasttext-wiki-news-subwords-300")
-                self.model_type = "fasttext"
-            elif "word2vec" in self.model_id.lower():
-                print("Initializing Word2Vec model...")
-                import gensim.downloader as api
+            print("Initializing SBERT model...")
+            from sentence_transformers import SentenceTransformer
 
-                self.model = api.load("word2vec-google-news-300")
-                self.model_type = "word2vec"
-            else:
-                raise ValueError(f"Unsupported model type: {self.model_id}")
-            print(f"Model {self.model_id} initialized successfully as {self.model_type} on {self.device}.")
-        except Exception as e:
-            print(f"Error initializing model {self.model_id}: {e}")
+            self.model = SentenceTransformer(self.model_id).to(self.device)
+        elif "fasttext" in self.model_id.lower():
+            self.model_type = "fasttext"
+
+            print("Initializing FastText model...")
+            import gensim.downloader as api
+
+            self.model = api.load("fasttext-wiki-news-subwords-300")
+        elif "word2vec" in self.model_id.lower():
+            self.model_type = "word2vec"
+
+            print("Initializing Word2Vec model...")
+            import gensim.downloader as api
+
+            self.model = api.load("word2vec-google-news-300")
+        else:
+            raise ValueError(f"Unsupported model type: {self.model_id}")
+        print(f"Model {self.model_id} initialized successfully as {self.model_type} on {self.device}.")
 
     def process(self, text: Data, data: Data):
         # Initialize outputs and metadata
@@ -146,6 +147,9 @@ class Embedding(Node):
                             text_embeddings.append(sentence_embedding)
                     text_embeddings = np.array(text_embeddings) if text_embeddings else None
 
+                else:
+                    raise ValueError(f"Model {self.model_id} does not support text embeddings.")
+
         # Compute image embeddings if data input is provided
         if data is not None:
             input_data = data.data
@@ -176,10 +180,8 @@ class Embedding(Node):
                     # Generate embeddings
                     outputs_data = self.model.get_image_features(**inputs_data)
                     data_embeddings = outputs_data.cpu().numpy()
-
-        # Log a message if no embeddings are computed
-        if text_embeddings is None and data_embeddings is None:
-            print("No embeddings were generated. Check the input data and model configuration.")
+                else:
+                    raise ValueError(f"Model {self.model_id} does not support image embeddings.")
 
         # Return separate embeddings and a dictionary of metadata
         return {
