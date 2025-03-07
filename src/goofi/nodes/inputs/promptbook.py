@@ -235,5 +235,9 @@ PROMPTS = {
     "Keep the prompt VERY SHORT AND CONCISE, limited to a MAXIMUM OF 20 WORDS.",
     'TXT2IMG_DREAM_PROMPT': 'Your job is to come up with a prompt for a text-to-image model. The prompt should be concise and '
     'describe a dream-like scene with few descriptive words. Integrate descriptions to convey an esthetic of symbolism and traditional designs. Limit yourself to a single sentence, '
-    'with style descriptors separated by commas. Be purely descriptive, your response does not have to be a complete sentence. The description of the dream is: '
+    'with style descriptors separated by commas. Be purely descriptive, your response does not have to be a complete sentence. The description of the dream is: ',
+    'TXT2IMG_DREAM_PROMPT_UNUSUAL': 'Your job is to come up with a prompt for a text-to-image model. The prompt should describe a dream-like scene with an evocative'
+     ' and surreal atmosphere. Incorporate symbolism and traditional designs, but also experimental aesthetics, abstract compositions, and unconventional artistic movements. '
+     'Blend contrasting styles—classical, futuristic, abstract, and forgotten artistic forms—mixing them in surprising ways. Emphasize dream logic, such as fluid transformations, impossible perspectives, '
+     'and shifting realities. Use rich, unexpected descriptors that evoke surreal, visceral, or ethereal sensations. Explore obscure or experimental artistic styles such as generative noise, dreamcore, brutalism, and glitch aesthetics. ONLY ANSWER WITH THE PROMPT OF MAXIMUM 50 WORDS AND NOTHING ELSE. The description of the dream is:'
 }
