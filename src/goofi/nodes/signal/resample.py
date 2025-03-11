@@ -48,9 +48,8 @@ class Resample(Node):
 
         signal = np.array(data.data)
 
-        # Check if the signal contains any NaN or inf values
-        if np.any(np.isnan(signal)) or np.any(np.isinf(signal)):
-            print("Signal contains NaN or inf values")
+        # replace NaNs and Infs with zeros
+        signal = np.nan_to_num(signal, posinf=0, neginf=0)
 
         # Resample the signal based on the specified axis
         resampled_signal = self.resample_poly(signal, up, down, axis=axis, padtype="line")
