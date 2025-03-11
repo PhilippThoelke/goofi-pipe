@@ -1,14 +1,19 @@
 import numpy as np
 
-from goofi.data import DataType, Data
+from goofi.data import Data, DataType
 from goofi.node import Node
-from goofi.params import FloatParam
-import time
+from goofi.params import FloatParam, IntParam
+
 
 class EEGHeadsetDetection(Node):
     def config_params():
         return {
-            "threshold": {"average_value": FloatParam(500.0, 0.0, 10000.0, doc="Threshold for average signal value")},
+            "threshold": {
+                "average_value": FloatParam(500.0, 0.0, 10000.0, doc="Threshold for average signal value"),
+                "no_data_threshold": IntParam(
+                    100, 0, 1000, doc="Number of updates without data to assume headset is not connected"
+                ),
+            },
             "common": {"autotrigger": True},
         }
 
@@ -18,15 +23,19 @@ class EEGHeadsetDetection(Node):
     def config_output_slots():
         return {"headset_status": DataType.ARRAY}
 
+    def setup(self):
+        self.no_data_count = 0
+        self.last_state = np.array(0)
+
     def process(self, eeg_data: Data):
-
-        if not hasattr(self, 'no_data_count'):
-            self.no_data_count = 0
-
         if eeg_data is None or eeg_data.data.size == 0:
             self.no_data_count += 1
-            if self.no_data_count >= 100:
-                return {"headset_status": (np.array(0), {})}  # No data for 100 times, assume headset is not connected
+            if self.no_data_count >= self.params.threshold.no_data_threshold.value:
+                # no data for a while, assume headset is not connected
+                return {"headset_status": (np.array(0), {})}
+
+            # no data, return last state
+            return {"headset_status": (self.last_state, {})}
         else:
             self.no_data_count = 0
 
@@ -46,4 +55,5 @@ class EEGHeadsetDetection(Node):
         # handle the case where the EEG LSL cuts out
         self.input_slots["eeg_data"].clear()
 
+        self.last_state = headset_worn
         return {"headset_status": (headset_worn, {})}
