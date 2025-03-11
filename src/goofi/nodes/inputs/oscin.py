@@ -3,7 +3,7 @@ from oscpy.server import OSCThreadServer
 
 from goofi.data import Data, DataType
 from goofi.node import Node
-from goofi.params import IntParam, StringParam
+from goofi.params import BoolParam, IntParam, StringParam
 
 
 class OSCIn(Node):
@@ -12,6 +12,8 @@ class OSCIn(Node):
             "osc": {
                 "address": StringParam("0.0.0.0"),
                 "port": IntParam(9000, 0, 65535),
+                "keep_messages": BoolParam(True, doc="Keep all received messages"),
+                "clear": BoolParam(trigger=True, doc="Clear all stored messages"),
             },
             "common": {"autotrigger": True},
         }
@@ -49,10 +51,11 @@ class OSCIn(Node):
             return None
 
         data = self.messages
-        meta = {}
-        self.messages = {}
 
-        return {"message": (data, meta)}
+        if not self.params.osc.keep_messages.value or self.params.osc.clear.value:
+            self.messages = {}
+
+        return {"message": (data, {})}
 
     def osc_address_changed(self, address):
         self.server.stop_all()
