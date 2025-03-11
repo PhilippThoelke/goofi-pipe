@@ -1,9 +1,9 @@
 import numpy as np
 
-from goofi.data import DataType
+from goofi.data import DataType, Data
 from goofi.node import Node
 from goofi.params import FloatParam
-
+import time
 
 class EEGHeadsetDetection(Node):
     def config_params():
@@ -18,9 +18,17 @@ class EEGHeadsetDetection(Node):
     def config_output_slots():
         return {"headset_status": DataType.ARRAY}
 
-    def process(self, eeg_data=None):
+    def process(self, eeg_data: Data):
+
+        if not hasattr(self, 'no_data_count'):
+            self.no_data_count = 0
+
         if eeg_data is None or eeg_data.data.size == 0:
-            return {"headset_status": (np.array(0), {})}  # No data, assume headset is not connected
+            self.no_data_count += 1
+            if self.no_data_count >= 100:
+                return {"headset_status": (np.array(0), {})}  # No data for 100 times, assume headset is not connected
+        else:
+            self.no_data_count = 0
 
         # Extract EEG data and parameters
         signal = eeg_data.data
