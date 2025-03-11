@@ -217,23 +217,17 @@ class TextGeneration(Node):
             self.messages = [{"role": "user", "content": prompt_}]
 
         if model.startswith("gpt-"):
-            if self.api_key_loaded:
-                pass
-            else:
+            if not self.api_key_loaded:
                 self.load_api_key()  # Ensure API key is loaded with the current model
             generated_text = self.generate_openai_response(self.messages, temp)
 
         elif model.startswith("claude-"):
-            if self.api_key_loaded:
-                pass
-            else:
+            if not self.api_key_loaded:
                 self.load_api_key()
             generated_text = self.generate_anthropic_response(self.messages, temp)
 
         elif model.startswith("gemini-"):
-            if self.api_key_loaded:
-                pass
-            else:
+            if not self.api_key_loaded:
                 self.load_api_key()
             generated_text = self.generate_gemini_response(prompt_, temp, keep_conversation)
 
