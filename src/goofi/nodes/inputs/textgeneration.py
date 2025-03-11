@@ -60,6 +60,7 @@ class TextGeneration(Node):
         if not self.api_key and not model.startswith("local-"):
             raise ValueError(f"API key for {model} not found in environment variables or input parameters.")
 
+        self.api_key_loaded = True
         print(f"Loaded API key for {model}.")
 
     def import_libs(self, model):
@@ -99,7 +100,6 @@ class TextGeneration(Node):
     def api_key_changed(self):
         self.load_api_key()
         self.client = None
-        self.api_key_loaded = True
 
     def generate_openai_response(self, messages, temp):
         if self.client is None:
