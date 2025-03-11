@@ -98,7 +98,7 @@ class TextGeneration(Node):
         else:
             raise ValueError(f"Unknown model: {model}")
 
-    def text_generation_api_key_changed(self):
+    def text_generation_api_key_changed(self, value):
         self.load_api_key()
         self.client = None
 
