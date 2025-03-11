@@ -44,6 +44,7 @@ class TextGeneration(Node):
         self.system_prompt = self.params["text_generation"]["system_prompt"].value
 
     def load_api_key(self):
+        self.api_key_loaded = False
         self.api_key = self.params["text_generation"]["api_key"].value
         model = self.params["text_generation"]["model"].value
 
@@ -97,7 +98,7 @@ class TextGeneration(Node):
         else:
             raise ValueError(f"Unknown model: {model}")
 
-    def api_key_changed(self):
+    def text_generation_api_key_changed(self):
         self.load_api_key()
         self.client = None
 
@@ -244,8 +245,5 @@ class TextGeneration(Node):
 
         if save_conversation:
             self.save_conversation_to_json()
-
-        if self.params["text_generation"]["api_key"].value != self.api_key:
-            self.api_key_changed()
 
         return {"generated_text": (generated_text, prompt.meta)}
