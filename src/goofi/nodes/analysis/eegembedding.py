@@ -50,7 +50,7 @@ class EEGEmbedding(Node):
 
     def process(self, eeg: Data):
         if eeg is None:
-            return None
+            return
 
         assert eeg.data.shape[0] == 128, f"Expected 128 channels, got {eeg.data.shape[0]}"
         assert eeg.data.shape[1] >= 440, f"Expected at least 440 samples, got {eeg.data.shape[1]}"
@@ -60,6 +60,8 @@ class EEGEmbedding(Node):
         eeg_data = eeg.data[:, -440:]
         # convert EEG data to PyTorch tensor and move to device
         eeg_data = self.torch.tensor(eeg_data, dtype=self.torch.float32)[None, None].to(self.device)
+        # replace NaNs and Infs with zeros
+        eeg_data[~self.torch.isfinite(eeg_data)] = 0
 
         # Extract embeddings from the EEG encoder
         with self.torch.inference_mode():
