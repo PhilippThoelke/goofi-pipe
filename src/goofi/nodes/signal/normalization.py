@@ -72,6 +72,9 @@ class Normalization(Node):
         for idxs in np.ndindex(self.buffer.shape[:-1]):
             current_slice = self.buffer[idxs]
 
+            # replace NaNs and Infs with zeros
+            current_slice = np.nan_to_num(current_slice, posinf=0, neginf=0)
+
             if self.params.normalization.method.value == "z-score":
                 normalized[idxs] = self.preprocessing.scale(current_slice)
             elif self.params.normalization.method.value == "quantile":
