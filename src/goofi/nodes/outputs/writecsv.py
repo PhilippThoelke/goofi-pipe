@@ -42,7 +42,11 @@ class WriteCsv(Node):
         if start is not None and (start.data > 0).any() or self.params["Write"]["start"].value:
             self.is_writing = True
             self.start_time = time.time()
-
+            # Generate a new filename each time writing starts
+            filename = self.params["Write"]["filename"].value
+            basename, ext = os.path.splitext(filename)
+            datetime_str = datetime.datetime.now().strftime("%Y%m%d_%H%M%S")
+            self.last_filename = f"{basename}_{datetime_str}{ext}"
         if stop is not None or self.params["Write"]["stop"].value:
             self.is_writing = False
         
@@ -101,14 +105,8 @@ class WriteCsv(Node):
             filename = self.params["Write"]["filename"].value
 
             # Check if filename has changed, then update with timestamp
-            if filename != self.base_filename:
-                basename, ext = os.path.splitext(filename)
-                datetime_str = datetime.datetime.now().strftime("%Y%m%d_%H%M%S")
-                fn = f"{basename}_{datetime_str}{ext}"
-                self.last_filename = fn
-                self.base_filename = filename
-            else:
-                fn = self.last_filename
+
+            fn = self.last_filename
 
             # Determine if headers should be written
             write_header = fn not in self.written_files
