@@ -39,7 +39,7 @@ class WriteCsv(Node):
         self.is_writing = False
 
     def process(self, table_input: Data, start: Data, stop: Data):
-        if start is not None or self.params["Write"]["start"].value:
+        if start is not None and (start.data > 0).any() or self.params["Write"]["start"].value:
             self.is_writing = True
             self.start_time = time.time()
 
