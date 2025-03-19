@@ -38,15 +38,15 @@ class Switch(Node):
         if mode == "array":
             if selector_value == 1:
                 if array1 is not None:
-                    return {"array_out": (array1.data, {}), "string_out": None}
+                    return {"array_out": (array1.data, array1.meta), "string_out": None}
                 return
             elif selector_value == 2:
                 if array2 is not None:
-                    return {"array_out": (array2.data, {}), "string_out": None}
+                    return {"array_out": (array2.data, array2.meta), "string_out": None}
                 return
             elif selector_value == 3:
                 if array3 is not None:
-                    return {"array_out": (array3.data, {}), "string_out": None}
+                    return {"array_out": (array3.data, array3.meta), "string_out": None}
                 return
             else:
                 raise ValueError("Selector value must be 1 or 2")
@@ -54,15 +54,15 @@ class Switch(Node):
         elif mode == "string":
             if selector_value == 1:
                 if string1 is not None:
-                    return {"array_out": None, "string_out": (string1.data, {})}
+                    return {"array_out": None, "string_out": (string1.data, string1.meta)}
                 return
             elif selector_value == 2:
                 if string2 is not None:
-                    return {"array_out": None, "string_out": (string2.data, {})}
+                    return {"array_out": None, "string_out": (string2.data, string2.meta)}
                 return
             elif selector_value == 3:
                 if string3 is not None:
-                    return {"array_out": None, "string_out": (string3.data, {})}
+                    return {"array_out": None, "string_out": (string3.data, string2.meta)}
                 return
             else:
                 raise ValueError("Selector value must be 1 or 2")
