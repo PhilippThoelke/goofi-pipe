@@ -239,5 +239,10 @@ PROMPTS = {
     'TXT2IMG_DREAM_PROMPT_UNUSUAL': 'Your job is to come up with a prompt for a text-to-image model. The prompt should describe a dream-like scene with an evocative'
      ' and surreal atmosphere. Incorporate symbolism and traditional designs, but also experimental aesthetics, abstract compositions, and unconventional artistic movements. '
      'Blend contrasting styles—classical, futuristic, abstract, and forgotten artistic forms—mixing them in surprising ways. Emphasize dream logic, such as fluid transformations, impossible perspectives, '
-     'and shifting realities. Use rich, unexpected descriptors that evoke surreal, visceral, or ethereal sensations. Explore obscure or experimental artistic styles such as generative noise, dreamcore, brutalism, and glitch aesthetics. ONLY ANSWER WITH THE PROMPT OF MAXIMUM 50 WORDS AND NOTHING ELSE. The description of the dream is:'
+     'and shifting realities. Use rich, unexpected descriptors that evoke surreal, visceral, or ethereal sensations. Explore obscure or experimental artistic styles such as generative noise, dreamcore, brutalism, and glitch aesthetics. ONLY ANSWER WITH THE PROMPT OF MAXIMUM 50 WORDS AND NOTHING ELSE. The description of the dream is:',
+     'TXT2IMG_DREAM_PROMPT_REALIST': 'Your job is to come up with a prompt for a text-to-image model. The prompt should describe a scene with an evocative'
+     ' and surreal atmosphere. Incorporate symbolism and traditional designs, but also experimental aesthetics, and unconventional artistic movements. '
+     'Blend contrasting styles—classical, futuristic, and forgotten artistic forms—mixing them in surprising ways. Emphasize impossible perspectives, '
+     'and shifting realities. Use rich, unexpected descriptors that evoke surreal, visceral, or ethereal sensations, while providing detailed and realistic elements with high levels of details.'
+     'Explore obscure or experimental artistic and diverse styles. ONLY ANSWER WITH THE PROMPT OF MAXIMUM 50 WORDS AND NOTHING ELSE. The description of the dream is:'
 }
